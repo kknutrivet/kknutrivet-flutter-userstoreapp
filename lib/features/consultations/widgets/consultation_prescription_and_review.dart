@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/haptics.dart';
+import '../../../core/widgets/common.dart';
 import '../../../models/consultation.dart';
 
 class ConsultationDetailAppBar extends StatelessWidget
@@ -14,12 +15,20 @@ class ConsultationDetailAppBar extends StatelessWidget
     required this.busyAction,
     required this.onJoinVideoCall,
     this.videoAvailable = false,
+    this.videoEligible = false,
+    this.videoAmount,
+    this.careChatAssignedAt,
+    this.onPayVideoCall,
   });
 
   final ConsultationBooking? booking;
   final bool busyAction;
   final bool videoAvailable;
+  final bool videoEligible;
+  final double? videoAmount;
+  final DateTime? careChatAssignedAt;
   final ValueChanged<ConsultationBooking> onJoinVideoCall;
+  final VoidCallback? onPayVideoCall;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 1);
@@ -27,6 +36,19 @@ class ConsultationDetailAppBar extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     final currentBooking = booking;
+    final isDoctorAssigned = currentBooking != null &&
+        (careChatAssignedAt != null || currentBooking.isDoctorAssigned);
+
+    final doctorSubtitle = currentBooking == null
+        ? 'KK Nutrivet Care Team'
+        : (isDoctorAssigned &&
+                currentBooking.vet != null &&
+                currentBooking.vet!.name.trim().isNotEmpty
+            ? (currentBooking.vet!.name.trim().toLowerCase().startsWith('dr')
+                ? currentBooking.vet!.name.trim()
+                : 'Dr. ${currentBooking.vet!.name.trim()}')
+            : 'KK Nutrivet Care Team');
+
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -76,9 +98,7 @@ class ConsultationDetailAppBar extends StatelessWidget
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        currentBooking.vet != null
-                            ? 'Dr. ${currentBooking.vet!.name}'
-                            : 'KK Nutrivet Care Team',
+                        doctorSubtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -94,15 +114,43 @@ class ConsultationDetailAppBar extends StatelessWidget
       actions: [
         if (currentBooking != null)
           IconButton(
-            onPressed: busyAction || !videoAvailable ? null : () => onJoinVideoCall(currentBooking),
-            tooltip: videoAvailable ? 'Join video consultation' : 'Video is not ready yet',
+            onPressed: busyAction
+                ? null
+                : () {
+                    if (videoAvailable ||
+                        (currentBooking.meetingUrl != null &&
+                            currentBooking.meetingUrl!.isNotEmpty)) {
+                      onJoinVideoCall(currentBooking);
+                    } else if (videoEligible && onPayVideoCall != null) {
+                      onPayVideoCall!();
+                    } else if (!isDoctorAssigned) {
+                      AppHaptics.light();
+                      showToast(
+                        'Video call is not active yet. Our care team will assign a veterinarian shortly.',
+                      );
+                    } else {
+                      AppHaptics.light();
+                      showToast(
+                        'Video call is not active yet. Your doctor will initiate or schedule the video session if needed.',
+                      );
+                    }
+                  },
+            tooltip: videoAvailable
+                ? 'Join video consultation'
+                : (videoEligible
+                    ? 'Video consultation available · Tap to unlock'
+                    : 'Video consultation status'),
             icon: Icon(
-              Icons.videocam_outlined,
-              color:
-                  (currentBooking.meetingUrl != null &&
-                      currentBooking.meetingUrl!.isNotEmpty)
+              videoAvailable
+                  ? Icons.videocam_rounded
+                  : Icons.videocam_outlined,
+              color: videoAvailable ||
+                      (currentBooking.meetingUrl != null &&
+                          currentBooking.meetingUrl!.isNotEmpty)
                   ? AppColors.primaryDeep
-                  : AppColors.textSecondary,
+                  : (videoEligible
+                      ? AppColors.warning
+                      : AppColors.textSecondary),
             ),
           ),
         IconButton(

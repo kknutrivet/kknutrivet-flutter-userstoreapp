@@ -318,7 +318,13 @@ class _ConsultationDetailScreenState
         booking: booking,
         busyAction: _busyAction,
         videoAvailable: page?.videoAvailable == true,
+        videoEligible: page?.videoEligible == true,
+        videoAmount: page?.videoAmount,
+        careChatAssignedAt:
+            page?.careChatAssignedAt ?? booking?.careChatAssignedAt,
         onJoinVideoCall: _joinVideoCall,
+        onPayVideoCall:
+            booking != null ? () => _payOrUnlock(booking, video: true) : null,
       ),
       body: bookingAsync.when(
         data: (bookingData) => Column(

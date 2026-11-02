@@ -57,19 +57,39 @@ class VetSummary {
 }
 
 class CareChatPage {
-  const CareChatPage({required this.messages, this.canMessage = false, this.hasMore = false,
-    this.followUpRequested = false, this.videoAvailable = false, this.videoEligible = false,
-    this.bookingStatus, this.videoAmount});
+  const CareChatPage({
+    required this.messages,
+    this.canMessage = false,
+    this.hasMore = false,
+    this.followUpRequested = false,
+    this.videoAvailable = false,
+    this.videoEligible = false,
+    this.bookingStatus,
+    this.videoAmount,
+    this.careChatAssignedAt,
+  });
   final List<CareChatMessage> messages;
   final bool canMessage, hasMore, followUpRequested, videoAvailable, videoEligible;
   final String? bookingStatus;
   final double? videoAmount;
+  final DateTime? careChatAssignedAt;
+
   factory CareChatPage.fromJson(Map<String, dynamic> json) => CareChatPage(
-    messages: (json['messages'] as List? ?? []).whereType<Map>().map((m) => CareChatMessage.fromJson(Map<String, dynamic>.from(m))).toList(),
+    messages: (json['messages'] as List? ?? [])
+        .whereType<Map>()
+        .map((m) => CareChatMessage.fromJson(Map<String, dynamic>.from(m)))
+        .toList(),
     canMessage: json['canMessage'] == true,
-    hasMore: json['hasMore'] == true, followUpRequested: json['followUpRequested'] == true,
-    videoAvailable: json['videoCallAvailable'] == true, videoEligible: json['videoCallEligible'] == true,
-    bookingStatus: json['bookingStatus']?.toString(), videoAmount: (json['videoAmount'] as num?)?.toDouble());
+    hasMore: json['hasMore'] == true,
+    followUpRequested: json['followUpRequested'] == true,
+    videoAvailable: json['videoCallAvailable'] == true,
+    videoEligible: json['videoCallEligible'] == true,
+    bookingStatus: json['bookingStatus']?.toString(),
+    videoAmount: (json['videoAmount'] as num?)?.toDouble(),
+    careChatAssignedAt: json['careChatAssignedAt'] != null
+        ? DateTime.tryParse(json['careChatAssignedAt'].toString())
+        : null,
+  );
 }
 
 class CareChatMessage {
@@ -245,6 +265,8 @@ class ConsultationBooking {
     this.unlockAmount,
     this.reviewRating,
     this.reviewComment,
+    this.isCareChat = false,
+    this.careChatAssignedAt,
     required this.createdAt,
   }) : bookingRef =
            bookingRef ??
@@ -276,7 +298,33 @@ class ConsultationBooking {
   final double? unlockAmount;
   final int? reviewRating;
   final String? reviewComment;
+  final bool isCareChat;
+  final DateTime? careChatAssignedAt;
   final DateTime createdAt;
+
+  bool get isDoctorAssigned {
+    final upperStatus = status.toUpperCase();
+    if (upperStatus == 'WAITING_FOR_VET' ||
+        upperStatus == 'HOLD' ||
+        upperStatus == 'PAYMENT_PENDING') {
+      return false;
+    }
+    if (careChatAssignedAt != null) {
+      return true;
+    }
+    if (isCareChat) {
+      return false;
+    }
+    return slot != null && vet != null;
+  }
+
+  String get doctorDisplayName {
+    if (isDoctorAssigned && vet != null && vet!.name.trim().isNotEmpty) {
+      final raw = vet!.name.trim();
+      return raw.toLowerCase().startsWith('dr') ? raw : 'Dr. $raw';
+    }
+    return 'KK Nutrivet Care Team';
+  }
 
   factory ConsultationBooking.fromJson(Map<String, dynamic> json) {
     final id = json['id']?.toString() ?? '';
@@ -339,6 +387,13 @@ class ConsultationBooking {
       reviewRating: (reviewMap?['rating'] as num?)?.toInt(),
       reviewComment:
           (reviewMap?['comment'] ?? reviewMap?['feedback'])?.toString(),
+      isCareChat: json['isCareChat'] == true ||
+          json['isCareTeamChat'] == true ||
+          (json['slot'] == null &&
+              (json['paymentStatus'] == 'CHAT_OPEN' || id.startsWith('care_'))),
+      careChatAssignedAt: json['careChatAssignedAt'] != null
+          ? DateTime.tryParse(json['careChatAssignedAt'].toString())
+          : null,
       createdAt:
           DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
