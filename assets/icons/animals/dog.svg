@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dog">
+  <path fill="#9A5E3B" d="M18 18C11 10 5 11 5 18c0 10 5 18 13 19V18Zm28 0c7-8 13-7 13 0 0 10-5 18-13 19V18Z"/>
+  <path fill="#D99562" stroke="#533321" stroke-width="2.5" stroke-linejoin="round" d="M15 28c0-13 7-21 17-21s17 8 17 21v10c0 12-7 20-17 20s-17-8-17-20V28Z"/>
+  <path fill="#F4C695" d="M22 41c0-7 4-11 10-11s10 4 10 11c0 8-4 13-10 13s-10-5-10-13Z"/>
+  <ellipse cx="25" cy="28" rx="2.5" ry="3" fill="#30231D"/>
+  <ellipse cx="39" cy="28" rx="2.5" ry="3" fill="#30231D"/>
+  <path fill="#30231D" d="M27 39c0-2 2-3 5-3s5 1 5 3c0 3-2 5-5 5s-5-2-5-5Z"/>
+  <path fill="none" stroke="#533321" stroke-width="2" stroke-linecap="round" d="M32 44v4m0 0c-3 0-5-1-6-3m6 3c3 0 5-1 6-3"/>
+  <path fill="#FFF4E4" d="M20 17c3-4 7-6 12-6 2 0 4 .4 6 1.2-5 1-8 4-9 9-3-2-6-3-9-4.2Z" opacity=".75"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cattle">
+  <path fill="#F3D69E" stroke="#58412C" stroke-width="2.5" stroke-linejoin="round" d="M21 15C12 16 6 12 5 6c10 0 17 4 20 10m18-1c9 1 15-3 16-9-10 0-17 4-20 10"/>
+  <path fill="#EFE1C8" stroke="#58412C" stroke-width="2.5" d="M14 28C14 16 21 9 32 9s18 7 18 19v12c0 11-7 18-18 18s-18-7-18-18V28Z"/>
+  <path fill="#8C593D" d="M16 24c3-8 8-12 16-12-2 7-7 11-16 12Zm30 2c-7 0-11-3-13-10 7-2 12 2 13 10Z"/>
+  <ellipse cx="24" cy="31" rx="2.5" ry="3" fill="#2E271F"/>
+  <ellipse cx="40" cy="31" rx="2.5" ry="3" fill="#2E271F"/>
+  <path fill="#DDAAA2" stroke="#58412C" stroke-width="2" d="M20 42c0-5 4-8 12-8s12 3 12 8v5c0 5-5 8-12 8s-12-3-12-8v-5Z"/>
+  <ellipse cx="27" cy="45" rx="2" ry="2.5" fill="#704B45"/>
+  <ellipse cx="37" cy="45" rx="2" ry="2.5" fill="#704B45"/>
+</svg>

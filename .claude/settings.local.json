@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"D:\\\\GitHub\\\\nvit-frontend\" && find src/app/api -name \"route.ts\" | sort)",
+      "Bash(flutter build *)",
+      "Bash(flutter analyze *)"
+    ]
+  }
+}

@@ -1,0 +1,556 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/haptics.dart';
+import '../../../core/widgets/product_card.dart';
+import '../../../models/product.dart';
+import '../../../providers/app_providers.dart';
+import '../../products/widgets/catalogue_controls.dart';
+import 'home_models_and_data.dart';
+
+// ── 3. HomeAnimalSelector (matches src/components/home/HomeAnimalSelector.tsx) ──
+class HomeAnimalSelector extends ConsumerWidget {
+  const HomeAnimalSelector({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
+    final hiddenCategories =
+        ref.watch(storeSettingsProvider).valueOrNull?.hiddenCategories ?? const [];
+    final allAnimals = [...kHomeAnimals, kHomeOtherAnimalEntry];
+    final visibleAnimals = allAnimals.where((animal) {
+      final nameLower = animal.name.toLowerCase();
+      final valLower = animal.value.toLowerCase();
+      return !hiddenCategories.any((h) {
+        final hl = h.toLowerCase().trim();
+        return hl == nameLower || hl == valLower;
+      });
+    }).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Shop by animal',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    Haptics.selection();
+                    ref.read(selectedHomeAnimalProvider.notifier).state = null;
+                    ref.read(productFilterProvider.notifier).state =
+                        ProductFilter();
+                    context.push('/products');
+                  },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 36),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      child: Text(
+                        'All animals',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDeep,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 102,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < visibleAnimals.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 12),
+                    Builder(
+                      builder: (context) {
+                        final animal = visibleAnimals[i];
+                        final label = animal.selectorLabel ?? animal.name;
+                        final isSelected = selectedAnimal == animal.query ||
+                            selectedAnimal == animal.value;
+                        return Semantics(
+                          button: true,
+                          selected: isSelected,
+                          label: 'Shop for $label',
+                          child: SizedBox(
+                            width: 72,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                Haptics.selection();
+                                ref
+                                    .read(selectedHomeAnimalProvider.notifier)
+                                    .state = animal.query;
+                                ref.read(productFilterProvider.notifier).state =
+                                    ProductFilter(animalType: animal.query);
+                                context.push(
+                                  '/products?animalType=${Uri.encodeComponent(animal.query)}',
+                                );
+                              },
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: animal.surface.background,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.primaryDeep
+                                            : Colors.black
+                                                .withValues(alpha: 0.06),
+                                        width: isSelected ? 2 : 1,
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Transform.scale(
+                                      scale: 1.8,
+                                      child: Image.asset(
+                                        animal.asset,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => Icon(
+                                          Icons.pets,
+                                          size: 26,
+                                          color: animal.surface.heading,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    label,
+                                    maxLines: 2,
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 4. HomeCategorySelector (matches src/components/home/HomeCategorySelector.tsx) ──
+class HomeCategorySelector extends ConsumerWidget {
+  const HomeCategorySelector({super.key, this.selectedAnimal});
+  final String? selectedAnimal;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeCategories = ref.watch(activeCategoriesProvider);
+    final activeLower =
+        activeCategories.map((c) => c.toLowerCase().trim()).toSet();
+
+    final visible = <HomeCategoryEntry>[
+      for (final cat in kHomeCategories)
+        if (activeLower.contains(cat.name.toLowerCase()) ||
+            activeLower.contains(cat.label.toLowerCase()))
+          cat,
+    ];
+
+    for (final catName in activeCategories) {
+      final exists = visible.any(
+        (c) =>
+            c.name.toLowerCase() == catName.toLowerCase() ||
+            c.label.toLowerCase() == catName.toLowerCase(),
+      );
+      if (!exists) {
+        visible.add(
+          HomeCategoryEntry(
+            name: catName,
+            label: catName,
+            asset: 'assets/images/category/supplements-v1.png',
+            background: const Color(0xFFECF6EC),
+            color: AppColors.primaryDeep,
+            fallbackIcon: Icons.category_outlined,
+          ),
+        );
+      }
+    }
+
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Shop by category',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    Haptics.tap();
+                    context.push('/products');
+                  },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 36),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      child: Text(
+                        'View all',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDeep,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Text(
+            'Everyday essentials, all in one place.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 10,
+              mainAxisExtent: 98,
+            ),
+            itemCount: visible.length,
+            itemBuilder: (context, i) {
+              final cat = visible[i];
+              return Semantics(
+                button: true,
+                label: cat.label,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      Haptics.tap();
+                      context.push(
+                        '/products?category=${Uri.encodeComponent(cat.name)}',
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: cat.background,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.black.withValues(alpha: 0.05),
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0F17322B),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.asset(
+                              cat.asset,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Icon(
+                                cat.fallbackIcon,
+                                size: 26,
+                                color: cat.color,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            cat.label,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              height: 1.25,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kept as an alias so any legacy tests or references still compile cleanly.
+class HomeShopByNeedChips extends HomeCategorySelector {
+  const HomeShopByNeedChips({super.key, super.selectedAnimal});
+}
+
+// ── 5. HomeAnimalScrollRail (matches src/components/home/HomeAnimalScrollRail.tsx) ──
+class HomeAnimalProductRail extends ConsumerWidget {
+  const HomeAnimalProductRail({super.key, required this.entry});
+  final HomeAnimalEntry entry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hiddenCategories =
+        ref.watch(storeSettingsProvider).valueOrNull?.hiddenCategories ?? const [];
+    final isHidden = hiddenCategories.any((h) {
+      final hl = h.toLowerCase().trim();
+      return hl == entry.name.toLowerCase() || hl == entry.value.toLowerCase();
+    });
+    if (isHidden) {
+      return const SizedBox.shrink();
+    }
+
+    final productsAsync = ref.watch(animalTypeProductsProvider(entry.value));
+    final products = productsAsync.value ?? const <Product>[];
+    if (productsAsync.hasError || products.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final shown = products.take(8).toList();
+    final route = '/products?animalType=${Uri.encodeComponent(entry.query)}';
+
+    return HomeScrollProductSection(
+      title: entry.title,
+      description: entry.description,
+      route: route,
+      products: shown,
+      surface: entry.surface,
+      tone: entry.tone,
+      assetPath: entry.asset,
+      fallbackIcon: Icons.pets,
+    );
+  }
+}
+
+/// Shared full-bleed horizontal product rail matching `HomeAnimalScrollRail.tsx` (`compact` mode).
+class HomeScrollProductSection extends StatelessWidget {
+  const HomeScrollProductSection({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.route,
+    required this.products,
+    required this.surface,
+    required this.tone,
+    this.assetPath,
+    required this.fallbackIcon,
+  });
+
+  final String title;
+  final String description;
+  final String route;
+  final List<Product> products;
+  final HomeRailSurface surface;
+  final Color tone;
+  final String? assetPath;
+  final IconData fallbackIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    if (products.isEmpty) return const SizedBox.shrink();
+    final shown = products.take(8).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: surface.background,
+        border: Border(
+          top: BorderSide(color: surface.border),
+          bottom: BorderSide(color: surface.border),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: tone,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x141C4637),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: assetPath != null
+                      ? Image.asset(
+                          assetPath!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Icon(
+                            fallbackIcon,
+                            size: 24,
+                            color: surface.heading,
+                          ),
+                        )
+                      : Icon(
+                          fallbackIcon,
+                          size: 24,
+                          color: surface.heading,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.28,
+                          color: surface.heading,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: surface.subtitle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Material(
+                  color: surface.accent,
+                  shape: const CircleBorder(),
+                  elevation: 2,
+                  shadowColor: const Color(0x291C4637),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
+                      Haptics.tap();
+                      context.push(route);
+                    },
+                    child: const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 15,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 244,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: shown.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, i) => SizedBox(
+                width: 152,
+                child: CompactProductCard(
+                  product: shown[i],
+                  variant: CompactCardVariant.homeGrid,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

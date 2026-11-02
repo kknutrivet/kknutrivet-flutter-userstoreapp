@@ -1,0 +1,860 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/haptics.dart';
+import '../../../core/widgets/product_card.dart' show formatInr;
+import '../../../providers/app_providers.dart';
+
+/// Free delivery progress bar in the cart screen.
+class CartFreeDeliveryBar extends StatelessWidget {
+  const CartFreeDeliveryBar({
+    super.key,
+    required this.subtotal,
+    required this.threshold,
+  });
+
+  final double subtotal;
+  final double threshold;
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = threshold - subtotal;
+    final progress =
+        threshold > 0 ? (subtotal / threshold).clamp(0.0, 1.0) : 1.0;
+    final qualifies = remaining <= 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: qualifies
+            ? AppColors.primary.withValues(alpha: 0.08)
+            : AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: qualifies
+              ? AppColors.primary.withValues(alpha: 0.25)
+              : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                qualifies
+                    ? Icons.local_shipping
+                    : Icons.local_shipping_outlined,
+                size: 16,
+                color: qualifies ? AppColors.primary : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  qualifies
+                      ? "You've unlocked FREE delivery"
+                      : '₹${formatInr(remaining)} away from FREE delivery',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: qualifies
+                        ? AppColors.primaryDark
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: AppColors.border,
+              valueColor: AlwaysStoppedAnimation(
+                qualifies ? AppColors.primary : AppColors.accent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Order Summary breakdown card in the cart screen (`src/app/cart/page.tsx`).
+class CartSummaryCard extends StatelessWidget {
+  const CartSummaryCard({
+    super.key,
+    required this.subtotal,
+    required this.couponCode,
+    required this.couponDiscount,
+    required this.points,
+    required this.total,
+    this.deliveryFee = 0,
+    this.baseDeliveryCharge = 49,
+    this.freeDeliveryThreshold = 500,
+    this.showInlinePincodeChecker = true,
+  });
+
+  final double subtotal;
+  final String? couponCode;
+  final double couponDiscount;
+  final int points;
+  final double total;
+  final double deliveryFee;
+  final double baseDeliveryCharge;
+  final double freeDeliveryThreshold;
+  final bool showInlinePincodeChecker;
+
+  @override
+  Widget build(BuildContext context) {
+    final earnedCoins = (subtotal * 0.05).round();
+    final qualifiesForFreeDelivery = deliveryFee <= 0;
+    final merchandiseAfterDiscount =
+        (subtotal - couponDiscount - points).clamp(0.0, double.infinity);
+    final neededForFreeDelivery =
+        (freeDeliveryThreshold - merchandiseAfterDiscount)
+            .clamp(0.0, double.infinity);
+    final totalSavings = couponDiscount +
+        points +
+        (qualifiesForFreeDelivery && baseDeliveryCharge > 0
+            ? baseDeliveryCharge
+            : 0);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.primaryWashDeep),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Order Summary',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: AppColors.primaryWashDeep),
+          const SizedBox(height: 10),
+          _row('Subtotal', '₹${formatInr(subtotal)}', null),
+          if (couponCode != null) ...[
+            const SizedBox(height: 6),
+            _row(
+              'Coupon ($couponCode)',
+              '− ₹${formatInr(couponDiscount)}',
+              AppColors.success,
+            ),
+          ],
+          const SizedBox(height: 6),
+          _row(
+            points > 0 ? 'KK Coins ($points)' : 'KK Coins redeemed',
+            points > 0 ? '− ₹${formatInr(points.toDouble())}' : '− ₹0',
+            points > 0 ? AppColors.success : AppColors.textTertiary,
+          ),
+          const SizedBox(height: 6),
+          _deliveryRow(qualifiesForFreeDelivery),
+          if (!qualifiesForFreeDelivery && neededForFreeDelivery > 0) ...[
+            const SizedBox(height: 3),
+            Text(
+              'Add ₹${formatInr(neededForFreeDelivery)} more for FREE delivery',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDeep,
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          const Row(
+            children: [
+              Icon(
+                Icons.local_shipping_outlined,
+                size: 14,
+                color: Color(0xFF047857),
+              ),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Standard Delivery: ',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '5–7 business days',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (showInlinePincodeChecker) ...[
+            const SizedBox(height: 8),
+            const _CartInlineDeliveryChecker(),
+          ],
+          const SizedBox(height: 8),
+          _feeJokeRow('Platform fees', "We're not those guys"),
+          const SizedBox(height: 4),
+          _feeJokeRow('Packaging fees', 'Seriously? Nope'),
+          const Divider(height: 20),
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Inclusive of all taxes',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '₹${formatInr(total)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          if (totalSavings > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              'You will save ₹${formatInr(totalSavings)} on this order',
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDeep,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xB3FDF2F8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFCE7F3)),
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'NO CONFUSING FEES · NO HIDDEN CHARGES',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                          color: Color(0xFFE11D48),
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Somewhere, an app just invented a new fee. Not us.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFFFBCFE8)),
+                  ),
+                  child: const Text(
+                    '🛡️ NO NONSENSE',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFE11D48),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (earnedCoins > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.coinsBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.coinsBorder),
+              ),
+              child: Text(
+                '🪙 Earn $earnedCoins KK Coins after delivery',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.coinsIcon,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _deliveryRow(bool qualifiesForFreeDelivery) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Delivery',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        if (qualifiesForFreeDelivery) ...[
+          if (baseDeliveryCharge > 0) ...[
+            Text(
+              '₹${formatInr(baseDeliveryCharge)}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textTertiary,
+                decoration: TextDecoration.lineThrough,
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          const Text(
+            'FREE',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.success,
+            ),
+          ),
+        ] else
+          Text(
+            '₹${formatInr(deliveryFee)}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _feeJokeRow(String label, String value) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textTertiary,
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF047857),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _row(String label, String value, Color? color, {bool bold = false}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: bold ? 15 : 13,
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: bold ? 16 : 13,
+            fontWeight: FontWeight.w800,
+            color: color ?? AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Inline delivery pincode checker inside `CartSummaryCard`, matching
+/// `<DeliveryChecker variant="inline" compact cartTheme restrained />`
+/// in `src/app/cart/page.tsx`.
+class _CartInlineDeliveryChecker extends ConsumerStatefulWidget {
+  const _CartInlineDeliveryChecker();
+
+  @override
+  ConsumerState<_CartInlineDeliveryChecker> createState() =>
+      _CartInlineDeliveryCheckerState();
+}
+
+class _CartInlineDeliveryCheckerState
+    extends ConsumerState<_CartInlineDeliveryChecker> {
+  final _controller = TextEditingController();
+  bool _syncedInitial = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final pin = _controller.text.trim();
+    if (pin.length == 6) {
+      ref.read(deliveryPincodeProvider.notifier).setPincode(pin);
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final savedPin = ref.watch(deliveryPincodeProvider).valueOrNull;
+    if (!_syncedInitial && savedPin != null && savedPin.isNotEmpty) {
+      _syncedInitial = true;
+      _controller.text = savedPin;
+    }
+    final etaAsync = ref.watch(deliveryEtaProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 36,
+                child: TextField(
+                  controller: _controller,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter delivery pincode',
+                    hintStyle: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.location_on_outlined,
+                      size: 15,
+                      color: AppColors.primaryDeep,
+                    ),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 36,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.primaryWashFaint,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide:
+                          const BorderSide(color: AppColors.primaryWashDeep),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide:
+                          const BorderSide(color: AppColors.primaryWashDeep),
+                    ),
+                  ),
+                  onSubmitted: (_) => _submit(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 36,
+              child: FilledButton(
+                onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryDeep,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(60, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                ),
+                child: const Text(
+                  'Check',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ],
+        ),
+        etaAsync.maybeWhen(
+          data: (info) {
+            if (info == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Row(
+                children: [
+                  Icon(
+                    info.serviceable
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.error_outline_rounded,
+                    size: 13,
+                    color:
+                        info.serviceable ? AppColors.success : AppColors.error,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      info.serviceable
+                          ? 'Delivering to ${info.city?.isNotEmpty == true ? "${info.city} (${info.pincode})" : info.pincode} · ${info.etaLabel}'
+                          : 'Delivery unavailable for PIN ${info.pincode}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: info.serviceable
+                            ? AppColors.primaryDeep
+                            : AppColors.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.only(top: 5),
+            child: Text(
+              'Checking pincode serviceability…',
+              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            ),
+          ),
+          orElse: () => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+/// Sticky checkout bottom bar in the cart screen.
+class CartStickyCheckoutBar extends StatelessWidget {
+  const CartStickyCheckoutBar({
+    super.key,
+    required this.total,
+    required this.blocked,
+  });
+
+  final double total;
+  final bool blocked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    '₹${formatInr(total)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              SizedBox(
+                width: 180,
+                child: ElevatedButton(
+                  onPressed: blocked ? null : () => context.push('/checkout'),
+                  child: const Text('Checkout'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Empty cart view with quick links to products and referrals, matching web mobile.
+class EmptyCartView extends StatelessWidget {
+  const EmptyCartView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFFBF7F2),
+      alignment: Alignment.center,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE8ECE9)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 16,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F8F5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFDCEEE3)),
+                  ),
+                  child: const Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 28,
+                    color: AppColors.primaryDeep,
+                  ),
+                ),
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF59E0B),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'SHOP, SAVE & EARN',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: AppColors.primaryDeep,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Your cart is empty',
+              style: AppTheme.serif(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add the care essentials you need, then combine eligible offers and KK Coins at checkout.',
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.45,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  AppHaptics.light();
+                  context.go('/products');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryDeep,
+                  foregroundColor: Colors.white,
+                  iconColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Start shopping',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () {
+                  AppHaptics.light();
+                  context.go('/referral');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: Color(0xFFDDE3E0)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'View referral rewards',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.only(top: 14),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Color(0xFFEEF2F0))),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check, size: 14, color: AppColors.primaryDeep),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Genuine products',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text('│', style: TextStyle(color: Color(0xFFDDE3E0))),
+                  ),
+                  const Icon(Icons.check, size: 14, color: AppColors.primaryDeep),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Secure checkout',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+);
+  }
+}

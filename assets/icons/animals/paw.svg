@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Animal paw">
+  <ellipse cx="19" cy="17" rx="8" ry="10" fill="#58A88B"/>
+  <ellipse cx="45" cy="17" rx="8" ry="10" fill="#58A88B"/>
+  <ellipse cx="9" cy="34" rx="7" ry="9" fill="#58A88B"/>
+  <ellipse cx="55" cy="34" rx="7" ry="9" fill="#58A88B"/>
+  <path fill="#18755A" d="M32 25c-12 0-21 14-16 25 4 9 12 4 16 4s12 5 16-4c5-11-4-25-16-25Z"/>
+  <path fill="#A7D9C7" d="M28 31c-5 2-9 8-9 13 0 2 .5 3 1 4-1-8 3-13 8-17Z" opacity=".8"/>
+</svg>
