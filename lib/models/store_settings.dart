@@ -127,5 +127,8 @@ class StoreSettings {
         courierCodFlatFee: 0.0,
         codEnabled: true,
         onlinePaymentsEnabled: true,
+        partialCodEnabled: true,
+        partialCodPercent: 15.0,
+        partialCodMinimum: 50.0,
       );
 }

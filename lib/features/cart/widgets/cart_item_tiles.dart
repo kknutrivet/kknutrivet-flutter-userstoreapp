@@ -391,15 +391,11 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                                           bundleQty - 1,
                                         ),
                                 child: Icon(
-                                  bundleQty <= 1
-                                      ? Icons.delete_outline_rounded
-                                      : Icons.remove,
+                                  Icons.remove,
                                   size: 15,
                                   color: _busy
                                       ? AppColors.textTertiary
-                                      : (bundleQty <= 1
-                                          ? AppColors.error
-                                          : AppColors.brandPrimary),
+                                      : AppColors.brandPrimary,
                                 ),
                               ),
                             ),
@@ -423,8 +419,8 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                                           color: AppColors.brandPrimary,
                                         ),
                                       )
-                                    : Text(
-                                        '$bundleQty',
+                                    : AppTextSwitcher(
+                                        text: '$bundleQty',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 13,
@@ -846,16 +842,11 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                                               item.quantity - 1,
                                             ),
                                     child: Icon(
-                                      item.quantity <= item.minimumQuantity
-                                          ? Icons.delete_outline_rounded
-                                          : Icons.remove,
+                                      Icons.remove,
                                       size: 15,
                                       color: _busy
                                           ? AppColors.textTertiary
-                                          : (item.quantity <=
-                                                  item.minimumQuantity
-                                              ? AppColors.error
-                                              : AppColors.brandPrimary),
+                                          : AppColors.brandPrimary,
                                     ),
                                   ),
                                 ),
@@ -879,8 +870,8 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                                               color: AppColors.brandPrimary,
                                             ),
                                           )
-                                        : Text(
-                                            '${item.quantity}',
+                                        : AppTextSwitcher(
+                                            text: '${item.quantity}',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w800,
                                               fontSize: 12.5,

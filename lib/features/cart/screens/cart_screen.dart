@@ -212,6 +212,8 @@ class CartScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               CartPointsRow(subtotal: subtotal),
               const SizedBox(height: 8),
+              const CartDeliveryCheckerCard(),
+              const SizedBox(height: 8),
               CartSummaryCard(
                 subtotal: subtotal,
                 couponCode: draft.couponCode,

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,6 +21,89 @@ class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
+  Future<void> _showExitDialog(BuildContext context) async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: AppColors.primaryWash,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.exit_to_app_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Exit KK Nutrivet?',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Would you like to exit the app or stay on the home screen to continue exploring products and care combos?',
+          style: TextStyle(
+            fontSize: 13.5,
+            height: 1.45,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primaryDeep,
+              side: const BorderSide(color: AppColors.primaryWashDeep),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text(
+              'Stay on Home',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryDeep,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            ),
+            child: const Text(
+              'Exit App',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (shouldExit == true) {
+      SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cartCount = ref.watch(cartCountProvider);
@@ -38,11 +122,14 @@ class MainShell extends ConsumerWidget {
         navigationShell.currentIndex != 4;
 
     return PopScope(
-      canPop: navigationShell.currentIndex == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && navigationShell.currentIndex != 0) {
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (navigationShell.currentIndex != 0) {
           AppHaptics.tap();
           navigationShell.goBranch(0);
+        } else {
+          await _showExitDialog(context);
         }
       },
       child: Scaffold(
@@ -411,38 +498,40 @@ class CartFloatingBar extends ConsumerWidget {
       label:
           'View cart, $count ${count == 1 ? "item" : "items"}, total ₹${total.toStringAsFixed(0)}',
       child: Center(
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E7E26),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.90),
-                width: 1.5,
+        child: AppBounce(
+          pressedScale: 0.95,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E7E26),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.90),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF07583F).withValues(alpha: 0.30),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF07583F).withValues(alpha: 0.30),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(32),
-              onTap: () {
-                AppHaptics.tap();
-                context.push('/cart');
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(5, 4, 12, 4),
-                child: Row(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(32),
+                onTap: () {
+                  AppHaptics.tap();
+                  context.push('/cart');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(5, 4, 12, 4),
+                  child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
@@ -505,8 +594,8 @@ class CartFloatingBar extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 1.5),
-                        Text(
-                          subtitle,
+                        AppTextSwitcher(
+                          text: subtitle,
                           style: AppTheme.sans(
                             color: Colors.white.withValues(alpha: 0.94),
                             fontSize: 11,
@@ -529,6 +618,7 @@ class CartFloatingBar extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -50,21 +50,20 @@ final paymentAvailabilityStatusProvider =
     FutureProvider.autoDispose<PaymentAvailabilityStatus>((ref) async {
   try {
     final result = await ref.read(orderServiceProvider).cashfreeAvailability();
-    final data = result['data'];
-    if (data is Map) {
-      return PaymentAvailabilityStatus(
-        onlineEnabled: (data['enabled'] as bool?) ?? true,
-        codEnabled: (data['codEnabled'] as bool?) ?? false,
-        userCodAllowed: (data['userCodAllowed'] as bool?) ?? true,
-        partialCodEnabled: (data['partialCodEnabled'] as bool?) ?? false,
-        codDisabledReason: data['codDisabledReason'] as String?,
-        userCodDisabledReason: data['userCodDisabledReason'] as String?,
-        isTrustedCustomer: (data['isTrustedCustomer'] as bool?) ?? false,
-        deliveredOrdersCount:
-            (data['deliveredOrdersCount'] as num?)?.toInt() ?? 0,
-      );
-    }
-    return const PaymentAvailabilityStatus();
+    final Map<String, dynamic> data = (result['data'] is Map)
+        ? Map<String, dynamic>.from(result['data'] as Map)
+        : result;
+    return PaymentAvailabilityStatus(
+      onlineEnabled: (data['enabled'] as bool?) ?? true,
+      codEnabled: (data['codEnabled'] as bool?) ?? false,
+      userCodAllowed: (data['userCodAllowed'] as bool?) ?? true,
+      partialCodEnabled: (data['partialCodEnabled'] as bool?) ?? false,
+      codDisabledReason: data['codDisabledReason'] as String?,
+      userCodDisabledReason: data['userCodDisabledReason'] as String?,
+      isTrustedCustomer: (data['isTrustedCustomer'] as bool?) ?? false,
+      deliveredOrdersCount:
+          (data['deliveredOrdersCount'] as num?)?.toInt() ?? 0,
+    );
   } catch (_) {
     return const PaymentAvailabilityStatus();
   }
@@ -1552,7 +1551,7 @@ class CheckoutOrderSuccessSheet extends StatelessWidget {
           OutlinedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.go('/products');
+              context.go('/home');
             },
             child: const Text('Continue shopping'),
           ),

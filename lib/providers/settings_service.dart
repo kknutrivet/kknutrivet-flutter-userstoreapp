@@ -7,6 +7,12 @@ class SettingsService {
 
   Future<StoreSettings> fetchSettings() async {
     final data = await _client.get('/settings');
-    return StoreSettings.fromJson(data);
+    if (data is Map) {
+      final map = data.containsKey('data') && data['data'] is Map
+          ? Map<String, dynamic>.from(data['data'] as Map)
+          : Map<String, dynamic>.from(data);
+      return StoreSettings.fromJson(map);
+    }
+    return StoreSettings.defaults();
   }
 }

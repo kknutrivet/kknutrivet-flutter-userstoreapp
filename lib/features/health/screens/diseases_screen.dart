@@ -904,14 +904,12 @@ class _ConcernGridCard extends StatelessWidget {
         'Veterinary care guidance and products.';
     final visual = _getVisual(concern.slug);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
+    return AppBounce(
+      pressedScale: 0.96,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: const Color(0xFFE2ECE6)),
@@ -988,8 +986,7 @@ class _ConcernGridCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

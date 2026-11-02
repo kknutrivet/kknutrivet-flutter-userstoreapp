@@ -7,6 +7,10 @@ class OrderItem {
     required this.price,
     this.product,
     this.variant,
+    this.comboId,
+    this.comboName,
+    this.comboQuantity,
+    this.comboPrice,
   });
 
   final String id;
@@ -14,6 +18,10 @@ class OrderItem {
   final double price;
   final Product? product;
   final ProductVariant? variant;
+  final String? comboId;
+  final String? comboName;
+  final int? comboQuantity;
+  final double? comboPrice;
 
   double get lineTotal => price * quantity;
 
@@ -23,6 +31,10 @@ class OrderItem {
         price: (json['price'] as num?)?.toDouble() ?? 0,
         product: json['product'] != null ? Product.fromJson(json['product']) : null,
         variant: json['variant'] != null ? ProductVariant.fromJson(json['variant']) : null,
+        comboId: json['comboId']?.toString(),
+        comboName: json['comboName']?.toString(),
+        comboQuantity: (json['comboQuantity'] as num?)?.toInt(),
+        comboPrice: (json['comboPrice'] as num?)?.toDouble(),
       );
 }
 
@@ -48,6 +60,7 @@ class Order {
     this.awbNumber,
     this.courierName,
     this.trackingStatus,
+    this.cashfreeMerchantOrderId,
     required this.createdAt,
     this.items = const [],
   });
@@ -72,6 +85,7 @@ class Order {
   final String? awbNumber;
   final String? courierName;
   final String? trackingStatus;
+  final String? cashfreeMerchantOrderId;
   final DateTime createdAt;
   final List<OrderItem> items;
 
@@ -107,6 +121,7 @@ class Order {
         awbNumber: json['awbNumber'],
         courierName: json['courierName'],
         trackingStatus: json['trackingStatus'],
+        cashfreeMerchantOrderId: json['cashfreeMerchantOrderId']?.toString(),
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
         items: (json['items'] as List?)
                 ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))

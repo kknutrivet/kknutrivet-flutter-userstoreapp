@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../models/content.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
-import '../utils/haptics.dart';
 import 'app_network_image.dart';
 
 class BlogCard extends StatelessWidget {
@@ -13,29 +12,24 @@ class BlogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: () {
-          AppHaptics.selection();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.borderWarm),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.cardShadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
+    return AppBounce(
+      pressedScale: 0.98,
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.borderWarm),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AspectRatio(
@@ -143,7 +137,6 @@ class BlogCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

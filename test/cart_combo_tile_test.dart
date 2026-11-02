@@ -105,8 +105,9 @@ void main() {
 
       // Check stepper with 1
       expect(find.text('1'), findsOneWidget);
+      expect(find.byIcon(Icons.remove), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
-      expect(find.byIcon(Icons.delete_outline_rounded), findsNWidgets(2)); // 1 in top right, 1 in stepper
+      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget); // delete action on the right side
     });
 
     test('getCartSubtotal calculates combo bundle subtotal correctly without double-counting', () {

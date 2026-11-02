@@ -609,12 +609,21 @@ class _GalleryCard extends StatelessWidget {
                         controller: controller,
                         itemCount: images.length,
                         onPageChanged: onPage,
-                        itemBuilder: (context, i) => ProductImageCover(
-                          imageUrl: images[i],
-                          borderRadius: BorderRadius.zero,
-                          innerPadding: const EdgeInsets.all(12),
-                          showPlaceholderOnLoading: false,
-                        ),
+                        itemBuilder: (context, i) {
+                          final cover = ProductImageCover(
+                            imageUrl: images[i],
+                            borderRadius: BorderRadius.zero,
+                            innerPadding: const EdgeInsets.all(12),
+                            showPlaceholderOnLoading: false,
+                          );
+                          if (i == 0) {
+                            return Hero(
+                              tag: 'product_image_${product.id}',
+                              child: cover,
+                            );
+                          }
+                          return cover;
+                        },
                       ),
                     if (product.offerLabel != null)
                       Positioned(

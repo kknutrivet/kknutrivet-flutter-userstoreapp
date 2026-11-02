@@ -69,20 +69,14 @@ class OrderItemsCard extends ConsumerWidget {
   final Order order;
 
   String? _extractComboId(OrderItem item) {
-    try {
-      final dynamic dyn = item;
-      final val = dyn.comboId?.toString();
-      if (val != null && val.trim().isNotEmpty) return val.trim();
-    } catch (_) {}
+    final val = item.comboId;
+    if (val != null && val.trim().isNotEmpty) return val.trim();
     return null;
   }
 
   String? _extractComboName(OrderItem item) {
-    try {
-      final dynamic dyn = item;
-      final val = dyn.comboName?.toString();
-      if (val != null && val.trim().isNotEmpty) return val.trim();
-    } catch (_) {}
+    final val = item.comboName;
+    if (val != null && val.trim().isNotEmpty) return val.trim();
     return null;
   }
 
@@ -215,8 +209,13 @@ class OrderComboBundleGroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cover = coverImage;
-    final bundleTotal =
-        members.fold<double>(0, (sum, m) => sum + m.lineTotal);
+    final double rawPrice = members
+        .map((m) => m.comboPrice ?? 0.0)
+        .fold(0.0, (max, p) => p > max ? p : max);
+    final int qty = members.first.comboQuantity ?? 1;
+    final double bundleTotal = rawPrice > 0
+        ? rawPrice * qty
+        : members.fold<double>(0, (sum, m) => sum + m.lineTotal);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -580,6 +579,7 @@ class OrderSupportSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Expanded(
           child: Material(
@@ -587,18 +587,19 @@ class OrderSupportSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () => context.go('/products'),
+              onTap: () => context.go('/home'),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.storefront_outlined, color: AppColors.primary),
-                    SizedBox(height: 8),
+                    SizedBox(height: 6),
                     Text(
                       'Continue shopping',
                       style: TextStyle(
@@ -626,7 +627,7 @@ class OrderSupportSection extends StatelessWidget {
                 mode: LaunchMode.externalApplication,
               ),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: AppColors.whatsAppGreen.withValues(alpha: 0.4),
@@ -634,10 +635,11 @@ class OrderSupportSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.chat, color: AppColors.whatsAppGreen),
-                    SizedBox(height: 8),
+                    SizedBox(height: 6),
                     Text(
                       'Chat on WhatsApp',
                       style: TextStyle(

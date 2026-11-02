@@ -100,8 +100,8 @@ class HomeAnimalSelector extends ConsumerWidget {
                           label: 'Shop for $label',
                           child: SizedBox(
                             width: 72,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
+                            child: AppBounce(
+                              pressedScale: 0.92,
                               onTap: () {
                                 Haptics.selection();
                                 ref
@@ -283,68 +283,64 @@ class HomeCategorySelector extends ConsumerWidget {
               return Semantics(
                 button: true,
                 label: cat.label,
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      Haptics.tap();
-                      context.push(
-                        '/products?category=${Uri.encodeComponent(cat.name)}',
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: cat.background,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.black.withValues(alpha: 0.05),
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x0F17322B),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
+                child: AppBounce(
+                  pressedScale: 0.92,
+                  onTap: () {
+                    Haptics.tap();
+                    context.push(
+                      '/products?category=${Uri.encodeComponent(cat.name)}',
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: cat.background,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.black.withValues(alpha: 0.05),
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Image.asset(
-                              cat.asset,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => Icon(
-                                cat.fallbackIcon,
-                                size: 26,
-                                color: cat.color,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x0F17322B),
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
                               ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            cat.asset,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Icon(
+                              cat.fallbackIcon,
+                              size: 26,
+                              color: cat.color,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            cat.label,
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              height: 1.25,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          cat.label,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            height: 1.25,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

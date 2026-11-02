@@ -476,11 +476,17 @@ class _CatalogueBody extends ConsumerWidget {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-                sliver: SliverList(
+                padding: const EdgeInsets.fromLTRB(10, 4, 10, 20),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    mainAxisExtent: 290,
+                  ),
                   delegate: SliverChildBuilderDelegate(
-                    (context, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                    (context, i) => AppFadeSlide(
+                      delay: Duration(milliseconds: (i % 6) * 35),
                       child: HomeComboCard(combo: list[i]),
                     ),
                     childCount: list.length,
@@ -545,7 +551,13 @@ class _CatalogueBody extends ConsumerWidget {
                   mainAxisExtent: productCardExtent(context),
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, i) => CompactProductCard(product: list[i]),
+                  (context, i) => AppFadeSlide(
+                    delay: Duration(milliseconds: (i % 6) * 35),
+                    child: CompactProductCard(
+                      product: list[i],
+                      heroTag: 'product_image_${list[i].id}',
+                    ),
+                  ),
                   childCount: list.length,
                 ),
               ),

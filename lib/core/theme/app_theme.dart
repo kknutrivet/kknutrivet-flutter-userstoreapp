@@ -11,6 +11,7 @@ export 'app_radii.dart';
 export 'app_shadows.dart';
 export 'app_spacing.dart';
 export 'app_typography.dart';
+export '../animations/app_animations.dart';
 
 /// Centralized KK Nutrivet ThemeData configuration sharing brand tokens with
 /// the Next.js production website design tokens.
@@ -78,6 +79,9 @@ class AppTheme {
         builders: <TargetPlatform, PageTransitionsBuilder>{
           TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+          TargetPlatform.windows: ZoomPageTransitionsBuilder(),
         },
       ),
       colorScheme: ColorScheme.fromSeed(

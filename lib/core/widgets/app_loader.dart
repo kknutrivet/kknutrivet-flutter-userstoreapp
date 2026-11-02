@@ -114,49 +114,52 @@ class AppEmptyState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryWash,
-                shape: BoxShape.circle,
+        child: AppFadeSlide(
+          offsetY: 14,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryWash,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 34, color: AppColors.primaryDeep),
               ),
-              child: Icon(icon, size: 34, color: AppColors.primaryDeep),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTheme.serif(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            if (description != null) ...[
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.lg),
               Text(
-                description!,
+                title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                  height: 1.4,
+                style: AppTheme.serif(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
               ),
+              if (description != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  description!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: AppSpacing.xl),
+                AppButton(
+                  label: actionLabel!,
+                  onPressed: onAction,
+                  size: AppButtonSize.md,
+                ),
+              ],
             ],
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: AppSpacing.xl),
-              AppButton(
-                label: actionLabel!,
-                onPressed: onAction,
-                size: AppButtonSize.md,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

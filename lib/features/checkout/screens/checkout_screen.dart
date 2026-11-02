@@ -629,14 +629,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
-    final result = await ref
+    final merchantOrderId = (session['orderId'] as String?)?.isNotEmpty == true
+        ? session['orderId'] as String
+        : (order.cashfreeMerchantOrderId?.isNotEmpty == true
+            ? order.cashfreeMerchantOrderId!
+            : order.orderNumber);
+
+    bool isPaymentConfirmed(Map<String, dynamic> res) =>
+        res['paid'] == true ||
+        res['confirmed'] == true ||
+        res['status'] == 'PAID' ||
+        res['status'] == 'ADVANCE_PAID' ||
+        res['status'] == 'SUCCESS';
+
+    var result = await ref
         .read(orderServiceProvider)
-        .verifyCashfreePayment(order.orderNumber);
+        .verifyCashfreePayment(merchantOrderId);
+
+    if (!isPaymentConfirmed(result)) {
+      // Short delay & retry in case gateway webhook / callback reconciliation is slightly delayed
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      if (!mounted) return;
+      try {
+        result = await ref
+            .read(orderServiceProvider)
+            .verifyCashfreePayment(merchantOrderId);
+      } catch (_) {}
+    }
     if (!mounted) return;
 
-    if (result['paid'] == true) {
+    if (isPaymentConfirmed(result)) {
+      await ref.read(cartProvider.notifier).clear();
+      if (!mounted) return;
       await showCheckoutOrderSuccessSheet(context, order);
-      if (mounted) context.go('/orders');
+      if (mounted) context.go('/order/${order.id}');
     } else {
       showToast(
         'We could not confirm your payment yet. Check your order for the latest status.',

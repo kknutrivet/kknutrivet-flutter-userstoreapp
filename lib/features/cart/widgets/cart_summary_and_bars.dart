@@ -99,7 +99,7 @@ class CartSummaryCard extends StatelessWidget {
     this.deliveryFee = 0,
     this.baseDeliveryCharge = 49,
     this.freeDeliveryThreshold = 500,
-    this.showInlinePincodeChecker = true,
+    this.showInlinePincodeChecker = false,
   });
 
   final double subtotal;
@@ -209,7 +209,7 @@ class CartSummaryCard extends StatelessWidget {
           ),
           if (showInlinePincodeChecker) ...[
             const SizedBox(height: 8),
-            const _CartInlineDeliveryChecker(),
+            const CartDeliveryCheckerCard(),
           ],
           const SizedBox(height: 8),
           _feeJokeRow('Platform fees', "We're not those guys"),
@@ -442,19 +442,17 @@ class CartSummaryCard extends StatelessWidget {
   }
 }
 
-/// Inline delivery pincode checker inside `CartSummaryCard`, matching
-/// `<DeliveryChecker variant="inline" compact cartTheme restrained />`
-/// in `src/app/cart/page.tsx`.
-class _CartInlineDeliveryChecker extends ConsumerStatefulWidget {
-  const _CartInlineDeliveryChecker();
+/// Standalone delivery pincode checker card placed above the Order Summary.
+class CartDeliveryCheckerCard extends ConsumerStatefulWidget {
+  const CartDeliveryCheckerCard({super.key});
 
   @override
-  ConsumerState<_CartInlineDeliveryChecker> createState() =>
-      _CartInlineDeliveryCheckerState();
+  ConsumerState<CartDeliveryCheckerCard> createState() =>
+      _CartDeliveryCheckerCardState();
 }
 
-class _CartInlineDeliveryCheckerState
-    extends ConsumerState<_CartInlineDeliveryChecker> {
+class _CartDeliveryCheckerCardState
+    extends ConsumerState<CartDeliveryCheckerCard> {
   final _controller = TextEditingController();
   bool _syncedInitial = false;
 
@@ -481,127 +479,184 @@ class _CartInlineDeliveryCheckerState
     }
     final etaAsync = ref.watch(deliveryEtaProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 36,
-                child: TextField(
-                  controller: _controller,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
-                  ],
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Enter delivery pincode',
-                    hintStyle: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.location_on_outlined,
-                      size: 15,
-                      color: AppColors.primaryDeep,
-                    ),
-                    prefixIconConstraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 36,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 0,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.primaryWashFaint,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
-                      borderSide:
-                          const BorderSide(color: AppColors.primaryWashDeep),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
-                      borderSide:
-                          const BorderSide(color: AppColors.primaryWashDeep),
-                    ),
-                  ),
-                  onSubmitted: (_) => _submit(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 36,
-              child: FilledButton(
-                onPressed: _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryDeep,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(60, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                ),
-                child: const Text(
-                  'Check',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-          ],
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
         ),
-        etaAsync.maybeWhen(
-          data: (info) {
-            if (info == null) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(top: 5),
-              child: Row(
-                children: [
-                  Icon(
-                    info.serviceable
-                        ? Icons.check_circle_outline_rounded
-                        : Icons.error_outline_rounded,
-                    size: 13,
-                    color:
-                        info.serviceable ? AppColors.success : AppColors.error,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.local_shipping_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Check Delivery Pincode',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      info.serviceable
-                          ? 'Delivering to ${info.city?.isNotEmpty == true ? "${info.city} (${info.pincode})" : info.pincode} · ${info.etaLabel}'
-                          : 'Delivery unavailable for PIN ${info.pincode}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: info.serviceable
-                            ? AppColors.primaryDeep
-                            : AppColors.error,
-                      ),
+                ),
+                if (savedPin != null && savedPin.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    savedPin,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryDeep,
                     ),
                   ),
                 ],
-              ),
-            );
-          },
-          loading: () => const Padding(
-            padding: EdgeInsets.only(top: 5),
-            child: Text(
-              'Checking pincode serviceability…',
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ],
             ),
-          ),
-          orElse: () => const SizedBox.shrink(),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 38,
+                    child: TextField(
+                      controller: _controller,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(6),
+                      ],
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter 6-digit pincode',
+                        hintStyle: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textTertiary,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.location_on_outlined,
+                          size: 16,
+                          color: AppColors.primaryDeep,
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 38,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 0,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.primaryWashFaint,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(9),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryWashDeep,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(9),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryWashDeep,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(9),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryDeep,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      onSubmitted: (_) => _submit(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 38,
+                  child: FilledButton(
+                    onPressed: _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primaryDeep,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(64, 38),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    ),
+                    child: const Text(
+                      'Check',
+                      style:
+                          TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            etaAsync.maybeWhen(
+              data: (info) {
+                if (info == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        info.serviceable
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.error_outline_rounded,
+                        size: 15,
+                        color: info.serviceable
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          info.serviceable
+                              ? 'Delivering to ${info.city?.isNotEmpty == true ? "${info.city} (${info.pincode})" : info.pincode} · ${info.etaLabel}'
+                              : 'Delivery unavailable for PIN ${info.pincode}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: info.serviceable
+                                ? AppColors.primaryDeep
+                                : AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Checking pincode serviceability…',
+                  style: TextStyle(
+                      fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

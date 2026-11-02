@@ -317,17 +317,15 @@ class _HomeHeroCarouselState extends ConsumerState<HomeHeroCarousel> {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: () {
-              Haptics.tap();
-              context.push(slide.route);
-            },
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
+        child: AppBounce(
+          pressedScale: 0.985,
+          onTap: () {
+            Haptics.tap();
+            context.push(slide.route);
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
                 // Ambient decorative background circle
                 Positioned(
                   right: -30,
@@ -504,7 +502,6 @@ class _HomeHeroCarouselState extends ConsumerState<HomeHeroCarousel> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../analytics/analytics_service.dart';
 import '../analytics/mixpanel_service.dart';
+import '../animations/app_animations.dart';
 import '../crashlytics/crashlytics_service.dart';
 
 import '../../features/addresses/screens/address_form_screen.dart';
@@ -234,13 +235,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/product/:id',
-        builder: (context, state) =>
-            ProductDetailScreen(id: state.pathParameters['id']!),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: ProductDetailScreen(id: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/products/:id',
-        builder: (context, state) =>
-            ProductDetailScreen(id: state.pathParameters['id']!),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: ProductDetailScreen(id: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/combos',
@@ -248,18 +253,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/combos/:id',
-        builder: (context, state) =>
-            ComboDetailScreen(comboId: state.pathParameters['id']!),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: ComboDetailScreen(comboId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/combo/:id',
-        builder: (context, state) =>
-            ComboDetailScreen(comboId: state.pathParameters['id']!),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: ComboDetailScreen(comboId: state.pathParameters['id']!),
+        ),
       ),
-      GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
+      GoRoute(
+        path: '/cart',
+        pageBuilder: (context, state) => AppTransitions.modalSlidePage(
+          key: state.pageKey,
+          child: const CartScreen(),
+        ),
+      ),
       GoRoute(
         path: '/search',
-        builder: (context, state) => const SearchScreen(),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const SearchScreen(),
+        ),
       ),
       GoRoute(
         path: '/wishlist',
@@ -267,7 +285,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/checkout',
-        builder: (context, state) => const CheckoutScreen(),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const CheckoutScreen(),
+        ),
       ),
       GoRoute(
         path: '/orders',
@@ -275,8 +296,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/order/:id',
-        builder: (context, state) =>
-            OrderDetailScreen(id: state.pathParameters['id']!),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: OrderDetailScreen(id: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/addresses',

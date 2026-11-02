@@ -25,6 +25,27 @@ class OrderHeroCard extends StatelessWidget {
   const OrderHeroCard({super.key, required this.order});
   final Order order;
 
+  IconData _statusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMED':
+        return Icons.check_rounded;
+      case 'PENDING':
+        return Icons.hourglass_top_rounded;
+      case 'PROCESSING':
+        return Icons.inventory_2_outlined;
+      case 'SHIPPED':
+        return Icons.local_shipping_outlined;
+      case 'OUT_FOR_DELIVERY':
+        return Icons.delivery_dining_outlined;
+      case 'DELIVERED':
+        return Icons.task_alt_rounded;
+      case 'CANCELLED':
+        return Icons.close_rounded;
+      default:
+        return Icons.info_outline_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final info = statusInfoFor(order.status);
@@ -99,8 +120,22 @@ class OrderHeroCard extends StatelessWidget {
           const Divider(color: Colors.white24, height: 26),
           Row(
             children: [
-              Text(info.emoji, style: const TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    _statusIcon(order.status),
+                    size: 15,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -645,11 +680,23 @@ class _OrderPaymentRetryBannerState
       );
       if (!mounted || returned != true) return;
 
+      final merchantOrderId =
+          (session['orderId'] as String?)?.isNotEmpty == true
+              ? session['orderId'] as String
+              : (widget.order.cashfreeMerchantOrderId?.isNotEmpty == true
+                  ? widget.order.cashfreeMerchantOrderId!
+                  : widget.order.orderNumber);
+
       final result = await ref
           .read(orderServiceProvider)
-          .verifyCashfreePayment(widget.order.orderNumber);
+          .verifyCashfreePayment(merchantOrderId);
       if (!mounted) return;
-      if (result['paid'] == true) {
+      final isPaid = result['paid'] == true ||
+          result['confirmed'] == true ||
+          result['status'] == 'PAID' ||
+          result['status'] == 'ADVANCE_PAID' ||
+          result['status'] == 'SUCCESS';
+      if (isPaid) {
         showToast('Payment confirmed');
       } else {
         showToast('Payment not confirmed yet', isError: true);

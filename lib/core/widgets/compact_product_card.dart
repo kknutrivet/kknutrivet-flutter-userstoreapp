@@ -40,10 +40,12 @@ class CompactProductCard extends ConsumerStatefulWidget {
     super.key,
     required this.product,
     this.variant = CompactCardVariant.catalogue,
+    this.heroTag,
   });
 
   final Product product;
   final CompactCardVariant variant;
+  final String? heroTag;
 
   @override
   ConsumerState<CompactProductCard> createState() =>
@@ -101,14 +103,15 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
         : 0;
     final dosageForm = _inferDosageForm(product);
 
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push(
-          '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-        ),
+    return AppBounce(
+      pressedScale: 0.975,
+      onTap: () => context.push(
+        '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
+      ),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -127,12 +130,22 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
               final imageStack = Stack(
                 children: [
                   Positioned.fill(
-                    child: ProductImageCover(
-                      imageUrl: image,
-                      showPlaceholderOnLoading: false,
-                      backdropOpacity: 0.85,
-                      innerPadding: const EdgeInsets.all(6),
-                    ),
+                    child: widget.heroTag != null
+                        ? Hero(
+                            tag: widget.heroTag!,
+                            child: ProductImageCover(
+                              imageUrl: image,
+                              showPlaceholderOnLoading: false,
+                              backdropOpacity: 0.85,
+                              innerPadding: const EdgeInsets.all(6),
+                            ),
+                          )
+                        : ProductImageCover(
+                            imageUrl: image,
+                            showPlaceholderOnLoading: false,
+                            backdropOpacity: 0.85,
+                            innerPadding: const EdgeInsets.all(6),
+                          ),
                   ),
                   if (hasDiscount && discountPercent > 0)
                     Positioned(
@@ -505,6 +518,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
 
     final hasMultipleVariants = product.variants.length > 1;
 
+    final Widget buttonWidget;
     if (widget.quantity > 0) {
       final bool isMintStepper = !widget.outlined;
       final Color bg = isMintStepper
@@ -514,7 +528,8 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           ? const Color(0xFF126B50)
           : Colors.white;
 
-      return Container(
+      buttonWidget = Container(
+        key: const ValueKey('stepper'),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(8),
@@ -538,8 +553,8 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
               child: Semantics(
                 button: true,
                 label: 'Decrease quantity of ${product.name}',
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                child: AppBounce(
+                  pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(-1),
                   child: Center(
                     child: Icon(Icons.remove, size: 14, color: fg),
@@ -576,8 +591,8 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '${widget.quantity}',
+                          AppTextSwitcher(
+                            text: '${widget.quantity}',
                             style: TextStyle(
                               color: fg,
                               fontSize: 12,
@@ -600,8 +615,8 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
               child: Semantics(
                 button: true,
                 label: 'Increase quantity of ${product.name}',
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                child: AppBounce(
+                  pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(1),
                   child: Center(
                     child: Icon(Icons.add, size: 14, color: fg),
@@ -612,86 +627,80 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           ],
         ),
       );
-    }
-
-    if (widget.outlined) {
-      return Semantics(
+    } else if (widget.outlined) {
+      buttonWidget = Semantics(
+        key: const ValueKey('add_outlined'),
         button: true,
         label: hasMultipleVariants
             ? 'Choose options for ${product.name}'
             : 'Add ${product.name} to cart',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: _busy ? null : _handleInitialAdd,
-            child: Ink(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  color: AppColors.catalogueGreen,
-                  width: 1.2,
-                ),
-                borderRadius: BorderRadius.circular(8),
+        child: AppBounce(
+          pressedScale: 0.94,
+          onTap: _busy ? null : _handleInitialAdd,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: AppColors.catalogueGreen,
+                width: 1.2,
               ),
-              child: Center(
-                child: _busy
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.catalogueGreen,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (!hasMultipleVariants) ...[
-                            const Icon(
-                              Icons.add,
-                              size: 13,
-                              color: AppColors.catalogueGreen,
-                            ),
-                            const SizedBox(width: 2),
-                          ],
-                          const Text(
-                            'ADD',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.catalogueGreen,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          if (hasMultipleVariants) ...[
-                            const SizedBox(width: 1),
-                            const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 14,
-                              color: AppColors.catalogueGreen,
-                            ),
-                          ],
-                        ],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: _busy
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.catalogueGreen,
                       ),
-              ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (!hasMultipleVariants) ...[
+                          const Icon(
+                            Icons.add,
+                            size: 13,
+                            color: AppColors.catalogueGreen,
+                          ),
+                          const SizedBox(width: 2),
+                        ],
+                        const Text(
+                          'ADD',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.catalogueGreen,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        if (hasMultipleVariants) ...[
+                          const SizedBox(width: 1),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 14,
+                            color: AppColors.catalogueGreen,
+                          ),
+                        ],
+                      ],
+                    ),
             ),
           ),
         ),
       );
-    }
-
-    return Semantics(
-      button: true,
-      label: hasMultipleVariants
-          ? 'Choose options for ${product.name}'
-          : 'Add ${product.name} to cart',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+    } else {
+      buttonWidget = Semantics(
+        key: const ValueKey('add_filled'),
+        button: true,
+        label: hasMultipleVariants
+            ? 'Choose options for ${product.name}'
+            : 'Add ${product.name} to cart',
+        child: AppBounce(
+          pressedScale: 0.94,
           onTap: _busy ? null : _handleInitialAdd,
-          child: Ink(
+          child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF07583F),
               borderRadius: BorderRadius.circular(8),
@@ -705,7 +714,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
             ),
             child: Center(
               child: _busy
-                   ? const SizedBox(
+                  ? const SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
@@ -746,7 +755,9 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    return AppScaleSwitcher(child: buttonWidget);
   }
 }

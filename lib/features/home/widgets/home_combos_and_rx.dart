@@ -1,14 +1,13 @@
-import 'dart:ui';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/utils/formatters.dart';
+import '../../../core/animations/app_animations.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/product_card.dart' show formatInr;
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
 
@@ -335,15 +334,16 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
     final combo = widget.combo;
     final qty = ref.watch(comboCartQuantityProvider(combo.id));
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Haptics.tap();
-          context.push('/combos/${combo.id}');
-        },
+    return AppBounce(
+      pressedScale: 0.98,
+      onTap: () {
+        Haptics.tap();
+        context.push('/combos/${combo.id}');
+      },
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFDFE7E1)),
@@ -353,38 +353,27 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 160px image area matching `h-40 bg-[#F8F5EF]`
+              // Clean white image area matching webapp HomeComboCard
               SizedBox(
-                height: 160,
+                height: 156,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    const ColoredBox(color: Color(0xFFF8F5EF)),
-                    if (combo.image != null && combo.image!.isNotEmpty) ...[
-                      ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: Opacity(
-                          opacity: 0.45,
-                          child: Transform.scale(
-                            scale: 1.25,
-                            child: CachedNetworkImage(
-                              imageUrl: combo.image!,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 80,
-                              maxWidthDiskCache: 200,
-                              errorWidget: (_, _, _) => const SizedBox.shrink(),
-                            ),
-                          ),
+                    const ColoredBox(color: Colors.white),
+                    if (combo.image != null && combo.image!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                      ),
-                      const ColoredBox(color: Color(0x26FFFFFF)),
-                      AppNetworkImage(
-                        imageUrl: combo.image,
-                        fit: BoxFit.contain,
-                        memCacheWidth: 600,
-                        errorWidget: (_, _, _) => _comboItemsCollage(combo),
-                      ),
-                    ] else
+                        child: AppNetworkImage(
+                          imageUrl: combo.image,
+                          fit: BoxFit.contain,
+                          memCacheWidth: 600,
+                          errorWidget: (_, _, _) => _comboItemsCollage(combo),
+                        ),
+                      )
+                    else
                       _comboItemsCollage(combo),
                     if (combo.savingPercent > 0)
                       Positioned(
@@ -393,7 +382,7 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE6F3EA),
@@ -418,7 +407,7 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${combo.items.length} products',
+                      '${combo.items.length} ${combo.items.length == 1 ? 'product' : 'products'}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF637367),
@@ -433,8 +422,8 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 13,
-                          height: 1.4,
-                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF17322B),
                         ),
                       ),
@@ -451,16 +440,16 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          formatPrice(combo.comboPrice),
+                          '₹${formatInr(combo.comboPrice)}',
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF173D30),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF17322B),
                           ),
                         ),
                         if (combo.originalPrice > combo.comboPrice)
                           Text(
-                            formatPrice(combo.originalPrice),
+                            '₹${formatInr(combo.originalPrice)}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF637367),
@@ -469,107 +458,111 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                           ),
                       ],
                     ),
-                    qty > 0
-                        ? Container(
-                            height: 40,
-                            width: 80,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF07583F),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: _busy
-                                        ? null
-                                        : () => _changeQuantity(qty - 1),
-                                    child: const Center(
-                                      child: Text(
-                                        '−',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 24,
-                                  child: Center(
-                                    child: _busy
-                                        ? const SizedBox(
-                                            width: 12,
-                                            height: 12,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : Text(
-                                            '$qty',
-                                            style: const TextStyle(
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: _busy
-                                        ? null
-                                        : () => _changeQuantity(qty + 1),
-                                    child: const Center(
-                                      child: Text(
-                                        '+',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SizedBox(
-                            height: 40,
-                            width: 80,
-                            child: FilledButton(
-                              onPressed:
-                                  _busy ? null : () => _changeQuantity(1),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF07583F),
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                    AppScaleSwitcher(
+                      child: qty > 0
+                          ? Container(
+                              key: const ValueKey('combo_stepper'),
+                              height: 38,
+                              width: 80,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF07583F),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: _busy
-                                  ? const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Add',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: _busy
+                                          ? null
+                                          : () => _changeQuantity(qty - 1),
+                                      child: const Center(
+                                        child: Text(
+                                          '−',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
                                     ),
+                                  ),
+                                  SizedBox(
+                                    width: 24,
+                                    child: Center(
+                                      child: _busy
+                                          ? const SizedBox(
+                                              width: 12,
+                                              height: 12,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : AppTextSwitcher(
+                                              text: '$qty',
+                                              style: const TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: _busy
+                                          ? null
+                                          : () => _changeQuantity(qty + 1),
+                                      child: const Center(
+                                        child: Text(
+                                          '+',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : SizedBox(
+                              key: const ValueKey('combo_add'),
+                              height: 38,
+                              width: 80,
+                              child: FilledButton(
+                                onPressed:
+                                    _busy ? null : () => _changeQuantity(1),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF07583F),
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: _busy
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Add',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                              ),
                             ),
-                          ),
+                    ),
                   ],
                 ),
               ),

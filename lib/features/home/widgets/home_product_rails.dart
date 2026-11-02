@@ -247,15 +247,16 @@ class _HomeShotCard extends StatelessWidget {
     final discount = shot.discountPercent;
     return SizedBox(
       width: 152,
-      child: Material(
-        color: const Color(0xFF0A2218),
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {
-            Haptics.tap();
-            context.go('/shots?product=${Uri.encodeComponent(shot.id)}');
-          },
+      child: AppBounce(
+        pressedScale: 0.95,
+        onTap: () {
+          Haptics.tap();
+          context.go('/shots?product=${Uri.encodeComponent(shot.id)}');
+        },
+        child: Material(
+          color: const Color(0xFF0A2218),
+          borderRadius: BorderRadius.circular(18),
+          clipBehavior: Clip.antiAlias,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -484,63 +485,60 @@ class HomeConcernsRail extends ConsumerWidget {
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, i) {
                     final concern = shown[i];
-                    return Material(
-                      color: AppColors.primaryWashFaint,
-                      borderRadius: BorderRadius.circular(14),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () {
-                          Haptics.tap();
-                          context.push('/diseases/${concern.slug}');
-                        },
-                        child: Container(
-                          width: 94,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
+                    return AppBounce(
+                      pressedScale: 0.92,
+                      onTap: () {
+                        Haptics.tap();
+                        context.push('/diseases/${concern.slug}');
+                      },
+                      child: Container(
+                        width: 94,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryWashFaint,
+                          border: Border.all(
+                            color: AppColors.primaryWashDeep,
                           ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryWashDeep,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: concern.imageUrl != null && concern.imageUrl!.isNotEmpty
+                                  ? AppNetworkImage(
+                                      imageUrl: concern.imageUrl!,
+                                      fit: BoxFit.cover,
+                                      memCacheWidth: 100,
+                                      errorWidget: (_, _, _) =>
+                                          _concernFallback(concern),
+                                    )
+                                  : _concernFallback(concern),
                             ),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: concern.imageUrl != null && concern.imageUrl!.isNotEmpty
-                                    ? AppNetworkImage(
-                                        imageUrl: concern.imageUrl!,
-                                        fit: BoxFit.cover,
-                                        memCacheWidth: 100,
-                                        errorWidget: (_, _, _) =>
-                                            _concernFallback(concern),
-                                      )
-                                    : _concernFallback(concern),
+                            const SizedBox(height: 6),
+                            Text(
+                              concern.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                height: 1.2,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                concern.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 9.5,
-                                  height: 1.2,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     );

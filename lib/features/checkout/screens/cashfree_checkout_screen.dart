@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// Wraps Cashfree's hosted checkout page (the same "Web Checkout" redirect
-/// flow nvit-frontend's own Cashfree JS SDK uses) in a WebView. The backend
-/// configures the return URL as `{siteUrl}/orders/{orderId}?payment=...`;
-/// once the WebView navigates there we intercept it, close, and let the
-/// caller verify the final payment status via /api/payments/cashfree/verify
-/// instead of rendering the website page in-app.
+/// Wraps Cashfree's hosted checkout page (powered by @cashfreepayments/cashfree-js
+/// on /checkout/cashfree-session) in a WebView. The backend configures the return
+/// URL as `{siteUrl}/orders/{orderId}/payment-return?order_id=...`; once the
+/// WebView navigates there we intercept it, close, and let the caller verify
+/// the final payment status via /api/payments/cashfree/verify.
 class CashfreeCheckoutScreen extends StatefulWidget {
   const CashfreeCheckoutScreen({
     super.key,
@@ -35,29 +36,45 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    final host = widget.mode == 'production'
-        ? 'payments.cashfree.com'
-        : 'payments-test.cashfree.com';
-    final url = 'https://$host/order/#${widget.paymentSessionId}';
+    final cleanMode = widget.mode.toLowerCase().contains('sandbox') ? 'sandbox' : 'production';
+    final sessionUrl =
+        '${AppConfig.apiBaseUrl}/checkout/cashfree-session?sessionId=${Uri.encodeQueryComponent(widget.paymentSessionId)}&mode=$cleanMode&orderId=${Uri.encodeQueryComponent(widget.orderId)}';
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) => setState(() => _loading = true),
-          onPageFinished: (_) => setState(() => _loading = false),
-          onNavigationRequest: (request) {
+          onPageStarted: (_) {
+            if (mounted) setState(() => _loading = true);
+          },
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          onNavigationRequest: (request) async {
             final returnTarget =
                 widget.returnUrlContains ?? '/orders/${widget.orderId}';
             if (request.url.contains(returnTarget)) {
               _finish();
               return NavigationDecision.prevent;
             }
+
+            final uri = Uri.tryParse(request.url);
+            if (uri != null &&
+                !uri.scheme.startsWith('http') &&
+                !uri.scheme.startsWith('about')) {
+              try {
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              } catch (_) {}
+              return NavigationDecision.prevent;
+            }
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(url));
+      );
+
+    _controller.loadRequest(Uri.parse(sessionUrl));
   }
 
   void _finish() {

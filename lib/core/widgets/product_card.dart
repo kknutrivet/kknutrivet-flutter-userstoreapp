@@ -22,12 +22,14 @@ class ProductCard extends ConsumerStatefulWidget {
     required this.onTap,
     this.onAdd,
     this.showAddButton = true,
+    this.heroTag,
   });
 
   final Product product;
   final VoidCallback onTap;
   final VoidCallback? onAdd;
   final bool showAddButton;
+  final String? heroTag;
 
   @override
   ConsumerState<ProductCard> createState() => _ProductCardState();
@@ -64,15 +66,16 @@ class _ProductCardState extends ConsumerState<ProductCard> {
         ? (((displayMrp - displayPrice) / displayMrp) * 100).round()
         : 0;
 
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Haptics.tap();
-          widget.onTap();
-        },
+    return AppBounce(
+      pressedScale: 0.98,
+      onTap: () {
+        Haptics.tap();
+        widget.onTap();
+      },
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: Ink(
           decoration: BoxDecoration(
             color: AppColors.surface,
@@ -95,11 +98,20 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                   SizedBox(
                     height: 140,
                     width: double.infinity,
-                    child: ProductImageCover(
-                      imageUrl: product.image,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      showPlaceholderOnLoading: false,
-                    ),
+                    child: widget.heroTag != null
+                        ? Hero(
+                            tag: widget.heroTag!,
+                            child: ProductImageCover(
+                              imageUrl: product.image,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                              showPlaceholderOnLoading: false,
+                            ),
+                          )
+                        : ProductImageCover(
+                            imageUrl: product.image,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                            showPlaceholderOnLoading: false,
+                          ),
                   ),
                   if (hasDiscount)
                     Positioned(
@@ -525,8 +537,10 @@ class _AddButtonState extends ConsumerState<_AddButton> {
 
     final hasMultipleVariants = product.variants.length > 1;
 
+    final Widget buttonWidget;
     if (widget.quantity > 0) {
-      return Container(
+      buttonWidget = Container(
+        key: const ValueKey('add_stepper'),
         width: double.infinity,
         constraints: const BoxConstraints(minHeight: 48),
         decoration: BoxDecoration(
@@ -552,8 +566,8 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                   minWidth: 48,
                   minHeight: 48,
                 ),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                child: AppBounce(
+                  pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(-1),
                   child: const Center(
                     child: Icon(Icons.remove, size: 17, color: Colors.white),
@@ -565,7 +579,6 @@ class _AddButtonState extends ConsumerState<_AddButton> {
               behavior: HitTestBehavior.opaque,
               onTap: hasMultipleVariants
                   ? () async {
-                      
                       if (!mounted) return;
                       final picked = await showVariantPickerBottomSheet(
                         context: context,
@@ -592,8 +605,8 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '${widget.quantity}',
+                          AppTextSwitcher(
+                            text: '${widget.quantity}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13.5,
@@ -620,8 +633,8 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                   minWidth: 48,
                   minHeight: 48,
                 ),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                child: AppBounce(
+                  pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(1),
                   child: const Center(
                     child: Icon(Icons.add, size: 17, color: Colors.white),
@@ -632,19 +645,17 @@ class _AddButtonState extends ConsumerState<_AddButton> {
           ],
         ),
       );
-    }
-
-    return Semantics(
-      button: true,
-      label: hasMultipleVariants
-          ? 'Choose options for ${product.name}'
-          : 'Add ${product.name} to cart',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+    } else {
+      buttonWidget = Semantics(
+        key: const ValueKey('add_initial'),
+        button: true,
+        label: hasMultipleVariants
+            ? 'Choose options for ${product.name}'
+            : 'Add ${product.name} to cart',
+        child: AppBounce(
+          pressedScale: 0.95,
           onTap: _busy ? null : _handleInitialAdd,
-          child: Ink(
+          child: Container(
             height: 38,
             width: double.infinity,
             decoration: BoxDecoration(
@@ -698,7 +709,9 @@ class _AddButtonState extends ConsumerState<_AddButton> {
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    return AppScaleSwitcher(child: buttonWidget);
   }
 }
