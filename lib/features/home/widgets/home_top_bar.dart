@@ -54,12 +54,12 @@ class HomeBrandBar extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFDDD7CB)),
+                    border: Border.all(color: const Color(0xFFE8ECE9)),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x0F173C32),
-                        blurRadius: 14,
-                        offset: Offset(0, 4),
+                        color: Color(0x0C173C32),
+                        blurRadius: 12,
+                        offset: Offset(0, 3),
                       ),
                     ],
                   ),
@@ -273,35 +273,35 @@ class HomeTopBarCard extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Material(
-            color: AppColors.surfaceAlt,
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFFF4F7F5),
+            borderRadius: BorderRadius.circular(24),
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
               onTap: () {
                 Haptics.tap();
                 context.push('/search');
               },
               child: Container(
-                height: 48,
+                height: 46,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.borderStrong),
-                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2EBE6)),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      width: 26,
-                      height: 26,
+                      width: 28,
+                      height: 28,
                       decoration: BoxDecoration(
                         color: AppColors.primaryWash,
-                        borderRadius: BorderRadius.circular(8),
+                        shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.search_rounded,
-                        size: 14,
+                        size: 15,
                         color: AppColors.primaryDeep,
                       ),
                     ),
@@ -312,21 +312,29 @@ class HomeTopBarCard extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ),
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: AppColors.primaryDeep,
-                        borderRadius: BorderRadius.circular(10),
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x2407583F),
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.arrow_forward_rounded,
-                        size: 16,
+                        size: 15,
                         color: Colors.white,
                       ),
                     ),

@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 import '../crashlytics/crashlytics_service.dart';
 import '../device/device_info_service.dart';
 import '../storage/token_storage.dart';
+import 'etag_interceptor.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode, this.code});
@@ -47,8 +48,13 @@ class _ApiLoggingInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final sw = _stopwatches[response.requestOptions];
     final elapsed = sw != null ? ' (${sw.elapsedMilliseconds}ms)' : '';
+    final isEtag304 = response.statusCode == 304 || response.extra['from_etag_cache'] == true;
+    final isOffline = response.extra['from_offline_cache'] == true;
+    final cacheBadge = isEtag304
+        ? ' [ETag 304 Cache Hit ⚡]'
+        : (isOffline ? ' [Offline Local DB Cache 📦]' : '');
 
-    debugPrint('✅ [HTTP-RES] [${response.statusCode}] ${response.requestOptions.method} ${response.requestOptions.uri}$elapsed');
+    debugPrint('✅ [HTTP-RES] [${response.statusCode}$cacheBadge] ${response.requestOptions.method} ${response.requestOptions.uri}$elapsed');
     debugPrint('   Data: ${response.data}');
     debugPrint('─────────────────────────────────────────────────────────────────');
     handler.next(response);
@@ -79,9 +85,12 @@ class ApiClient {
         connectTimeout: const Duration(seconds: 20),
         receiveTimeout: const Duration(seconds: 20),
         headers: {'Content-Type': 'application/json'},
+        validateStatus: (status) =>
+            status != null && ((status >= 200 && status < 300) || status == 304),
       ),
     );
 
+    // 1. Auth & Device headers
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -98,7 +107,10 @@ class ApiClient {
       ),
     );
 
-    // Network logging interceptor for Android Studio Logcat & Run console.
+    // 2. High-performance ETag & Local DB caching interceptor
+    _dio.interceptors.add(ETagInterceptor());
+
+    // 3. Network logging interceptor for Android Studio Logcat & Run console.
     _dio.interceptors.add(_ApiLoggingInterceptor());
   }
 

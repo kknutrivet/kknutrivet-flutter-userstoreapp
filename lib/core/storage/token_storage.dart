@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../database/local_database.dart';
 
 class TokenStorage {
   TokenStorage._();
@@ -11,5 +12,8 @@ class TokenStorage {
 
   Future<String?> readToken() => _storage.read(key: _tokenKey);
 
-  Future<void> clearToken() => _storage.delete(key: _tokenKey);
+  Future<void> clearToken() async {
+    await _storage.delete(key: _tokenKey);
+    await LocalDatabase.instance.clearUserScoped();
+  }
 }

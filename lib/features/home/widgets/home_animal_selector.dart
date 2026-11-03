@@ -127,8 +127,19 @@ class HomeAnimalSelector extends ConsumerWidget {
                                             ? AppColors.primaryDeep
                                             : Colors.black
                                                 .withValues(alpha: 0.06),
-                                        width: isSelected ? 2 : 1,
+                                        width: isSelected ? 2.5 : 1,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (isSelected
+                                                  ? AppColors.primaryDeep
+                                                  : Colors.black)
+                                              .withValues(
+                                                  alpha: isSelected ? 0.28 : 0.07),
+                                          blurRadius: isSelected ? 10 : 6,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
                                     clipBehavior: Clip.antiAlias,
                                     child: Transform.scale(
@@ -150,11 +161,15 @@ class HomeAnimalSelector extends ConsumerWidget {
                                     maxLines: 2,
                                     textAlign: TextAlign.center,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       height: 1.25,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      color: isSelected
+                                          ? AppColors.primaryDeep
+                                          : AppColors.textPrimary,
                                     ),
                                   ),
                                 ],

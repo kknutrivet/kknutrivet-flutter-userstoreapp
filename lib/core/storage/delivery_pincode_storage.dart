@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../database/local_database.dart';
 
 class DeliveryPincodeStorage {
   DeliveryPincodeStorage._();
@@ -6,13 +6,8 @@ class DeliveryPincodeStorage {
 
   static const _key = 'delivery_pincode';
 
-  Future<String?> read() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_key);
-  }
+  Future<String?> read() => LocalDatabase.instance.get<String>(_key);
 
-  Future<void> save(String pincode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, pincode);
-  }
+  Future<void> save(String pincode) =>
+      LocalDatabase.instance.put<String>(_key, pincode);
 }

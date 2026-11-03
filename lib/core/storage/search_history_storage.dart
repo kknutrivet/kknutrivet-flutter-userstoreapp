@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../database/local_database.dart';
 
 class SearchHistoryStorage {
   SearchHistoryStorage._();
@@ -8,22 +8,18 @@ class SearchHistoryStorage {
   static const _max = 8;
 
   Future<List<String>> readAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_key) ?? const [];
+    final list = await LocalDatabase.instance.get<List>(_key);
+    return list?.map((e) => e.toString()).toList() ?? const [];
   }
 
   Future<void> add(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getStringList(_key) ?? [];
+    final current = (await readAll()).toList();
     current.removeWhere((q) => q.toLowerCase() == trimmed.toLowerCase());
     current.insert(0, trimmed);
-    await prefs.setStringList(_key, current.take(_max).toList());
+    await LocalDatabase.instance.put(_key, current.take(_max).toList());
   }
 
-  Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
-  }
+  Future<void> clear() => LocalDatabase.instance.delete(_key);
 }

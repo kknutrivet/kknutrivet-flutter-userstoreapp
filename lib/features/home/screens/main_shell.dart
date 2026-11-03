@@ -208,16 +208,18 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 32,
-                height: 24,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                width: selected ? 46 : 34,
+                height: 28,
                 decoration: BoxDecoration(
                   color: selected
                       ? (isShots
                           ? const Color(0x3310B981)
                           : AppColors.primaryWash)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
                   child: Stack(

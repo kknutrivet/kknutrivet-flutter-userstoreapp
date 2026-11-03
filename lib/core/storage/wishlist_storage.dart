@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../database/local_database.dart';
 
 /// No wishlist endpoint exists on the backend, so favorites are kept
 /// on-device (per install) rather than synced to the account.
@@ -9,12 +9,11 @@ class WishlistStorage {
   static const _key = 'wishlist_product_ids';
 
   Future<Set<String>> readAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_key) ?? const []).toSet();
+    final list = await LocalDatabase.instance.get<List>(_key);
+    return list?.map((e) => e.toString()).toSet() ?? const {};
   }
 
   Future<void> saveAll(Set<String> ids) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_key, ids.toList());
+    await LocalDatabase.instance.put(_key, ids.toList());
   }
 }

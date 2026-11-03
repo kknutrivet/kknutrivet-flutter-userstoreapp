@@ -90,18 +90,23 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
       ),
       child: Material(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: const Color(0xFFDCE7E1)),
-            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE8ECE9), width: 1),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x0D173C32),
-                blurRadius: 10,
-                offset: Offset(0, 3),
+                color: Color(0x0A173C32),
+                blurRadius: 14,
+                offset: Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Color(0x05000000),
+                blurRadius: 4,
+                offset: Offset(0, 1),
               ),
             ],
           ),
@@ -135,21 +140,21 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                       left: 6,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 7,
                           vertical: 2.5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECF7EF),
-                          border: Border.all(color: const Color(0xFFCEE4D5)),
-                          borderRadius: BorderRadius.circular(6),
+                          color: const Color(0xFFE8F5EE),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '$discountPercent% off',
+                          '$discountPercent% OFF',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 10.5,
                             height: 1.15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF176441),
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                            color: Color(0xFF0E7A53),
                           ),
                         ),
                       ),
@@ -364,13 +369,6 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
               variantId: v?.id,
               quantity: nextQty,
             );
-        if (mounted) {
-          showToast(
-            nextQty == 0
-                ? '${widget.product.name} removed from cart'
-                : 'Cart updated',
-          );
-        }
       } else if (widget.quantity == 0) {
         await ref
             .read(cartProvider.notifier)
@@ -382,7 +380,6 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
               variant: v,
             );
         AppHaptics.cart();
-        if (mounted) showToast('Added to cart');
       } else {
         AppHaptics.step();
         await ref
@@ -392,7 +389,6 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
               variantId: v?.id,
               quantity: widget.quantity + delta,
             );
-        if (mounted) showToast('Cart updated');
       }
     } catch (e) {
       if (mounted) showToast(e.toString(), isError: true);
@@ -476,7 +472,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
         key: const ValueKey('stepper'),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(20),
           border: isMintStepper
               ? Border.all(color: const Color(0xFFBDD6C9), width: 1.2)
               : null,
@@ -555,7 +551,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: AppColors.catalogueGreen, width: 1.2),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Center(
               child: _busy
@@ -614,12 +610,12 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF07583F),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF07583F).withValues(alpha: 0.18),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: const Color(0xFF07583F).withValues(alpha: 0.22),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
