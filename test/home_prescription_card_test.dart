@@ -51,7 +51,7 @@ void main() {
         expect(caughtDetails, isNull);
 
         expect(find.text('Upload care slip'), findsOneWidget);
-        expect(find.text('Free review · Photo or PDF'), findsOneWidget);
+        expect(find.text('Free review · Camera or gallery photo'), findsOneWidget);
       });
     }
 

@@ -841,7 +841,7 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Photo or PDF. Verified by our veterinary team.',
+                      'Photo from camera or gallery. Reviewed by our care team.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -1075,7 +1075,7 @@ class _VetAdviceBanner extends StatelessWidget {
               children: [
                 Expanded(
                   child: AppButton(
-                    label: 'Consult Vet',
+                    label: 'Care team chat',
                     icon: const Icon(Icons.chat_bubble_outline_rounded,
                         size: 15),
                     variant: AppButtonVariant.primary,
@@ -1086,7 +1086,7 @@ class _VetAdviceBanner extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: AppButton(
-                    label: 'Ask Dr. Paw',
+                    label: 'Dr. Paw (AI)',
                     icon: const Icon(Icons.auto_awesome_rounded, size: 14),
                     variant: AppButtonVariant.outline,
                     size: AppButtonSize.sm,

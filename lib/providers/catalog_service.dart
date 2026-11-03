@@ -32,16 +32,19 @@ class CatalogService {
         return hit.$2;
       }
     }
-    final data = await _client.get('/products', query: {
-      'category': ?category,
-      'subCategory': ?subCategory,
-      'animalType': ?animalType,
-      'disease': ?disease,
-      if (search != null && search.isNotEmpty) 'search': search,
-      'sort': ?sort,
-      'limit': ?limit,
-      'relatedTo': ?relatedTo,
-    });
+    final data = await _client.get(
+      '/products',
+      query: {
+        'category': ?category,
+        'subCategory': ?subCategory,
+        'animalType': ?animalType,
+        'disease': ?disease,
+        if (search != null && search.isNotEmpty) 'search': search,
+        'sort': ?sort,
+        'limit': ?limit,
+        'relatedTo': ?relatedTo,
+      },
+    );
     final products = (data as List).map((e) => Product.fromJson(e)).toList();
     _productsCache[cacheKey] = (DateTime.now(), products);
     return products;
@@ -68,18 +71,22 @@ class CatalogService {
         '/search/suggestions',
         query: {'q': query.trim()},
       );
-      final map = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      final map = data is Map
+          ? Map<String, dynamic>.from(data)
+          : <String, dynamic>{};
       final inner = map['data'] is Map
           ? Map<String, dynamic>.from(map['data'])
           : map;
       final list = inner['suggestions'] as List?;
       if (list == null) return const [];
       return list
-          .map((e) =>
-              SearchSuggestion.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                SearchSuggestion.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (_) {
-      return const [];
+      rethrow;
     }
   }
 
@@ -97,8 +104,10 @@ class CatalogService {
       );
       if (data is List) {
         return data
-            .map((e) =>
-                ProductCategory.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) =>
+                  ProductCategory.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
             .where((c) => all || c.active)
             .toList();
       }
@@ -123,7 +132,9 @@ class CatalogService {
       final data = await _client.get('/combos');
       if (data is List) {
         return data
-            .map((e) => ComboBundle.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) => ComboBundle.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
             .where((c) => c.isActive && c.items.isNotEmpty)
             .toList();
       }
@@ -145,13 +156,21 @@ class CatalogService {
     }
   }
 
-  Future<ProductFacets> fetchFacets({String? category, String? animalType, String? search, String? disease}) async {
-    final data = await _client.get('/products/facets', query: {
-      'category': ?category,
-      'animalType': ?animalType,
-      if (search != null && search.isNotEmpty) 'search': search,
-      'disease': ?disease,
-    });
+  Future<ProductFacets> fetchFacets({
+    String? category,
+    String? animalType,
+    String? search,
+    String? disease,
+  }) async {
+    final data = await _client.get(
+      '/products/facets',
+      query: {
+        'category': ?category,
+        'animalType': ?animalType,
+        if (search != null && search.isNotEmpty) 'search': search,
+        'disease': ?disease,
+      },
+    );
     return ProductFacets.fromJson(Map<String, dynamic>.from(data as Map));
   }
 }

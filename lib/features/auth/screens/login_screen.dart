@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/phone.dart';
 import '../../../core/notifications/push_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
@@ -82,7 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _sendOtp() async {
     final rawPhone = _phoneController.text.trim();
-    final phone = rawPhone.replaceAll(RegExp(r'\D'), '').replaceFirst(RegExp(r'^91'), '');
+    final phone = normalizeIndianPhone(rawPhone);
     if (phone.length != 10) {
       showToast('Enter a valid 10-digit mobile number', isError: true);
       return;
@@ -108,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _verifyOtp() async {
     final rawPhone = _phoneController.text.trim();
-    final phone = rawPhone.replaceAll(RegExp(r'\D'), '').replaceFirst(RegExp(r'^91'), '');
+    final phone = normalizeIndianPhone(rawPhone);
     final code = _otpController.text.trim();
     if (code.isEmpty) {
       showToast('Enter the OTP sent to your mobile', isError: true);
@@ -116,7 +117,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
     setState(() => _verifyingOtp = true);
     try {
-      await ref.read(authProvider.notifier).verifyOtp(
+      await ref
+          .read(authProvider.notifier)
+          .verifyOtp(
             phone,
             code,
             name: _regName.text.trim().isEmpty ? null : _regName.text.trim(),
@@ -139,9 +142,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _googleLoading = true);
     try {
-      await ref.read(authProvider.notifier).signInWithGoogle(
-            referralCode: _referralCodeOrNull(),
-          );
+      await ref
+          .read(authProvider.notifier)
+          .signInWithGoogle(referralCode: _referralCodeOrNull());
       if (ref.read(authProvider).value != null) {
         _dismissDialog();
       }
@@ -249,15 +252,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             // Semi-transparent backdrop overlay with blur
             Positioned.fill(
               child: GestureDetector(
-                onTap: () => context.canPop() ? context.pop() : context.go('/home'),
+                onTap: () =>
+                    context.canPop() ? context.pop() : context.go('/home'),
                 child: BackdropFilter(
                   filter: ColorFilter.mode(
                     const Color(0xBB08271E), // rgba(8, 39, 30, 0.73)
                     BlendMode.srcOver,
                   ),
-                  child: Container(
-                    color: const Color(0x9908271E),
-                  ),
+                  child: Container(color: const Color(0x9908271E)),
                 ),
               ),
             ),
@@ -265,13 +267,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 16,
+                  ),
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 364),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x4008271E),
@@ -288,8 +295,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           children: [
                             _header(),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                              child: _showEmailFallback ? _emailFallbackForm(authState) : _quickAuthBody(authState),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                16,
+                              ),
+                              child: _showEmailFallback
+                                  ? _emailFallbackForm(authState)
+                                  : _quickAuthBody(authState),
                             ),
                           ],
                         ),
@@ -298,7 +312,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           top: 4,
                           right: 4,
                           child: IconButton(
-                            icon: const Icon(Icons.close, size: 20, color: Color(0xFF5A615F)),
+                            icon: const Icon(
+                              Icons.close,
+                              size: 20,
+                              color: Color(0xFF5A615F),
+                            ),
                             onPressed: () {
                               if (context.canPop()) {
                                 context.pop();
@@ -332,14 +350,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: const Color(0xF5FFFDF8),
                             borderRadius: BorderRadius.circular(11),
                             child: InkWell(
-                              onTap: () => context.canPop() ? context.pop() : context.go('/home'),
+                              onTap: () => context.canPop()
+                                  ? context.pop()
+                                  : context.go('/home'),
                               borderRadius: BorderRadius.circular(11),
                               child: Container(
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(11),
-                                  border: Border.all(color: const Color(0xFFD8E5DE), width: 1.5),
+                                  border: Border.all(
+                                    color: const Color(0xFFD8E5DE),
+                                    width: 1.5,
+                                  ),
                                   boxShadow: const [
                                     BoxShadow(
                                       color: Color(0x1217322B),
@@ -348,7 +371,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Icon(Icons.close_rounded, size: 22, color: Color(0xFF07583F)),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  size: 22,
+                                  color: Color(0xFF07583F),
+                                ),
                               ),
                             ),
                           ),
@@ -389,7 +416,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.shield_outlined, size: 12, color: Color(0xFF5A615F)),
+              const Icon(
+                Icons.shield_outlined,
+                size: 12,
+                color: Color(0xFF5A615F),
+              ),
               const SizedBox(width: 4),
               const Text(
                 'Secure sign-in',
@@ -431,7 +462,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
-              onTap: (_googleLoading || authState.isLoading) ? null : _signInWithGoogle,
+              onTap: (_googleLoading || authState.isLoading)
+                  ? null
+                  : _signInWithGoogle,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 height: 42,
@@ -439,7 +472,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFD5E4DE)),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1)),
+                    BoxShadow(
+                      color: Color(0x0A000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -479,7 +516,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                const Expanded(child: Divider(color: Color(0xFFE6F1EA), height: 1)),
+                const Expanded(
+                  child: Divider(color: Color(0xFFE6F1EA), height: 1),
+                ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
@@ -492,7 +531,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                const Expanded(child: Divider(color: Color(0xFFE6F1EA), height: 1)),
+                const Expanded(
+                  child: Divider(color: Color(0xFFE6F1EA), height: 1),
+                ),
               ],
             ),
           ),
@@ -537,7 +578,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Row(
               children: [
                 const SizedBox(width: 12),
-                const Icon(Icons.phone_iphone_outlined, size: 18, color: Color(0xFF8A9490)),
+                const Icon(
+                  Icons.phone_iphone_outlined,
+                  size: 18,
+                  color: Color(0xFF8A9490),
+                ),
                 const SizedBox(width: 6),
                 const Text(
                   '🇮🇳  +91',
@@ -548,7 +593,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(width: 2),
-                const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF8A9490)),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 16,
+                  color: Color(0xFF8A9490),
+                ),
                 Container(
                   width: 1,
                   height: 22,
@@ -559,6 +608,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    autofillHints: const [AutofillHints.telephoneNumberNational],
                     maxLength: 10,
                     onChanged: (_) => setState(() {}),
                     decoration: const InputDecoration(
@@ -606,7 +656,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text(
                       'Continue with mobile',
@@ -642,22 +695,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Text(
             'OTP sent to +91 ${_phoneController.text.trim()}',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: _otpController,
+            autofillHints: const [AutofillHints.oneTimeCode],
             keyboardType: TextInputType.number,
             maxLength: 6,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.w700),
-            decoration: const InputDecoration(counterText: '', hintText: '••••••'),
+            style: const TextStyle(
+              fontSize: 22,
+              letterSpacing: 8,
+              fontWeight: FontWeight.w700,
+            ),
+            decoration: const InputDecoration(
+              counterText: '',
+              hintText: '••••••',
+            ),
           ),
           const SizedBox(height: 10),
           ElevatedButton(
-            onPressed: (authState.isLoading || _verifyingOtp) ? null : _verifyOtp,
+            onPressed: (authState.isLoading || _verifyingOtp)
+                ? null
+                : _verifyOtp,
             child: (authState.isLoading || _verifyingOtp)
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Text('Verify & Continue'),
           ),
           const SizedBox(height: 10),
@@ -673,7 +746,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               TextButton(
                 onPressed: _resendCountdown > 0 ? null : _sendOtp,
-                child: Text(_resendCountdown > 0 ? 'Resend in ${_resendCountdown}s' : 'Resend OTP'),
+                child: Text(
+                  _resendCountdown > 0
+                      ? 'Resend in ${_resendCountdown}s'
+                      : 'Resend OTP',
+                ),
               ),
             ],
           ),
@@ -712,8 +789,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const Icon(Icons.card_giftcard, size: 16, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(
-              child: Text('Referral applied: ${_regReferral.text}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
+              child: Text(
+                'Referral applied: ${_regReferral.text}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryDark,
+                ),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.close, size: 16),
@@ -732,21 +815,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: TextField(
               controller: _regReferral,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(hintText: 'Referral code', isDense: true),
+              decoration: const InputDecoration(
+                hintText: 'Referral code',
+                isDense: true,
+              ),
               onChanged: (_) => setState(() {}),
             ),
           ),
-          TextButton(onPressed: () => setState(() => _showReferral = false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => setState(() => _showReferral = false),
+            child: const Text('Cancel'),
+          ),
         ],
       );
     }
     return OutlinedButton.icon(
       onPressed: () => setState(() => _showReferral = true),
       icon: const Icon(Icons.card_giftcard, size: 16),
-      label: const Text('Have a referral code? Get bonus points', style: TextStyle(fontSize: 11.5)),
+      label: const Text(
+        'Have a referral code? Get bonus points',
+        style: TextStyle(fontSize: 11.5),
+      ),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(38),
-        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3), style: BorderStyle.solid),
+        side: BorderSide(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          style: BorderStyle.solid,
+        ),
       ),
     );
   }
@@ -804,7 +899,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1.5,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(999),
@@ -847,30 +945,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           TextButton.icon(
             onPressed: () => setState(() => _showEmailFallback = false),
             icon: const Icon(Icons.arrow_back, size: 16),
-            label: const Text('Back to quick login', style: TextStyle(fontSize: 12.5)),
-            style: TextButton.styleFrom(alignment: Alignment.centerLeft, padding: EdgeInsets.zero),
+            label: const Text(
+              'Back to quick login',
+              style: TextStyle(fontSize: 12.5),
+            ),
+            style: TextButton.styleFrom(
+              alignment: Alignment.centerLeft,
+              padding: EdgeInsets.zero,
+            ),
           ),
           const SizedBox(height: 10),
           if (_emailMode == _EmailMode.register) ...[
             TextFormField(
               controller: _regName,
               decoration: const InputDecoration(labelText: 'Full name'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _regEmail,
               keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+              validator: (v) => (v == null || !v.contains('@'))
+                  ? 'Enter a valid email'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _regPhone,
               keyboardType: TextInputType.phone,
+                    autofillHints: const [AutofillHints.telephoneNumberNational],
               maxLength: 10,
               decoration: const InputDecoration(labelText: 'Phone (10 digits)'),
-              validator: (v) => (v == null || v.length != 10) ? 'Enter a valid phone' : null,
+              validator: (v) =>
+                  (v == null || v.length != 10) ? 'Enter a valid phone' : null,
             ),
             TextFormField(
               controller: _regPassword,
@@ -878,17 +988,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePw ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    _obscurePw ? Icons.visibility_off : Icons.visibility,
+                  ),
                   onPressed: () => setState(() => _obscurePw = !_obscurePw),
                 ),
               ),
-              validator: (v) => (v == null || v.length < 6) ? 'Minimum 6 characters' : null,
+              validator: (v) =>
+                  (v == null || v.length < 6) ? 'Minimum 6 characters' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _regReferral,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Referral code (optional)'),
+              decoration: const InputDecoration(
+                labelText: 'Referral code (optional)',
+              ),
             ),
             const SizedBox(height: 18),
             ElevatedButton(
@@ -897,19 +1012,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : () async {
                       if (_formKey.currentState!.validate()) {
                         try {
-                          await ref.read(authProvider.notifier).register(
+                          await ref
+                              .read(authProvider.notifier)
+                              .register(
                                 email: _regEmail.text.trim(),
                                 password: _regPassword.text,
                                 name: _regName.text.trim(),
                                 phone: _regPhone.text.trim(),
-                                referralCode: _regReferral.text.trim().isEmpty ? null : _regReferral.text.trim(),
+                                referralCode: _regReferral.text.trim().isEmpty
+                                    ? null
+                                    : _regReferral.text.trim(),
                               );
                           _dismissDialog();
                         } catch (_) {}
                       }
                     },
               child: authState.isLoading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Create account'),
             ),
             const SizedBox(height: 12),
@@ -923,8 +1049,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextFormField(
               controller: _loginEmail,
               keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+              validator: (v) => (v == null || !v.contains('@'))
+                  ? 'Enter a valid email'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -933,11 +1062,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePw ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    _obscurePw ? Icons.visibility_off : Icons.visibility,
+                  ),
                   onPressed: () => setState(() => _obscurePw = !_obscurePw),
                 ),
               ),
-              validator: (v) => (v == null || v.length < 6) ? 'Minimum 6 characters' : null,
+              validator: (v) =>
+                  (v == null || v.length < 6) ? 'Minimum 6 characters' : null,
             ),
             Align(
               alignment: Alignment.centerRight,
@@ -953,19 +1085,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : () async {
                       if (_formKey.currentState!.validate()) {
                         try {
-                          await ref.read(authProvider.notifier).login(_loginEmail.text.trim(), _loginPassword.text);
+                          await ref
+                              .read(authProvider.notifier)
+                              .login(
+                                _loginEmail.text.trim(),
+                                _loginPassword.text,
+                              );
                           _dismissDialog();
                         } catch (_) {}
                       }
                     },
               child: authState.isLoading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Login'),
             ),
             const SizedBox(height: 12),
             Center(
               child: TextButton(
-                onPressed: () => setState(() => _emailMode = _EmailMode.register),
+                onPressed: () =>
+                    setState(() => _emailMode = _EmailMode.register),
                 child: const Text("New here? Create an account"),
               ),
             ),

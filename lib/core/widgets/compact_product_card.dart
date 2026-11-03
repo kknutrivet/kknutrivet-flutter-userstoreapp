@@ -48,8 +48,7 @@ class CompactProductCard extends ConsumerStatefulWidget {
   final String? heroTag;
 
   @override
-  ConsumerState<CompactProductCard> createState() =>
-      _CompactProductCardState();
+  ConsumerState<CompactProductCard> createState() => _CompactProductCardState();
 }
 
 class _CompactProductCardState extends ConsumerState<CompactProductCard> {
@@ -68,31 +67,13 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
     );
   }
 
-  String? _inferDosageForm(Product product) {
-    final text = '${product.name} ${product.category}'.toLowerCase();
-    if (text.contains('syrup') || text.contains('liquid') || text.contains('suspension')) {
-      return 'SYRUP';
-    }
-    if (text.contains('powder') || text.contains('granule')) return 'POWDER';
-    if (text.contains('tablet') || text.contains('chewable')) return 'TABLET';
-    if (text.contains('bolus')) return 'BOLUS';
-    if (text.contains('spray')) return 'SPRAY';
-    if (text.contains('shampoo') || text.contains('wash')) return 'SHAMPOO';
-    if (text.contains('drop') || text.contains('spot on') || text.contains('spot-on')) {
-      return 'DROPS';
-    }
-    if (text.contains('ointment') || text.contains('cream') || text.contains('gel')) {
-      return 'CREAM';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
     final v = _resolveVariant(product);
     final quantity = ref.watch(cartQuantityProvider((product.id, v?.id)));
-    final image = product.image ??
+    final image =
+        product.image ??
         (product.images.isNotEmpty ? product.images.first : null);
     final isCatalogue = widget.variant == CompactCardVariant.catalogue;
     final displayPrice = v?.price ?? product.effectivePrice;
@@ -101,7 +82,6 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
     final discountPercent = hasDiscount
         ? (((displayMrp - displayPrice) / displayMrp) * 100).round()
         : 0;
-    final dosageForm = _inferDosageForm(product);
 
     return AppBounce(
       pressedScale: 0.975,
@@ -147,7 +127,9 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                             innerPadding: const EdgeInsets.all(6),
                           ),
                   ),
-                  if (hasDiscount && discountPercent > 0)
+                  if (hasDiscount &&
+                      discountPercent > 0 &&
+                      !product.requiresPrescription)
                     Positioned(
                       top: 6,
                       left: 6,
@@ -164,7 +146,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                         child: Text(
                           '$discountPercent% off',
                           style: const TextStyle(
-                            fontSize: 9.5,
+                            fontSize: 12,
                             height: 1.15,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF176441),
@@ -189,34 +171,9 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                         child: const Text(
                           'Rx required',
                           style: TextStyle(
-                            fontSize: 8.5,
+                            fontSize: 12,
                             color: AppColors.rxText,
                             fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (dosageForm != null)
-                    Positioned(
-                      bottom: 5,
-                      left: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          border: Border.all(color: const Color(0xFFCFE3D9)),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          dosageForm,
-                          style: const TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.3,
-                            color: Color(0xFF0B6645),
                           ),
                         ),
                       ),
@@ -243,8 +200,8 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 12,
-                            height: 1.22,
+                            fontSize: 14,
+                            height: 1.25,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
@@ -264,8 +221,9 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                                 setState(() => _selectedVariantId = picked.id);
                               }
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 1),
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              alignment: Alignment.centerLeft,
                               child: Row(
                                 children: [
                                   Expanded(
@@ -274,7 +232,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        fontSize: 10.5,
+                                        fontSize: 12,
                                         height: 1.2,
                                         fontWeight: FontWeight.w500,
                                         color: AppColors.textSecondary,
@@ -291,65 +249,48 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 10.5,
+                              fontSize: 12,
                               height: 1.2,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                             ),
                           ),
                         const SizedBox(height: 6),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                          spacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Flexible(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '₹${formatInr(displayPrice)}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      height: 1.1,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.25,
-                                      color: isCatalogue
-                                          ? const Color(0xFF0C831F)
-                                          : const Color(0xFF126B50),
-                                    ),
-                                  ),
-                                  if (hasDiscount)
-                                    Text(
-                                      '₹${formatInr(displayMrp)}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 9.5,
-                                        height: 1.1,
-                                        color: AppColors.mrp,
-                                        decoration: TextDecoration.lineThrough,
-                                      ),
-                                    ),
-                                ],
+                            Text(
+                              '₹${formatInr(displayPrice)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDeep,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            SizedBox(
-                              height: 30,
-                              width: quantity > 0 ? 74 : 62,
-                              child: _CompactAddButton(
-                                product: product,
-                                variant: v,
-                                quantity: quantity,
-                                outlined: isCatalogue,
-                                onVariantChanged: (picked) => setState(
-                                    () => _selectedVariantId = picked.id),
+                            if (hasDiscount)
+                              Text(
+                                '₹${formatInr(displayMrp)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.mrp,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
                               ),
-                            ),
                           ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 48,
+                          width: double.infinity,
+                          child: _CompactAddButton(
+                            product: product,
+                            variant: v,
+                            quantity: quantity,
+                            outlined: isCatalogue,
+                            onVariantChanged: (picked) =>
+                                setState(() => _selectedVariantId = picked.id),
+                          ),
                         ),
                       ],
                     ),
@@ -367,8 +308,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
 /// Reserve space for readable names, pack details and controls.
 double productCardExtent(BuildContext context) {
   final width = (MediaQuery.sizeOf(context).width - 44) / 2;
-  return width / 1.25 +
-      118 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 1.35);
+  return width / 1.25 + 128 + 70 * MediaQuery.textScalerOf(context).scale(1);
 }
 
 class _CompactAddButton extends ConsumerStatefulWidget {
@@ -387,8 +327,7 @@ class _CompactAddButton extends ConsumerStatefulWidget {
   final ValueChanged<ProductVariant>? onVariantChanged;
 
   @override
-  ConsumerState<_CompactAddButton> createState() =>
-      _CompactAddButtonState();
+  ConsumerState<_CompactAddButton> createState() => _CompactAddButtonState();
 }
 
 class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
@@ -416,21 +355,26 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
     setState(() => _busy = true);
     try {
       if (delta < 0) {
-        final nextQty =
-            widget.quantity <= minQty ? 0 : widget.quantity + delta;
+        final nextQty = widget.quantity <= minQty ? 0 : widget.quantity + delta;
         AppHaptics.step();
-        await ref.read(cartProvider.notifier).setQuantity(
+        await ref
+            .read(cartProvider.notifier)
+            .setQuantity(
               productId: widget.product.id,
               variantId: v?.id,
               quantity: nextQty,
             );
         if (mounted) {
-          showToast(nextQty == 0
-              ? '${widget.product.name} removed from cart'
-              : 'Cart updated');
+          showToast(
+            nextQty == 0
+                ? '${widget.product.name} removed from cart'
+                : 'Cart updated',
+          );
         }
       } else if (widget.quantity == 0) {
-        await ref.read(cartProvider.notifier).addItem(
+        await ref
+            .read(cartProvider.notifier)
+            .addItem(
               productId: widget.product.id,
               variantId: v?.id,
               quantity: minQty,
@@ -441,7 +385,9 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
         if (mounted) showToast('Added to cart');
       } else {
         AppHaptics.step();
-        await ref.read(cartProvider.notifier).setQuantity(
+        await ref
+            .read(cartProvider.notifier)
+            .setQuantity(
               productId: widget.product.id,
               variantId: v?.id,
               quantity: widget.quantity + delta,
@@ -484,7 +430,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                 child: Text(
                   'Bundle Only →',
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primaryDeep,
                   ),
@@ -507,7 +453,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           child: Text(
             'Out of stock',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: AppColors.textTertiary,
             ),
@@ -524,9 +470,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
       final Color bg = isMintStepper
           ? const Color(0xFFF0F7F3)
           : AppColors.catalogueGreen;
-      final Color fg = isMintStepper
-          ? const Color(0xFF126B50)
-          : Colors.white;
+      final Color fg = isMintStepper ? const Color(0xFF126B50) : Colors.white;
 
       buttonWidget = Container(
         key: const ValueKey('stepper'),
@@ -549,78 +493,48 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
+            SizedBox(
+              width: 48,
               child: Semantics(
                 button: true,
                 label: 'Decrease quantity of ${product.name}',
                 child: AppBounce(
                   pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(-1),
-                  child: Center(
-                    child: Icon(Icons.remove, size: 14, color: fg),
-                  ),
+                  child: Center(child: Icon(Icons.remove, size: 14, color: fg)),
                 ),
               ),
             ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: hasMultipleVariants
-                  ? () async {
-                      if (!mounted) return;
-                      final picked = await showVariantPickerBottomSheet(
-                        context: context,
-                        product: product,
-                        selectedVariant: v,
-                      );
-                      if (picked != null && mounted) {
-                        widget.onVariantChanged?.call(picked);
-                      }
-                    }
-                  : null,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
+            Expanded(
+              child: Center(
                 child: _busy
                     ? SizedBox(
-                        width: 12,
-                        height: 12,
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: fg,
                         ),
                       )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppTextSwitcher(
-                            text: '${widget.quantity}',
-                            style: TextStyle(
-                              color: fg,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (hasMultipleVariants) ...[
-                            const SizedBox(width: 1),
-                            Icon(
-                              Icons.arrow_drop_down,
-                              size: 13,
-                              color: fg,
-                            ),
-                          ],
-                        ],
+                    : Text(
+                        '${widget.quantity}',
+                        style: TextStyle(
+                          color: fg,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
               ),
             ),
-            Expanded(
+            SizedBox(
+              width: 48,
               child: Semantics(
                 button: true,
                 label: 'Increase quantity of ${product.name}',
                 child: AppBounce(
                   pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(1),
-                  child: Center(
-                    child: Icon(Icons.add, size: 14, color: fg),
-                  ),
+                  child: Center(child: Icon(Icons.add, size: 14, color: fg)),
                 ),
               ),
             ),
@@ -640,10 +554,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(
-                color: AppColors.catalogueGreen,
-                width: 1.2,
-              ),
+              border: Border.all(color: AppColors.catalogueGreen, width: 1.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
@@ -670,7 +581,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                         const Text(
                           'ADD',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: AppColors.catalogueGreen,
                             letterSpacing: 0.3,
@@ -726,17 +637,13 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (!hasMultipleVariants) ...[
-                          const Icon(
-                            Icons.add,
-                            size: 13,
-                            color: Colors.white,
-                          ),
+                          const Icon(Icons.add, size: 13, color: Colors.white),
                           const SizedBox(width: 2),
                         ],
                         const Text(
                           'ADD',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: 0.3,

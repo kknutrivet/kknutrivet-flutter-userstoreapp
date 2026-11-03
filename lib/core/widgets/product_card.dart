@@ -96,20 +96,24 @@ class _ProductCardState extends ConsumerState<ProductCard> {
               Stack(
                 children: [
                   SizedBox(
-                    height: 140,
+                    height: 128,
                     width: double.infinity,
                     child: widget.heroTag != null
                         ? Hero(
                             tag: widget.heroTag!,
                             child: ProductImageCover(
                               imageUrl: product.image,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
                               showPlaceholderOnLoading: false,
                             ),
                           )
                         : ProductImageCover(
                             imageUrl: product.image,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12),
+                            ),
                             showPlaceholderOnLoading: false,
                           ),
                   ),
@@ -130,7 +134,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                           '-$discountPercent%',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 9.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -155,7 +159,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                           'Rx',
                           style: TextStyle(
                             color: AppColors.rxText,
-                            fontSize: 9,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -184,8 +188,8 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                           },
                           child: Center(
                             child: Container(
-                              width: 32,
-                              height: 32,
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.92),
                                 shape: BoxShape.circle,
@@ -225,21 +229,21 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.primary,
-                          fontSize: 9.5,
+                          fontSize: 12,
                           letterSpacing: 0.5,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     const SizedBox(height: 3),
                     SizedBox(
-                      height: 36,
+                      height: MediaQuery.textScalerOf(context).scale(14) * 2.7,
                       child: Text(
                         product.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
+                          fontSize: 14,
                           height: 1.35,
                           color: AppColors.textPrimary,
                         ),
@@ -255,10 +259,9 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
                             Haptics.tap();
-                            
+
                             if (!mounted) return;
-                            final picked =
-                                await showVariantPickerBottomSheet(
+                            final picked = await showVariantPickerBottomSheet(
                               context: context,
                               product: product,
                               selectedVariant: v,
@@ -268,6 +271,8 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                             }
                           },
                           child: Container(
+                            constraints: const BoxConstraints(minHeight: 48),
+                            alignment: Alignment.centerLeft,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
@@ -285,7 +290,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: AppColors.primaryDeep,
-                                fontSize: 10.5,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -300,7 +305,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 10.5,
+                          fontSize: 12,
                         ),
                       ),
                     ] else if (product.size != null) ...[
@@ -311,7 +316,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 10.5,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -334,16 +339,8 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                             '₹${formatInr(displayMrp)}',
                             style: const TextStyle(
                               color: AppColors.mrp,
-                              fontSize: 10,
+                              fontSize: 12,
                               decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                          Text(
-                            '$discountPercent% OFF',
-                            style: const TextStyle(
-                              color: AppColors.accent,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -355,7 +352,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                         'Prescription required',
                         style: TextStyle(
                           color: AppColors.rxText,
-                          fontSize: 8.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -408,7 +405,6 @@ class _AddButtonState extends ConsumerState<_AddButton> {
 
   Future<void> _handleInitialAdd() async {
     if (widget.product.variants.length > 1) {
-      
       if (!mounted) return;
       final picked = await showVariantPickerBottomSheet(
         context: context,
@@ -430,21 +426,26 @@ class _AddButtonState extends ConsumerState<_AddButton> {
     setState(() => _busy = true);
     try {
       if (delta < 0) {
-        final nextQty =
-            widget.quantity <= minQty ? 0 : widget.quantity + delta;
+        final nextQty = widget.quantity <= minQty ? 0 : widget.quantity + delta;
         AppHaptics.step();
-        await ref.read(cartProvider.notifier).setQuantity(
+        await ref
+            .read(cartProvider.notifier)
+            .setQuantity(
               productId: widget.product.id,
               variantId: v?.id,
               quantity: nextQty,
             );
         if (mounted) {
-          showToast(nextQty == 0
-              ? '${widget.product.name} removed from cart'
-              : 'Cart updated');
+          showToast(
+            nextQty == 0
+                ? '${widget.product.name} removed from cart'
+                : 'Cart updated',
+          );
         }
       } else if (widget.quantity == 0) {
-        await ref.read(cartProvider.notifier).addItem(
+        await ref
+            .read(cartProvider.notifier)
+            .addItem(
               productId: widget.product.id,
               variantId: v?.id,
               quantity: minQty,
@@ -456,7 +457,9 @@ class _AddButtonState extends ConsumerState<_AddButton> {
         if (mounted) showToast('Added to cart');
       } else {
         AppHaptics.step();
-        await ref.read(cartProvider.notifier).setQuantity(
+        await ref
+            .read(cartProvider.notifier)
+            .setQuantity(
               productId: widget.product.id,
               variantId: v?.id,
               quantity: widget.quantity + delta,
@@ -492,7 +495,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
             },
             child: Container(
               width: double.infinity,
-              height: 38,
+              height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.primaryWashDeep),
@@ -502,7 +505,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                   'Bundle Only →',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: AppColors.primaryDeep,
                   ),
                 ),
@@ -516,7 +519,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
     if (!inStock) {
       return Container(
         width: double.infinity,
-        height: 38,
+        height: 48,
         decoration: BoxDecoration(
           color: AppColors.surfaceAlt,
           borderRadius: BorderRadius.circular(12),
@@ -527,7 +530,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
             'Out of stock',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: 11.5,
+              fontSize: 12,
               color: AppColors.textTertiary,
             ),
           ),
@@ -562,10 +565,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
               button: true,
               label: 'Decrease quantity of ${product.name}',
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: 48,
-                  minHeight: 48,
-                ),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 child: AppBounce(
                   pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(-1),
@@ -629,10 +629,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
               button: true,
               label: 'Increase quantity of ${product.name}',
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: 48,
-                  minHeight: 48,
-                ),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 child: AppBounce(
                   pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(1),
@@ -656,15 +653,12 @@ class _AddButtonState extends ConsumerState<_AddButton> {
           pressedScale: 0.95,
           onTap: _busy ? null : _handleInitialAdd,
           child: Container(
-            height: 38,
+            height: 48,
             width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.stepperBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.stepperBorder,
-                width: 1.2,
-              ),
+              border: Border.all(color: AppColors.stepperBorder, width: 1.2),
             ),
             child: Center(
               child: _busy
@@ -692,7 +686,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                           style: TextStyle(
                             color: AppColors.primaryDeep,
                             fontWeight: FontWeight.w800,
-                            fontSize: 12.5,
+                            fontSize: 14,
                             letterSpacing: 0.3,
                           ),
                         ),

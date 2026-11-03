@@ -1046,7 +1046,7 @@ class _NeedHelpCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: AppButton(
-                    label: 'Ask Dr. Paw',
+                    label: 'Dr. Paw (AI)',
                     icon: const Icon(Icons.auto_awesome_rounded, size: 14),
                     variant: AppButtonVariant.outline,
                     size: AppButtonSize.sm,

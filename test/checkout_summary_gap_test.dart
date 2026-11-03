@@ -35,47 +35,54 @@ void main() {
   );
 
   group('CheckoutScreen Gap Tests', () {
-    testWidgets('gap between Order total and Pay button is compact (< 35px)',
-        (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 844));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'checkout explains missing address above the disabled payment action',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            cartProvider.overrideWith(() => MockCartNotifier([sampleCartItem])),
-            cartTotalProvider.overrideWithValue(219.0),
-            cartCountProvider.overrideWithValue(1),
-            addressesProvider.overrideWith((ref) => Future.value([])),
-            homeCombosProvider.overrideWith((ref) => Future.value([])),
-          ],
-          child: const MaterialApp(
-            home: CheckoutScreen(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              cartProvider.overrideWith(
+                () => MockCartNotifier([sampleCartItem]),
+              ),
+              cartTotalProvider.overrideWithValue(219.0),
+              cartCountProvider.overrideWithValue(1),
+              addressesProvider.overrideWith((ref) => Future.value([])),
+              homeCombosProvider.overrideWith((ref) => Future.value([])),
+            ],
+            child: const MaterialApp(home: CheckoutScreen()),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Scroll to bottom of checkout list
-      final orderTotalFinder = find.text('Order total');
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, -1200));
-      await tester.pumpAndSettle();
+        // Scroll to bottom of checkout list
+        final orderTotalFinder = find.text('Order total');
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -1200),
+        );
+        await tester.pumpAndSettle();
 
-      expect(orderTotalFinder, findsOneWidget);
-      final payButtonFinder = find.byType(ElevatedButton);
-      expect(payButtonFinder, findsOneWidget);
+        expect(orderTotalFinder, findsOneWidget);
+        final payButtonFinder = find.byType(ElevatedButton);
+        expect(payButtonFinder, findsOneWidget);
 
-      final summaryCardFinder = find.byType(CheckoutSummaryCard);
-      expect(summaryCardFinder, findsOneWidget);
+        final summaryCardFinder = find.byType(CheckoutSummaryCard);
+        expect(summaryCardFinder, findsOneWidget);
 
-      final summaryBottom = tester.getBottomLeft(summaryCardFinder).dy;
-      final payButtonTop = tester.getTopLeft(payButtonFinder).dy;
-
-      final gap = payButtonTop - summaryBottom;
-      // Gap should be compact (< 35px) and not inflated to ~128px
-      expect(gap, lessThan(35.0));
-      expect(gap, greaterThan(0.0));
-    });
+        expect(
+          find.text('Add a delivery address to continue.'),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<ElevatedButton>(payButtonFinder).onPressed,
+          isNull,
+        );
+        expect(find.text('Review and continue'), findsOneWidget);
+      },
+    );
   });
 }

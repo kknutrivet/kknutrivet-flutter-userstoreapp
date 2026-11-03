@@ -1,0 +1,9 @@
+# Audit implementation status
+
+Homepage rails and order are preserved at the user's request.
+
+Implemented across this and the preceding pass: OTP normalization; current-request delivery verification; consistent approval checks; saved-order payment recovery; larger card typography and purchase controls; less badge clutter; PDP/cart ordering; disabled checkout reasons; distinct search/scan/history failures; release-only hiding of environment settings; accurate photo upload wording; care-channel labels; persisted reminder setting; stable Account navigation; platform Home back behavior; autofill; reduced-motion shared transitions and carousel/video autoplay; muted video default; removal of artificial splash delay with failure fallback; force-update refresh routing; published return text reused by Help; shared support destination; plain-language transactional load errors; calculator estimate wording.
+
+Still requires implementation or product validation: shorter onboarding; reversible cart removal; optional coupon/coin grouping; complete inline form-error migration; expanded address autofill and permission recovery; care-intake persistence and attachment retry; notification-channel permission status; captions/transcripts and data-saving settings; guest wishlist merging; analytics order-created versus paid events and deduplication; full 2× text-scale and screen-reader audit; device screenshots and live payment/backend verification. The existing prescription API exposes approval status but no product/patient applicability contract. Return-policy eligibility has not been changed; business confirmation is still needed. Navigation replacement and conversion-uplift hypotheses require user research.
+
+This file records partial implementation, not certification that every recommendation in the audit is complete.

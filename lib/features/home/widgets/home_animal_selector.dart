@@ -530,7 +530,7 @@ class HomeScrollProductSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 244,
+            height: 264 + 70 * MediaQuery.textScalerOf(context).scale(1),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),

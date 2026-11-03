@@ -40,6 +40,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  final _paymentSectionKey = GlobalKey();
   String? _selectedAddressId;
   bool _addressExpanded = false;
   bool _orderReviewExpanded = false;
@@ -48,6 +49,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _checkingDelivery = false;
   DeliveryInfo? _delivery;
   Timer? _deliveryDebounce;
+  int _deliveryRequest = 0;
+  String? _deliveryError;
 
   final _couponController = TextEditingController();
   bool _validatingCoupon = false;
@@ -84,6 +87,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cartAsync = ref.watch(cartProvider);
+    ref.watch(prescriptionsProvider);
+    ref.watch(paymentAvailabilityStatusProvider);
     final addressesAsync = ref.watch(addressesProvider);
     final settingsAsync = ref.watch(storeSettingsProvider);
     final combosAsync = ref.watch(homeCombosProvider);
@@ -151,12 +156,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             final merchandise = (subtotal - couponDiscount - pointsDiscount)
                 .clamp(0.0, double.infinity);
             final effectivePincode =
-                _selectedAddress?.zipCode ?? _delivery?.pincode ?? fallbackPincode;
+                _selectedAddress?.zipCode ??
+                _delivery?.pincode ??
+                fallbackPincode;
             final effectiveSource =
                 _delivery?.source ?? fallbackDeliveryInfo?.source;
             final activeSettings = settings ?? StoreSettings.defaults();
-            final freeDeliveryThreshold =
-                activeSettings.effectiveFreeDeliveryThreshold(
+            final freeDeliveryThreshold = activeSettings
+                .effectiveFreeDeliveryThreshold(
                   pincode: effectivePincode,
                   source: effectiveSource,
                 );
@@ -167,8 +174,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             );
             final isNotServiceable =
                 _delivery != null && !_delivery!.serviceable;
-            final total =
-                (merchandise + deliveryFee).clamp(0.0, double.infinity);
+            final total = (merchandise + deliveryFee).clamp(
+              0.0,
+              double.infinity,
+            );
             final codConfirmationEnabled =
                 activeSettings.codConfirmationEnabled;
 
@@ -202,9 +211,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     setState(() => _selectedAddressId = addr.id);
                     _scheduleDeliveryCheck(addr.zipCode);
                   },
-                  onToggleExpanded: () => setState(
-                    () => _addressExpanded = !_addressExpanded,
-                  ),
+                  onToggleExpanded: () =>
+                      setState(() => _addressExpanded = !_addressExpanded),
                   onDefaultAddressResolved: (defaultAddr) {
                     if (!mounted) return;
                     if (_selectedAddressId == null) {
@@ -245,6 +253,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const SizedBox(height: 8),
                 CheckoutPaymentSection(
+                  key: _paymentSectionKey,
                   paymentMethod: _paymentMethod,
                   delivery: _delivery,
                   codConfirmationEnabled: codConfirmationEnabled,
@@ -279,21 +288,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           },
           loading: () => const LoadingView(),
           error: (e, _) => ErrorView(
-            message: e.toString(),
+            message: 'Could not load this information. Check your connection and retry.',
             onRetry: () => ref.invalidate(cartProvider),
           ),
         ),
         bottomNavigationBar: cartAsync.maybeWhen(
           data: (items) {
             if (items.isEmpty) return null;
-            final settings = ref.watch(storeSettingsProvider).valueOrNull ??
+            final settings =
+                ref.watch(storeSettingsProvider).valueOrNull ??
                 StoreSettings.defaults();
             final couponDiscount = draft.couponDiscount;
             final pointsDiscount = draft.pointsToRedeem.toDouble();
             final merchandise = (subtotal - couponDiscount - pointsDiscount)
                 .clamp(0.0, double.infinity);
             final effectivePincode =
-                _selectedAddress?.zipCode ?? _delivery?.pincode ?? fallbackPincode;
+                _selectedAddress?.zipCode ??
+                _delivery?.pincode ??
+                fallbackPincode;
             final effectiveSource =
                 _delivery?.source ?? fallbackDeliveryInfo?.source;
             final deliveryFee = settings.calculateDeliveryFee(
@@ -306,14 +318,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
             return CheckoutStickyPlaceOrderBar(
               canPlace: _canPlace(),
+              disabledReason: _checkoutBlockReason,
+              onResolve: _checkingDelivery ? null : _resolveCheckoutBlock,
               submitting: _submitting,
               paymentMethod: _paymentMethod,
               total: total,
               advanceAmount: quote.advance,
-              onPlaceOrder: () => _confirmAndPlaceOrder(
-                cartCount: cartCount,
-                total: total,
-              ),
+              onPlaceOrder: () =>
+                  _confirmAndPlaceOrder(cartCount: cartCount, total: total),
             );
           },
           orElse: () => null,
@@ -325,43 +337,92 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Address? get _selectedAddress {
     final addresses = ref.read(addressesProvider).value;
     if (addresses == null || addresses.isEmpty) return null;
-    return addresses
-            .where((a) => a.id == _selectedAddressId)
-            .firstOrNull ??
+    return addresses.where((a) => a.id == _selectedAddressId).firstOrNull ??
         addresses.where((a) => a.isDefault).firstOrNull ??
         addresses.first;
+  }
+
+  String? get _checkoutBlockReason {
+    if (_submitting) return null;
+    if (_selectedAddress == null) return 'Add a delivery address to continue.';
+    if (_checkingDelivery) return 'Checking delivery for your address…';
+    if (_delivery == null || _delivery?.pincode != _selectedAddress?.zipCode) {
+      return _deliveryError ?? 'Verify delivery for this address to continue.';
+    }
+    if (!_delivery!.serviceable) {
+      return 'Delivery is unavailable here. Choose another address.';
+    }
+    if (_rxBlocked) {
+      return 'An approved prescription is needed. Upload one or check its review status.';
+    }
+    if (!_canPlace()) {
+      return 'This payment method is unavailable. Choose another method.';
+    }
+    return null;
+  }
+
+  void _resolveCheckoutBlock() {
+    if (_selectedAddress == null || _delivery?.serviceable == false) {
+      context.push<Address>('/addresses/new').then((address) {
+        if (!mounted) return;
+        ref.invalidate(addressesProvider);
+        if (address != null) {
+          setState(() => _selectedAddressId = address.id);
+          _scheduleDeliveryCheck(address.zipCode);
+        }
+      });
+    } else if (_delivery == null ||
+        _delivery?.pincode != _selectedAddress?.zipCode) {
+      _scheduleDeliveryCheck(_selectedAddress!.zipCode);
+    } else if (_rxBlocked) {
+      context.push('/prescriptions');
+    } else if (_paymentSectionKey.currentContext != null) {
+      Scrollable.ensureVisible(
+        _paymentSectionKey.currentContext!,
+        duration: const Duration(milliseconds: 250),
+      );
+    }
   }
 
   // ── Delivery check ───────────────────────────────────────────────────────
   void _scheduleDeliveryCheck(String zip) {
     _deliveryDebounce?.cancel();
+    final request = ++_deliveryRequest;
     ref.read(deliveryPincodeProvider.notifier).setPincode(zip);
     if (!RegExp(r'^\d{6}$').hasMatch(zip)) {
-      setState(() => _delivery = null);
+      setState(() {
+        _delivery = null;
+        _checkingDelivery = false;
+        _deliveryError = 'Enter a valid 6-digit delivery pincode.';
+      });
       return;
     }
     setState(() {
       _checkingDelivery = true;
+      _delivery = null;
+      _deliveryError = null;
       _phoneError = null;
     });
     _deliveryDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final info =
-            await ref.read(deliveryServiceProvider).checkPincode(zip);
-        if (!mounted) return;
+        final info = await ref.read(deliveryServiceProvider).checkPincode(zip);
+        if (!mounted || request != _deliveryRequest) return;
         final availability =
             ref.read(paymentAvailabilityStatusProvider).value ??
-                const PaymentAvailabilityStatus();
+            const PaymentAvailabilityStatus();
         final settings = ref.read(storeSettingsProvider).valueOrNull;
-        final codAllowed = availability.codEnabled &&
+        final codAllowed =
+            availability.codEnabled &&
             availability.userCodAllowed &&
             (settings?.codEnabled ?? true);
-        final onlineAllowed = availability.onlineEnabled &&
+        final onlineAllowed =
+            availability.onlineEnabled &&
             (settings?.onlinePaymentsEnabled ?? true);
         final partialCodConfigured =
             (settings?.partialCodEnabled ?? false) ||
-                availability.partialCodEnabled;
-        final partialCodAvailable = partialCodConfigured &&
+            availability.partialCodEnabled;
+        final partialCodAvailable =
+            partialCodConfigured &&
             onlineAllowed &&
             info.prepaid &&
             info.cod &&
@@ -383,8 +444,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 codAllowed &&
                 info.cod) {
               _paymentMethod = 'COD';
-            } else if (_paymentMethod == 'COD' &&
-                (!codAllowed || !info.cod)) {
+            } else if (_paymentMethod == 'COD' && (!codAllowed || !info.cod)) {
               _paymentMethod = partialCodAvailable
                   ? 'PARTIAL_COD'
                   : (onlineAllowed ? 'CASHFREE' : 'COD');
@@ -394,9 +454,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           }
         });
       } catch (_) {
-        if (mounted) setState(() => _delivery = null);
+        if (mounted && request == _deliveryRequest) {
+          setState(() {
+            _delivery = null;
+            _deliveryError = 'Could not check delivery. Please retry.';
+          });
+        }
       } finally {
-        if (mounted) setState(() => _checkingDelivery = false);
+        if (mounted && request == _deliveryRequest) {
+          setState(() => _checkingDelivery = false);
+        }
       }
     });
   }
@@ -415,14 +482,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .validateCoupon(code, subtotal);
       final discount = (result['discount'] as num?)?.toDouble() ?? 0;
       final coupon = result['coupon'];
-      final appliedCode =
-          coupon is Map ? coupon['code']?.toString() ?? code : code;
+      final appliedCode = coupon is Map
+          ? coupon['code']?.toString() ?? code
+          : code;
       if (!mounted) return;
-      ref.read(checkoutDraftProvider.notifier).state =
-          ref.read(checkoutDraftProvider).copyWith(
-                couponCode: appliedCode,
-                couponDiscount: discount,
-              );
+      ref.read(checkoutDraftProvider.notifier).state = ref
+          .read(checkoutDraftProvider)
+          .copyWith(couponCode: appliedCode, couponDiscount: discount);
       showToast('Coupon applied — you save ₹${formatInr(discount)}');
     } catch (e) {
       if (mounted) setState(() => _couponError = e.toString());
@@ -438,7 +504,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!hasRx) return false;
     final rx = ref.read(prescriptionsProvider).value;
     if (rx == null || rx.isEmpty) return true;
-    return rx.first.status.toUpperCase() != 'APPROVED';
+    return !rx.any((p) => p.isApproved);
   }
 
   bool _canPlace() {
@@ -446,26 +512,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (_selectedAddress == null) return false;
     if (_rxBlocked) return false;
     final info = _delivery;
-    if (info != null && !info.serviceable) return false;
-    final availability = ref.read(paymentAvailabilityStatusProvider).value ??
+    if (info == null ||
+        info.pincode != _selectedAddress?.zipCode ||
+        !info.serviceable) {
+      return false;
+    }
+    final availability =
+        ref.read(paymentAvailabilityStatusProvider).value ??
         const PaymentAvailabilityStatus();
     final settings =
         ref.read(storeSettingsProvider).valueOrNull ?? StoreSettings.defaults();
     final onlineEnabled =
         availability.onlineEnabled && settings.onlinePaymentsEnabled;
-    final codAllowed = availability.codEnabled &&
+    final codAllowed =
+        availability.codEnabled &&
         availability.userCodAllowed &&
         settings.codEnabled;
     final partialCodConfigured =
         settings.partialCodEnabled || availability.partialCodEnabled;
-    final partialCodAvailable = partialCodConfigured &&
+    final partialCodAvailable =
+        partialCodConfigured &&
         onlineEnabled &&
-        (info == null || (info.prepaid && info.cod)) &&
+        (info.prepaid && info.cod) &&
         availability.userCodAllowed;
 
-    if (_paymentMethod == 'CASHFREE' && !onlineEnabled) return false;
+    if (_paymentMethod == 'CASHFREE' && (!onlineEnabled || !info.prepaid)) {
+      return false;
+    }
     if (_paymentMethod == 'PARTIAL_COD' && !partialCodAvailable) return false;
-    if (_paymentMethod == 'COD' && (!codAllowed || (info != null && !info.cod))) {
+    if (_paymentMethod == 'COD' && (!codAllowed || !info.cod)) {
       return false;
     }
     return true;
@@ -512,6 +587,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _placeOrder() async {
+    if (!_canPlace()) return;
+    String? createdOrderId;
     final address = _selectedAddress;
     if (address == null) return;
     final digits = address.phone.replaceAll(RegExp(r'\D'), '');
@@ -541,21 +618,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       String? prescriptionId;
       try {
         final rx = await ref.read(prescriptionsProvider.future);
-        prescriptionId = rx
-            .where((p) => p.status.toUpperCase() == 'APPROVED')
-            .firstOrNull
-            ?.id;
+        prescriptionId = rx.where((p) => p.isApproved).firstOrNull?.id;
       } catch (_) {}
       final itemsPayload = cartItems
-          .map((item) => {
-                'productId': item.productId,
-                'variantId': ?item.variantId,
-                'quantity': item.quantity,
-                'comboId': ?item.comboId,
-                'comboPrice': ?item.comboPrice,
-              })
+          .map(
+            (item) => {
+              'productId': item.productId,
+              'variantId': ?item.variantId,
+              'quantity': item.quantity,
+              'comboId': ?item.comboId,
+              'comboPrice': ?item.comboPrice,
+            },
+          )
           .toList();
-      final order = await ref.read(orderServiceProvider).placeOrder(
+      final order = await ref
+          .read(orderServiceProvider)
+          .placeOrder(
             recipientName: address.fullName,
             shippingAddress:
                 '${address.formattedAddress}, ${address.city}, ${address.state} - ${address.zipCode}',
@@ -567,6 +645,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             paymentMethod: _paymentMethod,
             items: itemsPayload,
           );
+      createdOrderId = order.id;
       AnalyticsService.instance.logPurchase(
         orderId: order.id,
         value: order.totalAmount,
@@ -593,7 +672,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      if (e.code == 'NOT_DELIVERABLE') {
+      if (createdOrderId != null) {
+        _recoverCreatedOrder(createdOrderId);
+      } else if (e.code == 'NOT_DELIVERABLE') {
         showCheckoutWaitlistSheet(context, address.zipCode);
       } else if (e.code == 'INVALID_PHONE') {
         setState(() => _phoneError = e.message);
@@ -601,15 +682,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         showToast(e.message, isError: true);
       }
     } catch (e) {
-      if (mounted) showToast(e.toString(), isError: true);
+      if (mounted) {
+        if (createdOrderId != null) {
+          _recoverCreatedOrder(createdOrderId);
+        } else {
+          showToast(
+            'Could not place your order. Please try again.',
+            isError: true,
+          );
+        }
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
+  void _recoverCreatedOrder(String orderId) {
+    showToast(
+      'Your order is saved. Check payment status or retry from order details.',
+    );
+    context.go('/order/$orderId');
+  }
+
   Future<void> _payOnline(Order order) async {
-    final session =
-        await ref.read(orderServiceProvider).createCashfreeOrder(order.id);
+    final session = await ref
+        .read(orderServiceProvider)
+        .createCashfreeOrder(order.id);
     if (!mounted) return;
 
     final returnedFromPayment = await Navigator.of(context).push<bool>(
@@ -632,8 +730,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final merchantOrderId = (session['orderId'] as String?)?.isNotEmpty == true
         ? session['orderId'] as String
         : (order.cashfreeMerchantOrderId?.isNotEmpty == true
-            ? order.cashfreeMerchantOrderId!
-            : order.orderNumber);
+              ? order.cashfreeMerchantOrderId!
+              : order.orderNumber);
 
     bool isPaymentConfirmed(Map<String, dynamic> res) =>
         res['paid'] == true ||

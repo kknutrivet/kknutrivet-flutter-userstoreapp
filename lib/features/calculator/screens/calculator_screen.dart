@@ -141,7 +141,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       ),
                       SizedBox(height: 3),
                       Text(
-                        'Calculates precise daily calories (kcal) and feeding portions based on species, weight, condition and diet density.',
+                        'Estimates daily calories (kcal) and feeding portions based on species, weight, condition and diet density.',
                         style: TextStyle(
                           fontSize: 11.5,
                           color: Color(0xFF38594C),
@@ -434,7 +434,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   Row(
                     children: [
                       const AppBadge(
-                        label: 'DAILY NUTRITION TARGET',
+                        label: 'ESTIMATED DAILY NUTRITION',
                         icon: Icon(Icons.flash_on_rounded,
                             size: 11, color: AppColors.primaryDeep),
                         tone: AppBadgeTone.emerald,
@@ -556,7 +556,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: AppButton(
-                    label: 'Consult Vet',
+                    label: 'Care team chat',
                     icon: const Icon(Icons.chat_bubble_outline_rounded,
                         size: 15),
                     variant: AppButtonVariant.outline,

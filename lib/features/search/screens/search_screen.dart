@@ -39,14 +39,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _debounce;
   List<SearchSuggestion> _suggestions = [];
   bool _loading = false;
+  String? _searchError;
   bool _showSuggestions = false;
   List<String> _recent = [];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _focusNode.requestFocus());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _focusNode.requestFocus(),
+    );
     _loadRecent();
   }
 
@@ -57,6 +59,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   void _onChanged(String value) {
     _debounce?.cancel();
+    _searchError = null;
     final query = value.trim();
     if (query.length < 2) {
       setState(() {
@@ -72,14 +75,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _showSuggestions = true;
     });
     _debounce = Timer(const Duration(milliseconds: 300), () async {
-      final results = await ref
-          .read(catalogServiceProvider)
-          .fetchSuggestions(query);
-      if (!mounted || _controller.text.trim() != query) return;
-      setState(() {
-        _suggestions = results;
-        _loading = false;
-      });
+      try {
+        final results = await ref
+            .read(catalogServiceProvider)
+            .fetchSuggestions(query);
+        if (!mounted || _controller.text.trim() != query) return;
+        setState(() {
+          _suggestions = results;
+          _loading = false;
+        });
+      } catch (_) {
+        if (!mounted || _controller.text.trim() != query) return;
+        setState(() {
+          _searchError =
+              'Could not load suggestions. Check your connection and retry.';
+          _loading = false;
+        });
+      }
     });
   }
 
@@ -112,7 +124,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         title: Padding(
           padding: const EdgeInsets.only(right: 8),
           child: Container(
-            height: 44,
+            height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: AppColors.surfaceAlt,
@@ -143,8 +155,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     onChanged: _onChanged,
                     onSubmitted: _submit,
                     decoration: const InputDecoration(
-                      hintText:
-                          'Search by product, animal, brand, or category',
+                      hintText: 'Search products or brands',
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -156,36 +167,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                 ),
                 if (_controller.text.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
+                  IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
                       _controller.clear();
                       _onChanged('');
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    icon: const Icon(Icons.close_rounded),
                   ),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => _submit(_controller.text),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryDeep,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
+                IconButton(
+                  tooltip: 'Search',
+                  onPressed: () => _submit(_controller.text),
+                  icon: const Icon(Icons.arrow_forward_rounded),
                 ),
               ],
             ),
@@ -197,45 +190,72 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: _showSuggestions
             ? _suggestionsPanel()
             : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (_recent.isNotEmpty) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Recent searches',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (_recent.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Recent searches',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          await SearchHistoryStorage.instance.clear();
-                          _loadRecent();
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Text(
-                            'Clear',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.primary,
+                        GestureDetector(
+                          onTap: () async {
+                            await SearchHistoryStorage.instance.clear();
+                            _loadRecent();
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Text(
+                              'Clear',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _recent
+                          .map(
+                            (q) => ActionChip(
+                              avatar: const Icon(Icons.history, size: 15),
+                              label: Text(q),
+                              onPressed: () {
+                                _controller.text = q;
+                                _submit(q);
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  const Text(
+                    'Popular searches',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _recent
+                    children: _popularSearches
                         .map(
                           (q) => ActionChip(
-                            avatar: const Icon(Icons.history, size: 15),
+                            avatar: const Icon(
+                              Icons.trending_up,
+                              size: 15,
+                              color: AppColors.primary,
+                            ),
                             label: Text(q),
                             onPressed: () {
                               _controller.text = q;
@@ -245,38 +265,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         )
                         .toList(),
                   ),
-                  const SizedBox(height: 20),
                 ],
-                const Text(
-                  'Popular searches',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _popularSearches
-                      .map(
-                        (q) => ActionChip(
-                          avatar: const Icon(
-                            Icons.trending_up,
-                            size: 15,
-                            color: AppColors.primary,
-                          ),
-                          label: Text(q),
-                          onPressed: () {
-                            _controller.text = q;
-                            _submit(q);
-                          },
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ),
+              ),
       ),
     );
   }
@@ -300,7 +290,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: _loading
+          child: _searchError != null
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(_searchError!),
+                      TextButton(
+                        onPressed: () => _onChanged(_controller.text),
+                        child: const Text('Retry'),
+                      ),
+                      TextButton(
+                        onPressed: () => _submit(query),
+                        child: const Text('View all results'),
+                      ),
+                    ],
+                  ),
+                )
+              : _loading
               ? const Padding(
                   padding: EdgeInsets.all(16),
                   child: Row(

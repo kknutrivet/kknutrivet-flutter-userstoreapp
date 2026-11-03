@@ -48,7 +48,8 @@ final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
 });
 
 final appUpdateCheckProvider = FutureProvider<AppUpdateCheckResult>((ref) async {
-  final settings = ref.watch(storeSettingsProvider).valueOrNull ?? StoreSettings.defaults();
+  final settings = ref.watch(storeSettingsProvider).valueOrNull ??
+      await ref.watch(storeSettingsProvider.future).catchError((_) => StoreSettings.defaults());
   PackageInfo packageInfo;
   try {
     packageInfo = ref.watch(packageInfoProvider).valueOrNull ??

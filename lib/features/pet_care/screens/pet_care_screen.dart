@@ -192,7 +192,7 @@ class PetCareScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: AppButton(
-                        label: 'Ask Dr. Paw',
+                        label: 'Dr. Paw (AI)',
                         variant: AppButtonVariant.outline,
                         fullWidth: true,
                         onPressed: () => context.push('/vet'),

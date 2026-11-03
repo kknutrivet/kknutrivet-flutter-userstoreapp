@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
-import '../../../core/widgets/common.dart';
+import '../../../core/widgets/welcome_art.dart';
 import '../../../providers/app_providers.dart';
 
 class _OnboardingSlide {
@@ -72,12 +72,12 @@ const _slides = [
     description:
         'Simply snap a photo of your vet prescription. Our pharmacology team verifies every dosage, matches exact compositions, and prepares your cart.',
     highlights: [
-      'Photo or PDF upload support',
+      'Camera or gallery photo upload',
       'Dosage and generic composition check',
       'Dedicated pharmacist follow-up',
     ],
     accentColor: Color(0xFFC4933C),
-    badge1: (text: 'Photo or PDF', icon: Icons.camera_alt_rounded),
+    badge1: (text: 'Camera or gallery photo', icon: Icons.camera_alt_rounded),
     badge2: (text: 'Pharmacist Review', icon: Icons.fact_check_rounded),
   ),
   _OnboardingSlide(
@@ -140,551 +140,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isLast = _index == _slides.length - 1;
-    final currentSlide = _slides[_index];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F8F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Header: Brand Identity + Step Progress Bars + Skip Action
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Brand Identity Pill
-                      Flexible(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFE2EBE5),
-                                  width: 1,
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x0A000000),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Image.asset(
-                                  'assets/images/app_icon.png',
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, _, _) => const Icon(
-                                    Icons.pets_rounded,
-                                    size: 16,
-                                    color: AppColors.primaryDeep,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Flexible(
-                              child: Text(
-                                'KK NUTRIVET',
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Skip to Store Button
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: _finish,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFFE5EDE8),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Skip to Store',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 9,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Segmented Stories-style Progress Indicator
-                  Row(
-                    children: List.generate(_slides.length, (i) {
-                      final isPassed = i < _index;
-                      final isCurrent = i == _index;
-                      return Expanded(
-                        child: Container(
-                          height: 3.5,
-                          margin: EdgeInsets.only(
-                            right: i < _slides.length - 1 ? 6 : 0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isPassed
-                                ? AppColors.primaryDeep
-                                : isCurrent
-                                    ? currentSlide.accentColor
-                                    : const Color(0xFFE2E5E3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-
-            // Paged Tutorial Content with Carousel
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                itemCount: _slides.length,
-                onPageChanged: (i) {
-                  AppHaptics.selection();
-                  setState(() => _index = i);
-                },
-                itemBuilder: (context, i) {
-                  final slide = _slides[i];
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 4,
-                        ),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight - 8,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Hero Illustrated Stage Card
-                              _HeroIllustrationStage(slide: slide),
-                              const SizedBox(height: 18),
-
-                              // Category Chip Pill
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: slide.accentColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: slide.accentColor.withValues(alpha: 0.25),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  slide.subtitle,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.8,
-                                    color: slide.accentColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-
-                              // Main Slide Headline
-                              Text(
-                                slide.title,
-                                textAlign: TextAlign.center,
-                                style: AppTheme.serif(
-                                  fontSize: 23,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Informative Subtitle Copy
-                              Text(
-                                slide.description,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 13,
-                                  height: 1.45,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-
-                              // Feature Highlights Checklist
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: const Color(0xFFE9EFEA),
-                                    width: 1,
-                                  ),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x06000000),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: slide.highlights.map((highlight) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 3.5,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(2.5),
-                                            decoration: BoxDecoration(
-                                              color: slide.accentColor
-                                                  .withValues(alpha: 0.12),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Icon(
-                                              Icons.check_rounded,
-                                              size: 11,
-                                              color: slide.accentColor,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              highlight,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.textPrimary,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-
-            // Bottom Navigation & Action Bar
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9F8F5),
-                border: Border(
-                  top: BorderSide(
-                    color: Color(0xFFEAEFEB),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Indicators & Slide Counter
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Expanding Active Pill Indicator
-                      Row(
-                        children: List.generate(_slides.length, (i) {
-                          final active = i == _index;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 280),
-                            curve: Curves.easeOutCubic,
-                            margin: const EdgeInsets.only(right: 6),
-                            width: active ? 22 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? currentSlide.accentColor
-                                  : const Color(0xFFD6DBD8),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          );
-                        }),
-                      ),
-
-                      // Step Label
-                      Text(
-                        'Step ${_index + 1} of ${_slides.length}',
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Action Buttons Row: Back (if > 0) + Primary Next/Finish
-                  Row(
-                    children: [
-                      if (_index > 0) ...[
-                        Material(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: _previous,
-                            child: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFDCE4DF),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_rounded,
-                                size: 20,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                      Expanded(
-                        child: AppButton(
-                          label: isLast ? 'Explore KK Nutrivet' : 'Continue',
-                          trailingIcon: Icon(
-                            isLast
-                                ? Icons.storefront_rounded
-                                : Icons.arrow_forward_rounded,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                          variant: AppButtonVariant.primary,
-                          size: AppButtonSize.lg,
-                          fullWidth: true,
-                          borderRadius: 16,
-                          onPressed: isLast ? _finish : _next,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Artistic Visual Stage for each onboarding slide
-class _HeroIllustrationStage extends StatelessWidget {
-  const _HeroIllustrationStage({required this.slide});
-
-  final _OnboardingSlide slide;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 188,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFE2EBE5),
-          width: 1.2,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0E000000),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Background Tinted Aura
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      slide.accentColor.withValues(alpha: 0.08),
-                      slide.accentColor.withValues(alpha: 0.02),
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Image.asset(
-                    slide.imagePath,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: slide.accentColor.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        slide.fallbackIcon,
-                        size: 46,
-                        color: slide.accentColor,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Floating Badge 1 (Top Right)
-          Positioned(
-            top: 10,
-            right: 10,
-            child: _FloatingTag(
-              icon: slide.badge1.icon,
-              label: slide.badge1.text,
-              accentColor: slide.accentColor,
-            ),
-          ),
-
-          // Floating Badge 2 (Bottom Left)
-          Positioned(
-            bottom: 10,
-            left: 10,
-            child: _FloatingTag(
-              icon: slide.badge2.icon,
-              label: slide.badge2.text,
-              accentColor: slide.accentColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FloatingTag extends StatelessWidget {
-  const _FloatingTag({
-    required this.icon,
-    required this.label,
-    required this.accentColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFE2EBE5),
-          width: 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: accentColor),
-          const SizedBox(width: 4.5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.homeCanvas,
+      body: SafeArea(child: Center(child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Column(children: [
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Row(children: [
+            const Expanded(child: Text('KK Nutrivet', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
+            TextButton(onPressed: _finish, child: const Text('Skip')),
+          ])),
+          Expanded(child: PageView.builder(
+            controller: _controller,
+            onPageChanged: (value) => setState(() => _index = value),
+            itemCount: _slides.length,
+            itemBuilder: (context, index) {
+              final slide = _slides[index];
+              return SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 12, 24, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                WelcomeArt(icon: slide.fallbackIcon, label: 'EXPLORE · ${index + 1} OF ${_slides.length}'),
+                const SizedBox(height: 28),
+                Text(slide.title, style: AppTheme.serif(fontSize: 30)),
+                const SizedBox(height: 14),
+                Text(slide.description, style: const TextStyle(fontSize: 16, height: 1.6, color: AppColors.textSecondary)),
+                const SizedBox(height: 20),
+                for (final highlight in slide.highlights.take(2)) Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.check_circle_outline, size: 20, color: AppColors.primaryDeep), const SizedBox(width: 10), Expanded(child: Text(highlight, style: const TextStyle(fontSize: 14, height: 1.4)))])),
+              ]));
+            },
+          )),
+          Padding(padding: const EdgeInsets.all(24), child: Column(children: [
+            Text('Step ${_index + 1} of ${_slides.length}', style: const TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(value: (_index + 1) / _slides.length, minHeight: 3, borderRadius: BorderRadius.circular(4)),
+            const SizedBox(height: 20),
+            Row(children: [if (_index > 0) ...[IconButton(onPressed: _previous, tooltip: 'Back', icon: const Icon(Icons.arrow_back)), const SizedBox(width: 12)], Expanded(child: FilledButton(onPressed: isLast ? _finish : _next, child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(isLast ? 'Explore KK Nutrivet' : 'Continue'))))]),
+          ])),
+        ]),
+      ))),
     );
   }
 }

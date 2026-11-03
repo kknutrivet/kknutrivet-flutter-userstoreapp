@@ -13,6 +13,8 @@ class Prescription {
   final String? imageUrl;
   final List<String> imageUrls;
   final String status;
+
+  bool get isApproved => status.toUpperCase() == 'APPROVED';
   final String? notes;
   final String? vetName;
   final DateTime createdAt;

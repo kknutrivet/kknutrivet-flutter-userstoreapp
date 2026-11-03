@@ -89,8 +89,10 @@ class CartScreen extends ConsumerWidget {
             (i) => i.comboId == null && (i.product?.inStock == false),
           );
           final discount = draft.couponDiscount + draft.pointsToRedeem;
-          final merchandiseAfterDiscount =
-              (subtotal - discount).clamp(0.0, double.infinity);
+          final merchandiseAfterDiscount = (subtotal - discount).clamp(
+            0.0,
+            double.infinity,
+          );
           final freeDeliveryThreshold = settings.effectiveFreeDeliveryThreshold(
             pincode: pincode,
             source: deliveryInfo?.source,
@@ -104,8 +106,10 @@ class CartScreen extends ConsumerWidget {
             pincode: pincode,
             source: deliveryInfo?.source,
           );
-          final total = (merchandiseAfterDiscount + deliveryFee)
-              .clamp(0.0, double.infinity);
+          final total = (merchandiseAfterDiscount + deliveryFee).clamp(
+            0.0,
+            double.infinity,
+          );
           final earnedCoins = (subtotal * 0.05).round();
           final cartEntries = _buildCartEntries(items, combos);
 
@@ -179,35 +183,11 @@ class CartScreen extends ConsumerWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(10, 10, 10, 2),
-                      child: Column(
-                        children: cartEntries,
-                      ),
+                      child: Column(children: cartEntries),
                     ),
                   ],
                 ),
               ),
-              // Useful extras for your animal (Matching src/components/cart/CartImpulseAddons.tsx)
-              const SizedBox(height: 6),
-              CartImpulseAddonsSection(
-                amountForFreeDelivery:
-                    (freeDeliveryThreshold - merchandiseAfterDiscount)
-                        .clamp(0.0, double.infinity),
-                qualifiesForFreeDelivery: freeDeliveryThreshold > 0 &&
-                    merchandiseAfterDiscount >= freeDeliveryThreshold,
-              ),
-              const SizedBox(height: 4),
-              // Cross-Sell Combos Rail
-              if (combos.where((c) => c.isActive).isNotEmpty) ...[
-                const SizedBox(height: 2),
-                CrossSellCombosRail(
-                  combos: combos.where((c) => c.isActive).toList(),
-                  cartItems: items,
-                ),
-                const SizedBox(height: 10),
-              ],
-              // Prescription Assistance Banner
-              const PrescriptionAssistanceBanner(),
-              const SizedBox(height: 10),
               CartCouponRow(subtotal: subtotal),
               const SizedBox(height: 8),
               CartPointsRow(subtotal: subtotal),
@@ -228,13 +208,38 @@ class CartScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 _buildOutOfStockWarning(),
               ],
+              // Useful extras for your animal (Matching src/components/cart/CartImpulseAddons.tsx)
+              const SizedBox(height: 6),
+              CartImpulseAddonsSection(
+                amountForFreeDelivery:
+                    (freeDeliveryThreshold - merchandiseAfterDiscount).clamp(
+                      0.0,
+                      double.infinity,
+                    ),
+                qualifiesForFreeDelivery:
+                    freeDeliveryThreshold > 0 &&
+                    merchandiseAfterDiscount >= freeDeliveryThreshold,
+              ),
+              const SizedBox(height: 4),
+              // Cross-Sell Combos Rail
+              if (combos.where((c) => c.isActive).isNotEmpty) ...[
+                const SizedBox(height: 2),
+                CrossSellCombosRail(
+                  combos: combos.where((c) => c.isActive).toList(),
+                  cartItems: items,
+                ),
+                const SizedBox(height: 10),
+              ],
+              // Prescription Assistance Banner
+              const PrescriptionAssistanceBanner(),
+              const SizedBox(height: 10),
               const SizedBox(height: 16),
             ],
           );
         },
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(
-          message: e.toString(),
+          message: 'Could not load this information. Check your connection and retry.',
           onRetry: () => ref.invalidate(cartProvider),
         ),
       ),
@@ -250,14 +255,18 @@ class CartScreen extends ConsumerWidget {
             (i) => i.comboId == null && (i.product?.inStock == false),
           );
           final merchandiseAfterDiscount =
-              (subtotal - draft.couponDiscount - draft.pointsToRedeem)
-                  .clamp(0.0, double.infinity);
-          final freeDeliveryThreshold = settings?.effectiveFreeDeliveryThreshold(
+              (subtotal - draft.couponDiscount - draft.pointsToRedeem).clamp(
+                0.0,
+                double.infinity,
+              );
+          final freeDeliveryThreshold =
+              settings?.effectiveFreeDeliveryThreshold(
                 pincode: pincode,
                 source: deliveryInfo?.source,
               ) ??
               500.0;
-          final baseDeliveryCharge = settings?.effectiveDeliveryCharge(
+          final baseDeliveryCharge =
+              settings?.effectiveDeliveryCharge(
                 pincode: pincode,
                 source: deliveryInfo?.source,
               ) ??
@@ -269,10 +278,12 @@ class CartScreen extends ConsumerWidget {
                   source: deliveryInfo?.source,
                 )
               : (merchandiseAfterDiscount >= freeDeliveryThreshold
-                  ? 0.0
-                  : baseDeliveryCharge);
-          final total = (merchandiseAfterDiscount + deliveryFee)
-              .clamp(0.0, double.infinity);
+                    ? 0.0
+                    : baseDeliveryCharge);
+          final total = (merchandiseAfterDiscount + deliveryFee).clamp(
+            0.0,
+            double.infinity,
+          );
           return CartStickyCheckoutBar(
             total: total.toDouble(),
             blocked: blocked,
@@ -331,9 +342,7 @@ class CartScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: const BoxDecoration(
         color: AppColors.primaryWashFaint,
-        border: Border(
-          bottom: BorderSide(color: AppColors.primaryWashDeep),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.primaryWashDeep)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -366,10 +375,7 @@ class CartScreen extends ConsumerWidget {
           if (earnedCoins > 0) ...[
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 9,
-                vertical: 3.5,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
               decoration: BoxDecoration(
                 color: AppColors.coinsBg,
                 border: Border.all(color: AppColors.coinsBorder),
@@ -399,11 +405,7 @@ class CartScreen extends ConsumerWidget {
       ),
       child: const Text(
         'One or more items in your cart are out of stock. Remove them or wait to be notified before checking out.',
-        style: TextStyle(
-          fontSize: 12,
-          color: AppColors.error,
-          height: 1.4,
-        ),
+        style: TextStyle(fontSize: 12, color: AppColors.error, height: 1.4),
       ),
     );
   }

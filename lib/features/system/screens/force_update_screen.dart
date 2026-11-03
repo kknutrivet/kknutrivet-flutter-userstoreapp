@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/app_update_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/welcome_art.dart';
+import '../../help/screens/help_screen.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
 import '../../../providers/app_providers.dart';
@@ -30,7 +32,7 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
       if (!result.isBlocked) {
         showToast('App is up to date!');
       } else {
-        showToast('Update still required');
+        showToast(result.isMaintenance ? 'Maintenance is still in progress.' : 'Update still required');
       }
     } catch (_) {
       if (mounted) showToast('Could not reach servers. Check internet.');
@@ -42,7 +44,7 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
   Future<void> _openWhatsApp() async {
     AppHaptics.light();
     final uri = Uri.parse(
-      'https://wa.me/918892055655?text=${Uri.encodeComponent('Hi KK Nutrivet support, I need help with the app.')}',
+      'https://wa.me/${HelpScreen.helpPhone}?text=${Uri.encodeComponent('Hi KK Nutrivet support, I need help with the app.')}',
     );
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
@@ -54,7 +56,7 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.homeCanvas,
         body: SafeArea(
           child: updateAsync.when(
             data: (result) {
@@ -71,33 +73,8 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Hero Icon
-                        Container(
-                          width: 88,
-                          height: 88,
-                          decoration: BoxDecoration(
-                            color: isMaintenance
-                                ? const Color(0xFFFEF3C7)
-                                : AppColors.primaryWash,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isMaintenance
-                                  ? const Color(0xFFF59E0B)
-                                  : AppColors.primary,
-                              width: 2,
-                            ),
-                          ),
-                          child: Icon(
-                            isMaintenance
-                                ? Icons.construction_rounded
-                                : Icons.system_update_rounded,
-                            size: 44,
-                            color: isMaintenance
-                                ? const Color(0xFFD97706)
-                                : AppColors.primaryDeep,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                        WelcomeArt(icon: isMaintenance ? Icons.handyman_outlined : Icons.system_update_rounded, label: isMaintenance ? 'SERVICE UPDATE' : 'A FRESH START'),
+                        const SizedBox(height: 32),
 
                         // Title
                         Text(
@@ -106,7 +83,7 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
                               : config.forceUpdateTitle,
                           textAlign: TextAlign.center,
                           style: AppTheme.serif(
-                            fontSize: 22,
+                            fontSize: 30,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
@@ -120,8 +97,8 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
                               : config.forceUpdateMessage,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 14,
-                            height: 1.45,
+                            fontSize: 16,
+                            height: 1.6,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -216,7 +193,7 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
                               width: double.infinity,
                               height: 52,
                               child: ElevatedButton.icon(
-                                onPressed: _refreshStatus,
+                                onPressed: _checking ? null : _refreshStatus,
                                 icon: _checking
                                     ? const SizedBox(
                                         width: 18,
@@ -324,7 +301,7 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: _refreshStatus,
+                      onPressed: _checking ? null : _refreshStatus,
                       child: const Text('Try Again'),
                     ),
                   ],
@@ -364,7 +341,7 @@ class _VersionRow extends StatelessWidget {
             fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
-        Text(
+        Flexible(child: Text(
           value,
           style: TextStyle(
             fontSize: 12.5,
@@ -373,7 +350,7 @@ class _VersionRow extends StatelessWidget {
                 ? AppColors.primaryDeep
                 : AppColors.textPrimary,
           ),
-        ),
+        )),
       ],
     );
   }

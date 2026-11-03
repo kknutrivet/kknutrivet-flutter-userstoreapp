@@ -296,7 +296,7 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
                   color: AppColors.textPrimary,
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'English', child: Text('Eng')),
+                  DropdownMenuItem(value: 'English', child: Text('English')),
                   DropdownMenuItem(value: 'हिन्दी', child: Text('हिन्दी')),
                   DropdownMenuItem(value: 'বাংলা', child: Text('বাংলা')),
                   DropdownMenuItem(value: 'తెలుగు', child: Text('తెలుగు')),

@@ -244,7 +244,7 @@ void main() {
       expect(find.text('Orders List Page'), findsOneWidget);
     });
 
-    testWidgets('MainShell backpress on Home tab displays exit dialog and Stay on Home closes it', (tester) async {
+    testWidgets('MainShell permits platform back from Home without exit confirmation', (tester) async {
       final router = GoRouter(
         initialLocation: '/home',
         routes: [
@@ -293,16 +293,7 @@ void main() {
       popScope.onPopInvokedWithResult!(false, null);
       await tester.pumpAndSettle();
 
-      // Verify the exit dialog appears
-      expect(find.text('Exit KK Nutrivet?'), findsOneWidget);
-      expect(find.text('Stay on Home'), findsOneWidget);
-      expect(find.text('Exit App'), findsOneWidget);
-
-      // Tap "Stay on Home"
-      await tester.tap(find.text('Stay on Home'));
-      await tester.pumpAndSettle();
-
-      // Dialog is dismissed, still on Home
+      expect(popScope.canPop, isTrue);
       expect(find.text('Exit KK Nutrivet?'), findsNothing);
       expect(find.text('Home Content'), findsOneWidget);
     });

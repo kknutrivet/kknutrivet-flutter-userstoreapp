@@ -95,8 +95,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/splash') return null;
 
       final updateCheck = ref.read(appUpdateCheckProvider).valueOrNull;
+      final settings = ref.read(storeSettingsProvider).valueOrNull;
       final onUpdateScreen = state.matchedLocation == '/update';
-      if (updateCheck != null && updateCheck.isBlocked) {
+      final isMaintenance =
+          (updateCheck != null && updateCheck.isMaintenance) ||
+              (settings != null && settings.appUpdate.maintenanceMode);
+      final isUpdateRequired =
+          updateCheck != null && updateCheck.isUpdateRequired;
+
+      if (isMaintenance || isUpdateRequired) {
         if (!onUpdateScreen) return '/update';
         return null;
       } else if (onUpdateScreen) {
@@ -482,6 +489,8 @@ class GoRouterRefreshAuth extends ChangeNotifier {
       notifyListeners();
     });
     ref.listen(onboardingProvider, (_, _) => notifyListeners());
+    ref.listen(appUpdateCheckProvider, (_, _) => notifyListeners());
+    ref.listen(storeSettingsProvider, (_, _) => notifyListeners());
   }
   final Ref ref;
 }

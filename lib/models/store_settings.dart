@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class AppUpdateConfig {
   const AppUpdateConfig({
     this.forceUpdateEnabled = false,
@@ -205,11 +207,25 @@ class StoreSettings {
       appUpdate: json['appUpdate'] is Map
           ? AppUpdateConfig.fromJson(
               Map<String, dynamic>.from(json['appUpdate'] as Map))
-          : (json['businessRules'] is Map &&
-                  (json['businessRules'] as Map)['appUpdate'] is Map
-              ? AppUpdateConfig.fromJson(Map<String, dynamic>.from(
-                  (json['businessRules'] as Map)['appUpdate'] as Map))
-              : const AppUpdateConfig()),
+          : () {
+              final br = json['businessRules'];
+              Map<String, dynamic>? brMap;
+              if (br is Map) {
+                brMap = Map<String, dynamic>.from(br);
+              } else if (br is String) {
+                try {
+                  final decoded = jsonDecode(br);
+                  if (decoded is Map) {
+                    brMap = Map<String, dynamic>.from(decoded);
+                  }
+                } catch (_) {}
+              }
+              if (brMap != null && brMap['appUpdate'] is Map) {
+                return AppUpdateConfig.fromJson(
+                    Map<String, dynamic>.from(brMap['appUpdate'] as Map));
+              }
+              return const AppUpdateConfig();
+            }(),
     );
   }
 

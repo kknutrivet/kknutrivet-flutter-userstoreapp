@@ -150,7 +150,7 @@ class VetInsightsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(width: 8),
                         AppButton(
-                          label: 'Ask Dr. Paw',
+                          label: 'Dr. Paw (AI)',
                           icon: const Icon(Icons.auto_awesome, size: 14),
                           variant: AppButtonVariant.primary,
                           size: AppButtonSize.sm,

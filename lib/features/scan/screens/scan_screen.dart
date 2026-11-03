@@ -22,6 +22,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   final _searchController = TextEditingController();
   List<Product>? _results;
   bool _loading = false;
+  String? _error;
   bool _usedImage = false;
   String? _localImagePath;
 
@@ -37,18 +38,22 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     AppHaptics.selection();
     setState(() {
       _loading = true;
+      _error = null;
       _results = null;
       _usedImage = false;
     });
     try {
-      final results =
-          await ref.read(aiServiceProvider).findAlternativesByText(query);
+      final results = await ref
+          .read(aiServiceProvider)
+          .findAlternativesByText(query);
       if (!mounted) return;
       setState(() => _results = results);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _results = []);
-      showToast(e.toString(), isError: true);
+      setState(
+        () => _error =
+            'Could not load matches. Check your connection and try again.',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -65,6 +70,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     AppHaptics.light();
     setState(() {
       _loading = true;
+      _error = null;
       _results = null;
       _usedImage = true;
       _localImagePath = image.path;
@@ -73,14 +79,17 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       final url = await ref
           .read(uploadServiceProvider)
           .uploadImage(image.path, purpose: 'scan');
-      final results =
-          await ref.read(aiServiceProvider).findAlternativesByImage(url);
+      final results = await ref
+          .read(aiServiceProvider)
+          .findAlternativesByImage(url);
       if (!mounted) return;
       setState(() => _results = results);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _results = []);
-      showToast(e.toString(), isError: true);
+      setState(
+        () => _error =
+            'Could not load matches. Check your connection and try again.',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -103,62 +112,72 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         top: false,
         child: Column(
           children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _searchController,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _search(),
-                  decoration: InputDecoration(
-                    hintText: 'Search brand medicine or supplement...',
-                    prefixIcon: const Icon(Icons.search_rounded,
-                        color: AppColors.textTertiary),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward_rounded,
-                          color: AppColors.primaryDeep),
-                      onPressed: _search,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        label: 'Photo Match / Rx Scan',
-                        icon: const Icon(Icons.camera_alt_outlined, size: 16),
-                        variant: AppButtonVariant.outline,
-                        size: AppButtonSize.md,
-                        isLoading: _loading && _usedImage,
-                        onPressed: _loading ? null : _pickImage,
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _search(),
+                    decoration: InputDecoration(
+                      hintText: 'Search brand medicine or supplement...',
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.textTertiary,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: AppColors.primaryDeep,
+                        ),
+                        onPressed: _search,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Photograph the front label or composition clearly. We match certified generic alternatives and exact formulas.',
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'Choose product photo',
+                          icon: const Icon(Icons.camera_alt_outlined, size: 16),
+                          variant: AppButtonVariant.outline,
+                          size: AppButtonSize.md,
+                          isLoading: _loading && _usedImage,
+                          onPressed: _loading ? null : _pickImage,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Photograph the front label or composition clearly. We match certified generic alternatives and exact formulas.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 1, color: AppColors.borderWarmSoft),
-          Expanded(
-            child: _buildBody(),
-          ),
-        ],
+            const Divider(height: 1, color: AppColors.borderWarmSoft),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildBody() {
+    if (_error != null) {
+      return ErrorView(
+        message: _error!,
+        onRetry: _usedImage ? _pickImage : _search,
+      );
+    }
     if (_loading) {
       return const Center(child: AppLoader.large());
     }
@@ -236,8 +255,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         final p = _results![i];
         return ProductCard(
           product: p,
-          onTap: () => context.push(
-              '/product/${p.slug.isNotEmpty ? p.slug : p.id}'),
+          onTap: () =>
+              context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}'),
           onAdd: () => showToast('Added to cart'),
         );
       },

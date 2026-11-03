@@ -48,29 +48,32 @@ class PaymentAvailabilityStatus {
 
 final paymentAvailabilityStatusProvider =
     FutureProvider.autoDispose<PaymentAvailabilityStatus>((ref) async {
-  try {
-    final result = await ref.read(orderServiceProvider).cashfreeAvailability();
-    final Map<String, dynamic> data = (result['data'] is Map)
-        ? Map<String, dynamic>.from(result['data'] as Map)
-        : result;
-    return PaymentAvailabilityStatus(
-      onlineEnabled: (data['enabled'] as bool?) ?? true,
-      codEnabled: (data['codEnabled'] as bool?) ?? false,
-      userCodAllowed: (data['userCodAllowed'] as bool?) ?? true,
-      partialCodEnabled: (data['partialCodEnabled'] as bool?) ?? false,
-      codDisabledReason: data['codDisabledReason'] as String?,
-      userCodDisabledReason: data['userCodDisabledReason'] as String?,
-      isTrustedCustomer: (data['isTrustedCustomer'] as bool?) ?? false,
-      deliveredOrdersCount:
-          (data['deliveredOrdersCount'] as num?)?.toInt() ?? 0,
-    );
-  } catch (_) {
-    return const PaymentAvailabilityStatus();
-  }
-});
+      try {
+        final result = await ref
+            .read(orderServiceProvider)
+            .cashfreeAvailability();
+        final Map<String, dynamic> data = (result['data'] is Map)
+            ? Map<String, dynamic>.from(result['data'] as Map)
+            : result;
+        return PaymentAvailabilityStatus(
+          onlineEnabled: (data['enabled'] as bool?) ?? true,
+          codEnabled: (data['codEnabled'] as bool?) ?? false,
+          userCodAllowed: (data['userCodAllowed'] as bool?) ?? true,
+          partialCodEnabled: (data['partialCodEnabled'] as bool?) ?? false,
+          codDisabledReason: data['codDisabledReason'] as String?,
+          userCodDisabledReason: data['userCodDisabledReason'] as String?,
+          isTrustedCustomer: (data['isTrustedCustomer'] as bool?) ?? false,
+          deliveredOrdersCount:
+              (data['deliveredOrdersCount'] as num?)?.toInt() ?? 0,
+        );
+      } catch (_) {
+        return const PaymentAvailabilityStatus();
+      }
+    });
 
-final cashfreeAvailabilityProvider =
-    FutureProvider.autoDispose<bool>((ref) async {
+final cashfreeAvailabilityProvider = FutureProvider.autoDispose<bool>((
+  ref,
+) async {
   final status = await ref.watch(paymentAvailabilityStatusProvider.future);
   return status.onlineEnabled;
 });
@@ -83,12 +86,7 @@ class CheckoutStepHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CheckoutBreadcrumb(
-          currentStep: 1,
-          lastLabel: 'Confirmation',
-        ),
-      ],
+      children: [CheckoutBreadcrumb(currentStep: 1, lastLabel: 'Confirmation')],
     );
   }
 }
@@ -127,16 +125,16 @@ class CheckoutOrderReviewSection extends StatelessWidget {
     final totalMrp = bundleItems.fold<double>(
       0,
       (s, i) =>
-          s +
-          ((i.variant?.mrp ?? i.product?.mrp ?? i.unitPrice) * i.quantity),
+          s + ((i.variant?.mrp ?? i.product?.mrp ?? i.unitPrice) * i.quantity),
     );
     return ComboBundle(
       id: comboId,
       name: first.comboName ?? 'Care Combo Bundle',
       description: first.comboDescription,
       image: first.comboImage ?? first.product?.image,
-      originalPrice:
-          totalMrp > 0 ? totalMrp / bundleQty : totalLine / bundleQty,
+      originalPrice: totalMrp > 0
+          ? totalMrp / bundleQty
+          : totalLine / bundleQty,
       comboPrice: totalLine / bundleQty,
       items: bundleItems
           .map(
@@ -168,8 +166,10 @@ class CheckoutOrderReviewSection extends StatelessWidget {
               first.comboImage ?? resolved.image ?? first.product?.image;
           final name = first.comboName ?? resolved.name;
           final qty = (first.comboQuantity ?? first.quantity).clamp(1, 999);
-          final totalLine =
-              bundleRows.fold<double>(0, (sum, i) => sum + i.lineTotal);
+          final totalLine = bundleRows.fold<double>(
+            0,
+            (sum, i) => sum + i.lineTotal,
+          );
 
           groupedTiles.add(
             Padding(
@@ -422,7 +422,7 @@ class CheckoutRxHoldCard extends ConsumerWidget {
     final rxAsync = ref.watch(prescriptionsProvider);
     return rxAsync.maybeWhen(
       data: (list) {
-        final approved = list.any((p) => p.status.toUpperCase() == 'APPROVED');
+        final approved = list.any((p) => p.isApproved);
         if (approved) return const SizedBox.shrink();
         final pending = list.any((p) => p.status.toUpperCase() == 'PENDING');
         return Container(
@@ -512,9 +512,8 @@ class CheckoutCouponSection extends ConsumerWidget {
             IconButton(
               tooltip: 'Remove coupon',
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: () =>
-                  ref.read(checkoutDraftProvider.notifier).state =
-                      draft.copyWith(clearCoupon: true, couponDiscount: 0),
+              onPressed: () => ref.read(checkoutDraftProvider.notifier).state =
+                  draft.copyWith(clearCoupon: true, couponDiscount: 0),
               icon: const Icon(
                 Icons.close_rounded,
                 size: 18,
@@ -684,11 +683,12 @@ class CheckoutPointsEditor extends ConsumerWidget {
                           ),
                           onPressed: draft.pointsToRedeem <= 0
                               ? null
-                              : () => ref
-                                  .read(checkoutDraftProvider.notifier)
-                                  .state = draft.copyWith(
-                                    pointsToRedeem: draft.pointsToRedeem - 1,
-                                  ),
+                              : () =>
+                                    ref
+                                        .read(checkoutDraftProvider.notifier)
+                                        .state = draft.copyWith(
+                                      pointsToRedeem: draft.pointsToRedeem - 1,
+                                    ),
                         ),
                         Text(
                           '${draft.pointsToRedeem}',
@@ -705,11 +705,12 @@ class CheckoutPointsEditor extends ConsumerWidget {
                           ),
                           onPressed: draft.pointsToRedeem >= max
                               ? null
-                              : () => ref
-                                  .read(checkoutDraftProvider.notifier)
-                                  .state = draft.copyWith(
-                                    pointsToRedeem: draft.pointsToRedeem + 1,
-                                  ),
+                              : () =>
+                                    ref
+                                        .read(checkoutDraftProvider.notifier)
+                                        .state = draft.copyWith(
+                                      pointsToRedeem: draft.pointsToRedeem + 1,
+                                    ),
                         ),
                       ],
                     ),
@@ -748,20 +749,23 @@ class CheckoutPaymentSection extends ConsumerWidget {
     final availability =
         availabilityAsync.value ?? const PaymentAvailabilityStatus();
     final settings =
-        ref.watch(storeSettingsProvider).valueOrNull ?? StoreSettings.defaults();
+        ref.watch(storeSettingsProvider).valueOrNull ??
+        StoreSettings.defaults();
 
     final onlineEnabled =
         availability.onlineEnabled && settings.onlinePaymentsEnabled;
     final pincodeCod = delivery == null || delivery!.cod;
     final pincodePrepaid = delivery == null || delivery!.prepaid;
-    final backendCodAllowed = availability.codEnabled &&
+    final backendCodAllowed =
+        availability.codEnabled &&
         availability.userCodAllowed &&
         settings.codEnabled;
     final codAvailable = backendCodAllowed && pincodeCod;
 
     final partialCodConfigured =
         settings.partialCodEnabled || availability.partialCodEnabled;
-    final partialCodAvailable = partialCodConfigured &&
+    final partialCodAvailable =
+        partialCodConfigured &&
         onlineEnabled &&
         pincodePrepaid &&
         pincodeCod &&
@@ -838,11 +842,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.sms_outlined,
-                  size: 18,
-                  color: AppColors.warning,
-                ),
+                Icon(Icons.sms_outlined, size: 18, color: AppColors.warning),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -1041,8 +1041,8 @@ Future<bool?> showCheckoutConfirmOrderDialog({
         isPartialCod
             ? 'Pay advance and the balance on delivery?'
             : isCod
-                ? 'Place Cash on Delivery order?'
-                : 'Proceed to online payment?',
+            ? 'Place Cash on Delivery order?'
+            : 'Proceed to online payment?',
         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
       ),
       content: Column(
@@ -1053,8 +1053,8 @@ Future<bool?> showCheckoutConfirmOrderDialog({
             isPartialCod
                 ? 'Pay ₹${formatInr(partialAdvance)} now and ₹${formatInr(partialBalance)} on delivery. No COD fee.'
                 : isCod
-                    ? 'Pay ₹${formatInr(total)} when your order arrives — nothing is charged now.'
-                    : "You'll continue to the secure Cashfree payment page.",
+                ? 'Pay ₹${formatInr(total)} when your order arrives — nothing is charged now.'
+                : "You'll continue to the secure Cashfree payment page.",
             style: const TextStyle(
               fontSize: 12.5,
               color: AppColors.textSecondary,
@@ -1128,10 +1128,7 @@ Future<bool?> showCheckoutConfirmOrderDialog({
                   ),
                   child: const Text(
                     'Change address',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -1146,9 +1143,7 @@ Future<bool?> showCheckoutConfirmOrderDialog({
         ),
         FilledButton(
           onPressed: () => Navigator.of(ctx).pop(true),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primaryDeep,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primaryDeep),
           child: const Text('Confirm & Place Order'),
         ),
       ],
@@ -1182,10 +1177,12 @@ class CheckoutSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fee = deliveryFee ?? 0.0;
-    final merchandise =
-        (subtotal - couponDiscount - points).clamp(0.0, double.infinity);
-    final remainingForFreeDelivery =
-        (freeDeliveryThreshold - merchandise).clamp(0.0, double.infinity);
+    final merchandise = (subtotal - couponDiscount - points).clamp(
+      0.0,
+      double.infinity,
+    );
+    final remainingForFreeDelivery = (freeDeliveryThreshold - merchandise)
+        .clamp(0.0, double.infinity);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1220,17 +1217,15 @@ class CheckoutSummaryCard extends StatelessWidget {
             isNotServiceable
                 ? 'Unavailable for this PIN'
                 : fee <= 0
-                    ? 'FREE'
-                    : '₹${formatInr(fee)}',
+                ? 'FREE'
+                : '₹${formatInr(fee)}',
             isNotServiceable
                 ? AppColors.textSecondary
                 : fee <= 0
-                    ? AppColors.success
-                    : null,
+                ? AppColors.success
+                : null,
           ),
-          if (!isNotServiceable &&
-              fee > 0 &&
-              remainingForFreeDelivery > 0) ...[
+          if (!isNotServiceable && fee > 0 && remainingForFreeDelivery > 0) ...[
             const SizedBox(height: 3),
             Text(
               'Add ₹${formatInr(remainingForFreeDelivery)} more for FREE delivery',
@@ -1387,6 +1382,8 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
   const CheckoutStickyPlaceOrderBar({
     super.key,
     required this.canPlace,
+    this.disabledReason,
+    this.onResolve,
     required this.submitting,
     required this.paymentMethod,
     required this.total,
@@ -1395,6 +1392,8 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
   });
 
   final bool canPlace;
+  final String? disabledReason;
+  final VoidCallback? onResolve;
   final bool submitting;
   final String paymentMethod;
   final double total;
@@ -1406,9 +1405,7 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE2ECE6), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE2ECE6), width: 1)),
         boxShadow: [
           BoxShadow(
             color: Color(0x0C173C32),
@@ -1421,39 +1418,56 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: canPlace ? onPlaceOrder : null,
-              style: ElevatedButton.styleFrom(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (disabledReason != null) ...[
+                Semantics(
+                  liveRegion: true,
+                  child: Text(disabledReason!, textAlign: TextAlign.center),
                 ),
-              ),
-              child: submitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      paymentMethod == 'COD'
-                          ? 'Place Order · ₹${formatInr(total)}'
-                          : paymentMethod == 'PARTIAL_COD'
+                if (onResolve != null)
+                  TextButton(
+                    onPressed: onResolve,
+                    child: const Text('Review and continue'),
+                  ),
+                const SizedBox(height: 8),
+              ],
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: canPlace ? onPlaceOrder : null,
+                  style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          paymentMethod == 'COD'
+                              ? 'Place Order · ₹${formatInr(total)}'
+                              : paymentMethod == 'PARTIAL_COD'
                               ? 'Pay ₹${formatInr(advanceAmount > 0 ? advanceAmount : total)} advance →'
                               : 'Pay ₹${formatInr(total)}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-            ),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

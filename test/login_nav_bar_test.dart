@@ -79,10 +79,10 @@ void main() {
 
     // Verify on home screen with bottom nav
     expect(find.byType(MainShell), findsOneWidget);
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
 
     // Tap 'Sign in' / Account icon in MainShell's bottom nav
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.text('Account'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -132,7 +132,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // Open LoginScreen
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.text('Account'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(LoginScreen), findsOneWidget);

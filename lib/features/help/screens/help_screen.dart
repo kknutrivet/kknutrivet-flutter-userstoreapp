@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
+import 'static_page_screen.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
 
@@ -156,7 +157,7 @@ class HelpScreen extends ConsumerWidget {
           ),
           _faqCard(
             'Can I return a medicine or supplement?',
-            'Unopened, sealed products with intact batch labels can be returned within 48 hours of delivery. Cold-chain items and opened containers cannot be returned for safety reasons.',
+            StaticPageScreen.returns.first.body,
           ),
           _faqCard(
             'How does the Prescription Concierge work?',

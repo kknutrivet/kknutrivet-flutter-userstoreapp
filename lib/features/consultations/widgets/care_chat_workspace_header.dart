@@ -34,7 +34,7 @@ class CareChatWorkspaceAppBar extends StatelessWidget
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Vet Care Chat',
+            'Care team chat',
             style: AppTheme.serif(
               fontSize: 18,
               fontWeight: FontWeight.w700,

@@ -376,6 +376,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       TextFormField(
                         controller: _phone,
                         keyboardType: TextInputType.phone,
+                    autofillHints: const [AutofillHints.telephoneNumberNational],
                         maxLength: 10,
                         decoration: const InputDecoration(
                           labelText: 'Mobile Number (10 digits) *',

@@ -31,7 +31,7 @@ void main() {
       expect(find.text('Shop'), findsOneWidget);
       expect(find.text('Consult'), findsOneWidget);
       expect(find.text('Shots'), findsOneWidget);
-      expect(find.text('Sign in'), findsOneWidget);
+      expect(find.text('Account'), findsOneWidget);
 
       // Verify Consult icon exists
       expect(find.byIcon(Icons.medical_services_rounded), findsOneWidget);

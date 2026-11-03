@@ -83,7 +83,7 @@ class OrderDetailScreen extends ConsumerWidget {
             ),
             loading: () => const LoadingView(),
             error: (e, _) => ErrorView(
-              message: e.toString(),
+              message: 'Could not load this information. Check your connection and retry.',
               onRetry: () => ref.invalidate(orderDetailProvider(id)),
             ),
           ),

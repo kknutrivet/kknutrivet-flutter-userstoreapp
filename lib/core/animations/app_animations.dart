@@ -128,10 +128,9 @@ class _AppBounceState extends State<AppBounce>
       onTapCancel: _onTapCancel,
       onTap: _onTap,
       onLongPress: widget.onLongPress != null ? _onLongPress : null,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: widget.child,
-      ),
+      child: MediaQuery.disableAnimationsOf(context)
+          ? widget.child
+          : ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }
@@ -200,6 +199,7 @@ class _AppFadeSlideState extends State<AppFadeSlide>
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {

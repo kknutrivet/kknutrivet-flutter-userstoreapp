@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nvit_app/core/router/app_router.dart';
 import 'package:nvit_app/core/services/app_update_service.dart';
 import 'package:nvit_app/features/consultations/widgets/care_chat_thread_widgets.dart';
 import 'package:nvit_app/features/system/screens/force_update_screen.dart';
 import 'package:nvit_app/models/store_settings.dart';
+import 'package:nvit_app/models/user.dart';
+import 'package:nvit_app/providers/app_providers.dart';
 
 void main() {
   group('AppUpdateConfig version & build comparisons', () {
@@ -100,6 +103,40 @@ void main() {
       expect(find.text('Undergoing server maintenance. Back in 30 minutes.'), findsOneWidget);
       expect(find.text('Retry Connection'), findsOneWidget);
     });
+
+    testWidgets('appRouter redirects to /update when StoreSettings maintenanceMode is active', (tester) async {
+      final maintenanceSettings = StoreSettings.defaults();
+      final settingsWithMaintenance = StoreSettings(
+        freeDeliveryThreshold: maintenanceSettings.freeDeliveryThreshold,
+        deliveryCharge: maintenanceSettings.deliveryCharge,
+        appUpdate: const AppUpdateConfig(
+          maintenanceMode: true,
+          maintenanceMessage: 'Emergency server maintenance in progress.',
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            storeSettingsProvider.overrideWith((ref) async => settingsWithMaintenance),
+            onboardingProvider.overrideWith(() => _MockOnboardingDone()),
+            authProvider.overrideWith(() => _MockAuthNull()),
+          ],
+          child: Consumer(
+            builder: (context, ref, child) {
+              final router = ref.watch(routerProvider);
+              return MaterialApp.router(routerConfig: router);
+            },
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 750));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Scheduled Maintenance'), findsOneWidget);
+      expect(find.text('Emergency server maintenance in progress.'), findsOneWidget);
+    });
   });
 
   group('CareChat Media Picker Sheet test', () {
@@ -127,4 +164,14 @@ void main() {
       expect(find.text('Video Gallery'), findsOneWidget);
     });
   });
+}
+
+class _MockOnboardingDone extends OnboardingNotifier {
+  @override
+  Future<bool> build() async => true;
+}
+
+class _MockAuthNull extends AuthNotifier {
+  @override
+  Future<AppUser?> build() async => null;
 }

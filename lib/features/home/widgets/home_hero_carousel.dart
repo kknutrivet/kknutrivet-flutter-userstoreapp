@@ -157,6 +157,7 @@ class _HomeHeroCarouselState extends ConsumerState<HomeHeroCarousel> {
     _timer?.cancel();
     _timer = Timer.periodic(_kAutoAdvanceInterval, (_) {
       if (!mounted || _isUserInteracting || !_controller.hasClients) return;
+      if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) return;
       _controller.nextPage(
         duration: _kPageTransitionDuration,
         curve: Curves.easeOutCubic,

@@ -111,7 +111,7 @@ void main() {
       expect(find.text('Shop'), findsOneWidget);
       expect(find.text('Consult'), findsOneWidget);
       expect(find.text('Shots'), findsOneWidget);
-      expect(find.text('Sign in'), findsOneWidget);
+      expect(find.text('Account'), findsOneWidget);
 
       // Verify Consult icon exists
       expect(find.byIcon(Icons.medical_services_rounded), findsOneWidget);
@@ -135,8 +135,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Ramesh'), findsOneWidget);
-      expect(find.text('Sign in'), findsNothing);
+      expect(find.text('Account'), findsOneWidget);
+      expect(find.text('Ramesh'), findsNothing);
     });
 
     testWidgets('DrPawFloatingButton transitions visibility smoothly', (tester) async {

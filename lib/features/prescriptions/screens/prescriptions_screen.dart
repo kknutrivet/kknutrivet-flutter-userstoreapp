@@ -13,8 +13,9 @@ import '../../../core/widgets/common.dart';
 import '../../../models/prescription.dart';
 import '../../../providers/app_providers.dart';
 
-final prescriptionsProvider =
-    FutureProvider.autoDispose<List<Prescription>>((ref) {
+final prescriptionsProvider = FutureProvider.autoDispose<List<Prescription>>((
+  ref,
+) {
   return ref.read(prescriptionServiceProvider).fetchPrescriptions();
 });
 
@@ -68,8 +69,10 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined,
-                color: AppColors.textPrimary),
+            icon: const Icon(
+              Icons.shopping_cart_outlined,
+              color: AppColors.textPrimary,
+            ),
             onPressed: () => context.push('/cart'),
           ),
           const SizedBox(width: 4),
@@ -112,6 +115,33 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
                   uploading: _uploading,
                 ),
               ),
+              if (ref.watch(authProvider).value != null &&
+                  prescriptionsAsync.isLoading)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: LoadingView(),
+                  ),
+                ),
+              if (ref.watch(authProvider).value != null &&
+                  prescriptionsAsync.hasError)
+                SliverToBoxAdapter(
+                  child: ErrorView(
+                    message:
+                        'Could not load your prescriptions. Your submissions are saved.',
+                    onRetry: () => ref.invalidate(prescriptionsProvider),
+                  ),
+                ),
+              if (ref.watch(authProvider).value != null &&
+                  !prescriptionsAsync.isLoading &&
+                  !prescriptionsAsync.hasError &&
+                  prescriptions.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('No prescriptions submitted yet.'),
+                  ),
+                ),
               if (prescriptions.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
@@ -199,7 +229,9 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
         if (notes.isNotEmpty) notes,
       ].join(' · ');
 
-      await ref.read(prescriptionServiceProvider).uploadPrescription(
+      await ref
+          .read(prescriptionServiceProvider)
+          .uploadPrescription(
             imageUrls: urls,
             notes: combinedNotes.isNotEmpty ? combinedNotes : null,
           );
@@ -517,26 +549,22 @@ class _PrescriptionCard extends StatelessWidget {
     final images = prescription.imageUrls.isNotEmpty
         ? prescription.imageUrls
         : (prescription.imageUrl != null
-            ? [prescription.imageUrl!]
-            : <String>[]);
+              ? [prescription.imageUrl!]
+              : <String>[]);
 
     final status = prescription.status.toUpperCase();
     final (statusLabel, statusTone, statusIcon) = switch (status) {
       'APPROVED' => (
-          'Verified & Approved',
-          AppBadgeTone.emerald,
-          Icons.check_circle_rounded,
-        ),
+        'Verified & Approved',
+        AppBadgeTone.emerald,
+        Icons.check_circle_rounded,
+      ),
       'REJECTED' => (
-          'Needs Attention',
-          AppBadgeTone.coral,
-          Icons.error_outline_rounded,
-        ),
-      _ => (
-          'Review in Progress',
-          AppBadgeTone.amber,
-          Icons.schedule_rounded,
-        ),
+        'Needs Attention',
+        AppBadgeTone.coral,
+        Icons.error_outline_rounded,
+      ),
+      _ => ('Review in Progress', AppBadgeTone.amber, Icons.schedule_rounded),
     };
 
     return AppCard(
@@ -594,8 +622,7 @@ class _PrescriptionCard extends StatelessWidget {
               ),
             ],
           ),
-          if (prescription.notes != null &&
-              prescription.notes!.isNotEmpty) ...[
+          if (prescription.notes != null && prescription.notes!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(10),
@@ -606,8 +633,11 @@ class _PrescriptionCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.notes_rounded,
-                      size: 15, color: AppColors.primaryDeep),
+                  const Icon(
+                    Icons.notes_rounded,
+                    size: 15,
+                    color: AppColors.primaryDeep,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -647,8 +677,11 @@ class _PrescriptionCard extends StatelessWidget {
                         width: 80,
                         height: 80,
                         color: AppColors.primaryWash,
-                        child: const Icon(Icons.broken_image,
-                            size: 20, color: AppColors.textTertiary),
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
                     ),
                   ),
@@ -669,7 +702,8 @@ class _PrescriptionUploadSheet extends StatefulWidget {
     String petType,
     String petName,
     String notes,
-  ) onSubmit;
+  )
+  onSubmit;
 
   @override
   State<_PrescriptionUploadSheet> createState() =>
@@ -688,7 +722,7 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
     'Cattle',
     'Goat',
     'Poultry',
-    'Other'
+    'Other',
   ];
 
   @override
@@ -703,13 +737,18 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
     final picker = ImagePicker();
     if (source == ImageSource.camera) {
       final shot = await picker.pickImage(
-          source: ImageSource.camera, imageQuality: 85, maxWidth: 1600);
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
       if (shot != null) {
         setState(() => _selectedFiles.add(shot));
       }
     } else {
-      final images =
-          await picker.pickMultiImage(imageQuality: 85, maxWidth: 1600);
+      final images = await picker.pickMultiImage(
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
       if (images.isNotEmpty) {
         setState(() {
           for (final img in images) {
@@ -722,7 +761,8 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom +
+    final bottomInset =
+        MediaQuery.viewInsetsOf(context).bottom +
         MediaQuery.paddingOf(context).bottom;
 
     return Padding(
@@ -788,8 +828,11 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _pickImages(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library_outlined,
-                        size: 18, color: Colors.white),
+                    icon: const Icon(
+                      Icons.photo_library_outlined,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                     label: const Text('From Gallery'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryDeep,
@@ -886,8 +929,7 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                         side: BorderSide(
-                          color:
-                              sel ? AppColors.primary : AppColors.borderWarm,
+                          color: sel ? AppColors.primary : AppColors.borderWarm,
                         ),
                       ),
                       onSelected: (_) {
@@ -909,7 +951,9 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -923,7 +967,9 @@ class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
             ),
 

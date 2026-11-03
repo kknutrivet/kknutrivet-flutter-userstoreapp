@@ -46,7 +46,7 @@ class _AnimalFilterItem {
 class _ShotsScreenState extends ConsumerState<ShotsScreen>
     with WidgetsBindingObserver {
   late String _selectedAnimal;
-  bool _muted = false;
+  bool _muted = true;
   final Set<String> _likedIds = <String>{};
   final Set<String> _addedIds = <String>{};
   String? _addingId;
@@ -923,7 +923,7 @@ class _ShotVideoSlideState extends State<_ShotVideoSlide> {
     if (resetPosition) {
       c.seekTo(Duration.zero);
     }
-    if (!_userPaused) {
+    if (!_userPaused && !MediaQuery.disableAnimationsOf(context) && !MediaQuery.accessibleNavigationOf(context)) {
       c.play();
     }
   }

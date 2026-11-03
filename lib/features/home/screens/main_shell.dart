@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,89 +20,6 @@ class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
-  Future<void> _showExitDialog(BuildContext context) async {
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: AppColors.primaryWash,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.exit_to_app_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Exit KK Nutrivet?',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Would you like to exit the app or stay on the home screen to continue exploring products and care combos?',
-          style: TextStyle(
-            fontSize: 13.5,
-            height: 1.45,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primaryDeep,
-              side: const BorderSide(color: AppColors.primaryWashDeep),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: const Text(
-              'Stay on Home',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primaryDeep,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            ),
-            child: const Text(
-              'Exit App',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (shouldExit == true) {
-      SystemNavigator.pop();
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cartCount = ref.watch(cartCountProvider);
@@ -122,14 +38,12 @@ class MainShell extends ConsumerWidget {
         navigationShell.currentIndex != 4;
 
     return PopScope(
-      canPop: false,
+      canPop: navigationShell.currentIndex == 0,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         if (navigationShell.currentIndex != 0) {
           AppHaptics.tap();
           navigationShell.goBranch(0);
-        } else {
-          await _showExitDialog(context);
         }
       },
       child: Scaffold(
@@ -279,7 +193,7 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
     final hasRealAccount =
         widget.userFirstName != null && widget.userFirstName!.isNotEmpty;
     final displayLabel =
-        isAccount ? (widget.userFirstName ?? 'Sign in') : _labels[i];
+        _labels[i];
 
     return Semantics(
       button: true,
@@ -377,7 +291,7 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Consult a Vet',
+      label: 'Care team chat',
       child: Material(
         color: Colors.transparent,
         shape: const CircleBorder(),
@@ -426,7 +340,7 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Consult a Vet',
+      label: 'Care team chat',
       child: Material(
         color: Colors.transparent,
         child: InkWell(

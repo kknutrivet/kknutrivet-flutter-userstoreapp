@@ -659,7 +659,7 @@ class _CatalogueBody extends ConsumerWidget {
           ),
           const SizedBox(height: 3),
           const Text(
-            'Photo or PDF. Verified by our veterinary team.',
+            'Photo from camera or gallery. Reviewed by our care team.',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,

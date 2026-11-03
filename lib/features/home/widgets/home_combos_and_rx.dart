@@ -98,7 +98,7 @@ class HomePrescriptionCard extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Share a photo or PDF. Our team helps find the products you need.',
+              'Share a photo from your camera or gallery. Our team helps find the products you need.',
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
@@ -146,7 +146,7 @@ class HomePrescriptionCard extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Free review · Photo or PDF',
+              'Free review · Camera or gallery photo',
               style: TextStyle(
                 fontSize: 12,
                 color: Color(0xFF52665A),

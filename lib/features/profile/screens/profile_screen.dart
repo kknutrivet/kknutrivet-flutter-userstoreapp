@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,28 +48,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _GuestWelcomeCard(
                   onLogin: () {
                     AppHaptics.light();
-                    ref.read(pendingAuthRedirectProvider.notifier).state = '/profile';
+                    ref.read(pendingAuthRedirectProvider.notifier).state =
+                        '/profile';
                     context.push('/login');
                   },
                 ),
                 const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: _showEnvironmentDialog,
-                  icon: Icon(
-                    AppConfig.isTest
-                        ? Icons.science_outlined
-                        : Icons.cloud_done_outlined,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  label: Text(
-                    'Server: ${AppConfig.environment.name}',
-                    style: const TextStyle(
-                      fontSize: 12,
+                if (kDebugMode)
+                  TextButton.icon(
+                    onPressed: _showEnvironmentDialog,
+                    icon: Icon(
+                      AppConfig.isTest
+                          ? Icons.science_outlined
+                          : Icons.cloud_done_outlined,
+                      size: 16,
                       color: AppColors.textSecondary,
                     ),
+                    label: Text(
+                      'Server: ${AppConfig.environment.name}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -173,7 +176,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     icon: Icons.auto_awesome_outlined,
                     iconBg: AppColors.homeLavender,
                     iconColor: AppColors.accentViolet,
-                    title: 'Ask Dr. Paw (AI)',
+                    title: 'Dr. Paw (AI)',
                     subtitle: '24/7 intelligent symptom checker & advice',
                     badgeText: 'AI',
                     onTap: () => context.push('/vet'),
@@ -182,8 +185,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     icon: Icons.chat_bubble_outline_rounded,
                     iconBg: AppColors.primaryWashFaint,
                     iconColor: AppColors.primary,
-                    title: 'Vet Care Chat',
-                    subtitle: 'Chat with certified vets & get digital prescriptions',
+                    title: 'Care team chat',
+                    subtitle:
+                        'Chat with certified vets & get digital prescriptions',
                     onTap: () => context.push('/consultations'),
                   ),
                   AppTile(
@@ -232,8 +236,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     icon: Icons.camera_alt_outlined,
                     iconBg: AppColors.homeLavender,
                     iconColor: AppColors.accentViolet,
-                    title: 'Barcode Scanner',
-                    subtitle: 'Scan products to find nutritional alternatives',
+                    title: 'Find product by photo',
+                    subtitle: 'Choose a product photo or search by name',
                     onTap: () => context.push('/scan'),
                     isLast: true,
                   ),
@@ -246,19 +250,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  AppTile(
-                    icon: Icons.dns_outlined,
-                    iconBg: AppConfig.isTest
-                        ? const Color(0xFFFFF3CD)
-                        : AppColors.primaryWash,
-                    iconColor: AppConfig.isTest
-                        ? const Color(0xFF856404)
-                        : AppColors.primaryDeep,
-                    title: 'Server Environment',
-                    subtitle:
-                        '${AppConfig.environment.name} (${AppConfig.apiBaseUrl})',
-                    onTap: _showEnvironmentDialog,
-                  ),
+                  if (kDebugMode)
+                    AppTile(
+                      icon: Icons.dns_outlined,
+                      iconBg: AppConfig.isTest
+                          ? const Color(0xFFFFF3CD)
+                          : AppColors.primaryWash,
+                      iconColor: AppConfig.isTest
+                          ? const Color(0xFF856404)
+                          : AppColors.primaryDeep,
+                      title: 'Server Environment',
+                      subtitle:
+                          '${AppConfig.environment.name} (${AppConfig.apiBaseUrl})',
+                      onTap: _showEnvironmentDialog,
+                    ),
                   AppTile(
                     icon: Icons.help_outline_rounded,
                     iconBg: AppColors.primaryWashFaint,
@@ -282,7 +287,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
             AppButton(
               label: 'Log out',
-              icon: const Icon(Icons.logout_rounded, color: AppColors.error, size: 18),
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.error,
+                size: 18,
+              ),
               variant: AppButtonVariant.danger,
               fullWidth: true,
               onPressed: _confirmLogout,
@@ -335,8 +344,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           : Colors.grey.withValues(alpha: 0.2),
                     ),
                   ),
-                  tileColor:
-                      isCurrent ? AppColors.primaryWashFaint : Colors.white,
+                  tileColor: isCurrent
+                      ? AppColors.primaryWashFaint
+                      : Colors.white,
                   leading: Icon(
                     env == AppEnvironment.prod
                         ? Icons.cloud_done_outlined
@@ -445,7 +455,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (saved != true) return;
     try {
-      await ref.read(authServiceProvider).updateProfile(
+      await ref
+          .read(authServiceProvider)
+          .updateProfile(
             name: nameController.text.trim(),
             phone: phoneController.text.trim(),
             email: emailController.text.trim(),
@@ -471,9 +483,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         title: Text('Log out?', style: AppTheme.serif(fontSize: 18)),
         content: const Text(
-            'You will need to sign in again to access your saved cart, orders and pet profiles.'),
+          'You will need to sign in again to access your saved cart, orders and pet profiles.',
+        ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () => ctx.pop(true),
             style: ElevatedButton.styleFrom(
@@ -499,7 +515,9 @@ class _UserHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = user.name?.isNotEmpty == true ? user.name! : 'Pet Parent';
+    final displayName = user.name?.isNotEmpty == true
+        ? user.name!
+        : 'Pet Parent';
     final initial = displayName.substring(0, 1).toUpperCase();
 
     return Container(
@@ -545,11 +563,7 @@ class _UserHeaderCard extends StatelessWidget {
                     color: AppColors.catalogueGreen,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 12,
-                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 12),
                 ),
               ),
             ],
@@ -576,7 +590,9 @@ class _UserHeaderCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -606,10 +622,7 @@ class _UserHeaderCard extends StatelessWidget {
                   user.email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -748,7 +761,11 @@ class _GuestWelcomeCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: const Center(
-              child: Icon(Icons.pets_rounded, size: 36, color: AppColors.primaryDeep),
+              child: Icon(
+                Icons.pets_rounded,
+                size: 36,
+                color: AppColors.primaryDeep,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -782,4 +799,3 @@ class _GuestWelcomeCard extends StatelessWidget {
     );
   }
 }
-

@@ -28,39 +28,34 @@ import '../widgets/product_description_renderer.dart';
 /// helps-with concerns, structured description accordions, Dr. Paw companion
 /// prompt card, confidence strip, Rx/Consult support banners, related grid,
 /// and the fixed Add-to-Cart / live stepper / Buy-Now bar.
-final productDetailProvider =
-    FutureProvider.autoDispose.family<Product, String>((ref, id) {
-  return ref.read(catalogServiceProvider).fetchProduct(id);
-});
+final productDetailProvider = FutureProvider.autoDispose
+    .family<Product, String>((ref, id) {
+      return ref.read(catalogServiceProvider).fetchProduct(id);
+    });
 
-final relatedProductsProvider =
-    FutureProvider.autoDispose.family<List<Product>, String>((
-  ref,
-  productId,
-) async {
-  final results = await ref
-      .read(catalogServiceProvider)
-      .fetchProducts(relatedTo: productId, limit: 10);
-  return results
-      .where((p) => p.id != productId && p.inStock)
-      .toList();
-});
+final relatedProductsProvider = FutureProvider.autoDispose
+    .family<List<Product>, String>((ref, productId) async {
+      final results = await ref
+          .read(catalogServiceProvider)
+          .fetchProducts(relatedTo: productId, limit: 10);
+      return results.where((p) => p.id != productId && p.inStock).toList();
+    });
 
-final _treatsProvider =
-    FutureProvider.autoDispose.family<List<HealthConcern>, Product>((
-  ref,
-  product,
-) async {
-  if (product.diseases.isEmpty) return const [];
-  final concerns =
-      await ref.read(catalogServiceProvider).fetchHealthConcerns();
-  final names = product.diseases.map((d) => d.toLowerCase()).toSet();
-  return concerns
-      .where((c) =>
-          names.contains(c.name.toLowerCase()) ||
-          names.contains(c.slug.toLowerCase()))
-      .toList();
-});
+final _treatsProvider = FutureProvider.autoDispose
+    .family<List<HealthConcern>, Product>((ref, product) async {
+      if (product.diseases.isEmpty) return const [];
+      final concerns = await ref
+          .read(catalogServiceProvider)
+          .fetchHealthConcerns();
+      final names = product.diseases.map((d) => d.toLowerCase()).toSet();
+      return concerns
+          .where(
+            (c) =>
+                names.contains(c.name.toLowerCase()) ||
+                names.contains(c.slug.toLowerCase()),
+          )
+          .toList();
+    });
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.id});
@@ -188,24 +183,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             final nextVar = id == null
                                 ? null
                                 : product.variants
-                                    .where((v) => v.id == id)
-                                    .firstOrNull;
+                                      .where((v) => v.id == id)
+                                      .firstOrNull;
                             final nextMin = product.minQtyFor(nextVar);
                             final nextCartQty = ref.read(
                               cartQuantityProvider((product.id, nextVar?.id)),
                             );
                             setState(() {
                               _selectedVariantId = id;
-                              _quantity =
-                                  nextCartQty > 0 ? nextCartQty : nextMin;
+                              _quantity = nextCartQty > 0
+                                  ? nextCartQty
+                                  : nextMin;
                             });
                           },
                           onQuantity: (q) async {
                             if (cartQty > 0) {
                               final nextCartQty = q < minQty ? 0 : q;
                               setState(() {
-                                _quantity =
-                                    nextCartQty > 0 ? nextCartQty : minQty;
+                                _quantity = nextCartQty > 0
+                                    ? nextCartQty
+                                    : minQty;
                               });
                               try {
                                 Haptics.tap();
@@ -217,9 +214,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                       quantity: nextCartQty,
                                     );
                                 if (context.mounted) {
-                                  showToast(nextCartQty == 0
-                                      ? '${product.name} removed from cart'
-                                      : 'Cart updated');
+                                  showToast(
+                                    nextCartQty == 0
+                                        ? '${product.name} removed from cart'
+                                        : 'Cart updated',
+                                  );
                                 }
                               } catch (e) {
                                 if (context.mounted) {
@@ -239,13 +238,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                     ),
                     SliverToBoxAdapter(
-                      key: _bundleSectionKey,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                        child: PdpComboBundleSection(product: product),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                         child: _TreatsCard(product: product),
@@ -255,6 +247,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                         child: _DescriptionCard(product: product),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      key: _bundleSectionKey,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                        child: PdpComboBundleSection(product: product),
                       ),
                     ),
                     SliverToBoxAdapter(
@@ -315,8 +314,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ),
           body: ErrorView(
             message: e.toString(),
-            onRetry: () =>
-                ref.invalidate(productDetailProvider(widget.id)),
+            onRetry: () => ref.invalidate(productDetailProvider(widget.id)),
           ),
         ),
       ),
@@ -330,7 +328,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final qtyToAdd = _quantity < minQty ? minQty : _quantity;
     setState(() => _adding = true);
     try {
-      await ref.read(cartProvider.notifier).addItem(
+      await ref
+          .read(cartProvider.notifier)
+          .addItem(
             productId: product.id,
             variantId: selectedVariant?.id,
             quantity: qtyToAdd,
@@ -379,9 +379,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       _alertSaved = false;
     });
     try {
-      await ref
-          .read(catalogServiceProvider)
-          .saveStockAlert(product.id);
+      await ref.read(catalogServiceProvider).saveStockAlert(product.id);
       if (mounted) {
         setState(() => _alertSaved = true);
         showToast('Stock alert saved.');
@@ -444,17 +442,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               product.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(width: 4),
           _circleButton(
             icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-            iconColor:
-                isFavorite ? AppColors.favoriteRed : AppColors.textPrimary,
+            iconColor: isFavorite
+                ? AppColors.favoriteRed
+                : AppColors.textPrimary,
             onTap: () {
               Haptics.tap();
               ref.read(wishlistProvider.notifier).toggle(product.id);
@@ -474,8 +470,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               _circleButton(
                 icon: Icons.shopping_cart_outlined,
                 onTap: () => context.push('/cart'),
-                semantics:
-                    cartCount > 0 ? 'Cart, $cartCount items' : 'Cart',
+                semantics: cartCount > 0 ? 'Cart, $cartCount items' : 'Cart',
               ),
               if (cartCount > 0)
                 Positioned(
@@ -728,9 +723,7 @@ class _GalleryCard extends StatelessWidget {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: AppColors.homeCanvas,
-                          border: Border.all(
-                            color: AppColors.borderWarm,
-                          ),
+                          border: Border.all(color: AppColors.borderWarm),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -808,9 +801,7 @@ class _GalleryCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.9),
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
               boxShadow: const [
                 BoxShadow(color: Colors.black26, blurRadius: 6),
               ],
@@ -839,8 +830,9 @@ class _Lightbox extends StatefulWidget {
 
 class _LightboxState extends State<_Lightbox> {
   late int _page = widget.initial;
-  late final PageController _controller =
-      PageController(initialPage: widget.initial);
+  late final PageController _controller = PageController(
+    initialPage: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -885,10 +877,7 @@ class _LightboxState extends State<_Lightbox> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
                   ),
                 ],
               ),
@@ -931,9 +920,7 @@ class _DetailsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedVariant = selectedVariantId == null
         ? null
-        : product.variants
-            .where((v) => v.id == selectedVariantId)
-            .firstOrNull;
+        : product.variants.where((v) => v.id == selectedVariantId).firstOrNull;
     final price = selectedVariant?.price ?? product.effectivePrice;
     final mrp = selectedVariant?.mrp ?? product.mrp;
     final stock = selectedVariant?.stock ?? product.stock;
@@ -943,8 +930,9 @@ class _DetailsCard extends ConsumerWidget {
         ? product.animalTypes.join(', ')
         : 'All Pets';
     final categoryLabel = product.category ?? 'General';
-    final prescriptionLabel =
-        product.requiresPrescription ? 'Required (Rx)' : 'Not required';
+    final prescriptionLabel = product.requiresPrescription
+        ? 'Required (Rx)'
+        : 'Not required';
     final purpose = _purposeOf(product.description);
 
     return Container(
@@ -1063,17 +1051,9 @@ class _DetailsCard extends ConsumerWidget {
               for (final a in product.animalTypes)
                 _chip(a, AppColors.successBg, AppColors.primaryDeep),
               if (product.category != null)
-                _chip(
-                  product.category!,
-                  AppColors.infoBg,
-                  AppColors.info,
-                ),
+                _chip(product.category!, AppColors.infoBg, AppColors.info),
               if (product.requiresPrescription)
-                _chip(
-                  'Rx Required',
-                  AppColors.rxBg,
-                  AppColors.rxText,
-                ),
+                _chip('Rx Required', AppColors.rxBg, AppColors.rxText),
               if (product.onlyForCombo)
                 _chip(
                   'Bundle Exclusive',
@@ -1129,10 +1109,7 @@ class _DetailsCard extends ConsumerWidget {
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: AppColors.primaryWashFaint,
               borderRadius: BorderRadius.circular(12),
@@ -1284,10 +1261,7 @@ class _DetailsCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     'Choose a package',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                 ),
                 Text(
@@ -1503,14 +1477,13 @@ class _DetailsCard extends ConsumerWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             tooltip: 'Decrease quantity',
-                            onPressed: (cartQuantity == 0 &&
-                                    quantity <= minQty)
+                            onPressed: (cartQuantity == 0 && quantity <= minQty)
                                 ? null
                                 : () => onQuantity(
-                                      cartQuantity > 0 && quantity <= minQty
-                                          ? 0
-                                          : quantity - 1,
-                                    ),
+                                    cartQuantity > 0 && quantity <= minQty
+                                        ? 0
+                                        : quantity - 1,
+                                  ),
                             icon: const Text(
                               '−',
                               style: TextStyle(fontSize: 18),
@@ -1523,9 +1496,7 @@ class _DetailsCard extends ConsumerWidget {
                           alignment: Alignment.center,
                           decoration: const BoxDecoration(
                             border: Border.symmetric(
-                              vertical: BorderSide(
-                                color: AppColors.border,
-                              ),
+                              vertical: BorderSide(color: AppColors.border),
                             ),
                           ),
                           child: Text(
@@ -1596,9 +1567,7 @@ class _DetailsCard extends ConsumerWidget {
                       Expanded(
                         child: _factCell(
                           label: 'PACK / FORM',
-                          value: packLabel.isNotEmpty
-                              ? packLabel
-                              : 'Standard',
+                          value: packLabel.isNotEmpty ? packLabel : 'Standard',
                         ),
                       ),
                       Container(width: 1, color: AppColors.border),
@@ -1627,10 +1596,7 @@ class _DetailsCard extends ConsumerWidget {
                 onPressed: savingAlert ? null : onNotifyMe,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
-                  side: const BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
-                  ),
+                  side: const BorderSide(color: AppColors.primary, width: 2),
                   backgroundColor: AppColors.successBg,
                   foregroundColor: AppColors.primaryDark,
                   shape: RoundedRectangleBorder(
@@ -1641,8 +1607,8 @@ class _DetailsCard extends ConsumerWidget {
                   savingAlert
                       ? 'Saving alert…'
                       : alertSaved
-                          ? "✓ We'll notify you when it is back"
-                          : 'Notify me when back in stock',
+                      ? "✓ We'll notify you when it is back"
+                      : 'Notify me when back in stock',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -1749,11 +1715,7 @@ class _DetailsCard extends ConsumerWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }
@@ -1894,7 +1856,8 @@ class PdpComboBundleSection extends ConsumerWidget {
               if (i > 0) const SizedBox(height: 10),
               PdpComboBundleCard(
                 combo: matching[i],
-                fallbackImage: product.image ??
+                fallbackImage:
+                    product.image ??
                     (product.images.isNotEmpty ? product.images.first : null),
               ),
             ],
@@ -1917,8 +1880,7 @@ class PdpComboBundleCard extends ConsumerStatefulWidget {
   final String? fallbackImage;
 
   @override
-  ConsumerState<PdpComboBundleCard> createState() =>
-      _PdpComboBundleCardState();
+  ConsumerState<PdpComboBundleCard> createState() => _PdpComboBundleCardState();
 }
 
 class _PdpComboBundleCardState extends ConsumerState<PdpComboBundleCard> {
@@ -1931,12 +1893,14 @@ class _PdpComboBundleCardState extends ConsumerState<PdpComboBundleCard> {
       final currentQty = ref.read(comboCartQuantityProvider(widget.combo.id));
       if (currentQty == 0 && nextQty > 0) {
         Haptics.success();
-        await ref.read(cartProvider.notifier).addCombo(
-          widget.combo.id,
-          comboName: widget.combo.name,
-          comboPrice: widget.combo.comboPrice,
-          comboImage: widget.combo.image,
-        );
+        await ref
+            .read(cartProvider.notifier)
+            .addCombo(
+              widget.combo.id,
+              comboName: widget.combo.name,
+              comboPrice: widget.combo.comboPrice,
+              comboImage: widget.combo.image,
+            );
         if (mounted) showToast('Care Bundle added to cart');
       } else {
         Haptics.tap();
@@ -2061,7 +2025,8 @@ class _PdpComboBundleCardState extends ConsumerState<PdpComboBundleCard> {
                     const SizedBox(height: 4),
                     Semantics(
                       button: true,
-                      label: 'View ${combo.items.length} items in ${combo.name}',
+                      label:
+                          'View ${combo.items.length} items in ${combo.name}',
                       child: GestureDetector(
                         onTap: () {
                           Haptics.tap();
@@ -2272,8 +2237,7 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
       _info = null;
     });
     try {
-      final info =
-          await ref.read(deliveryServiceProvider).checkPincode(code);
+      final info = await ref.read(deliveryServiceProvider).checkPincode(code);
       ref.read(deliveryPincodeProvider.notifier).setPincode(code);
       if (mounted) setState(() => _info = info);
     } catch (e) {
@@ -2309,10 +2273,7 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
                   decoration: const InputDecoration(
                     hintText: 'Enter delivery pincode',
                     counterText: '',
-                    prefixIcon: Icon(
-                      Icons.location_on_outlined,
-                      size: 18,
-                    ),
+                    prefixIcon: Icon(Icons.location_on_outlined, size: 18),
                   ),
                   style: const TextStyle(fontSize: 13),
                   onSubmitted: (_) => _check(),
@@ -2354,10 +2315,7 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.error,
-              ),
+              style: const TextStyle(fontSize: 11, color: AppColors.error),
             ),
           ],
           if (_info != null) ...[
@@ -2573,9 +2531,7 @@ class _DescriptionCardState extends State<_DescriptionCard> {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 decoration: const BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: AppColors.border),
-                  ),
+                  border: Border(top: BorderSide(color: AppColors.border)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 10),
@@ -2588,10 +2544,7 @@ class _DescriptionCardState extends State<_DescriptionCard> {
           ],
           Container(
             margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.warningBg,
               borderRadius: BorderRadius.circular(8),
@@ -2743,10 +2696,7 @@ class _AskDrPawCompanionCard extends StatelessWidget {
                   ),
                   child: const Text(
                     'Open Companion',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -2956,11 +2906,7 @@ class _ConfidenceStrip extends StatelessWidget {
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      item.$1,
-                      size: 15,
-                      color: AppColors.primary,
-                    ),
+                    child: Icon(item.$1, size: 15, color: AppColors.primary),
                   ),
                   const SizedBox(height: 6),
                   Padding(
@@ -3049,8 +2995,7 @@ class _RelatedCard extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(top: 4, bottom: 4),
-                gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
@@ -3109,7 +3054,9 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
     setState(() => _stepping = true);
     try {
       Haptics.tap();
-      await ref.read(cartProvider.notifier).setQuantity(
+      await ref
+          .read(cartProvider.notifier)
+          .setQuantity(
             productId: product.id,
             variantId: variant?.id,
             quantity: nextQty,
@@ -3127,8 +3074,8 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
     final variant = widget.selectedVariantId == null
         ? null
         : product.variants
-            .where((v) => v.id == widget.selectedVariantId)
-            .firstOrNull;
+              .where((v) => v.id == widget.selectedVariantId)
+              .firstOrNull;
     final price = variant?.price ?? product.effectivePrice;
     final stock = variant?.stock ?? product.stock;
     final packLabel = variant?.name ?? product.size ?? 'Standard Pack';
@@ -3246,11 +3193,11 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
                                     onTap: _stepping
                                         ? null
                                         : () => _stepCartQuantity(
-                                              product: product,
-                                              variant: variant,
-                                              currentQty: cartQty,
-                                              delta: -1,
-                                            ),
+                                            product: product,
+                                            variant: variant,
+                                            currentQty: cartQty,
+                                            delta: -1,
+                                          ),
                                     child: const Center(
                                       child: Text(
                                         '−',
@@ -3298,11 +3245,11 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
                                     onTap: _stepping || cartQty >= stock
                                         ? null
                                         : () => _stepCartQuantity(
-                                              product: product,
-                                              variant: variant,
-                                              currentQty: cartQty,
-                                              delta: 1,
-                                            ),
+                                            product: product,
+                                            variant: variant,
+                                            currentQty: cartQty,
+                                            delta: 1,
+                                          ),
                                     child: const Center(
                                       child: Text(
                                         '+',
@@ -3426,7 +3373,9 @@ class _RxSheetState extends ConsumerState<_RxSheet> {
       final url = await ref
           .read(uploadServiceProvider)
           .uploadImage(_file!.path, purpose: 'prescription');
-      await ref.read(prescriptionServiceProvider).uploadPrescription(
+      await ref
+          .read(prescriptionServiceProvider)
+          .uploadPrescription(
             imageUrls: [url],
             notes: 'For ${widget.product.name}',
           );
@@ -3444,19 +3393,15 @@ class _RxSheetState extends ConsumerState<_RxSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomSpace = MediaQuery.viewInsetsOf(context).bottom +
+    final bottomSpace =
+        MediaQuery.viewInsetsOf(context).bottom +
         MediaQuery.paddingOf(context).bottom;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        20 + bottomSpace,
-      ),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomSpace),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3554,10 +3499,7 @@ class _RxSheetState extends ConsumerState<_RxSheet> {
           if (_file != null) ...[
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.primaryWashFaint,
                 border: Border.all(color: AppColors.primaryWashDeep),
@@ -3580,9 +3522,7 @@ class _RxSheetState extends ConsumerState<_RxSheet> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: _busy
-                        ? null
-                        : () => setState(() => _file = null),
+                    onTap: _busy ? null : () => setState(() => _file = null),
                     child: const Icon(
                       Icons.close_rounded,
                       size: 18,
@@ -3597,10 +3537,7 @@ class _RxSheetState extends ConsumerState<_RxSheet> {
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.error,
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.error),
             ),
           ],
           const SizedBox(height: 16),

@@ -10,10 +10,11 @@ import '../../../core/widgets/common.dart';
 import '../../../models/pet.dart';
 import '../../../providers/app_providers.dart';
 
-final petDetailProvider =
-    FutureProvider.autoDispose.family<PetProfile, String>((ref, id) {
-  return ref.read(petServiceProvider).fetchPet(id);
-});
+final petDetailProvider = FutureProvider.autoDispose.family<PetProfile, String>(
+  (ref, id) {
+    return ref.read(petServiceProvider).fetchPet(id);
+  },
+);
 
 class PetDetailScreen extends ConsumerStatefulWidget {
   const PetDetailScreen({super.key, required this.id});
@@ -42,8 +43,10 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
         surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded,
-                color: AppColors.error),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.error,
+            ),
             onPressed: _busy ? null : () => _deletePet(),
           ),
         ],
@@ -133,14 +136,14 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
               width: 72,
               height: 72,
               child: pet.photoUrl != null && pet.photoUrl!.isNotEmpty
-                  ? AppNetworkImage(
-                      imageUrl: pet.photoUrl!,
-                      fit: BoxFit.cover,
-                    )
+                  ? AppNetworkImage(imageUrl: pet.photoUrl!, fit: BoxFit.cover)
                   : Container(
                       color: Colors.white24,
-                      child:
-                          const Icon(Icons.pets, color: Colors.white, size: 36),
+                      child: const Icon(
+                        Icons.pets,
+                        color: Colors.white,
+                        size: 36,
+                      ),
                     ),
             ),
           ),
@@ -171,8 +174,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
                   spacing: 6,
                   runSpacing: 4,
                   children: [
-                    if (pet.breed != null)
-                      _pill('${pet.breed}', Icons.pets),
+                    if (pet.breed != null) _pill('${pet.breed}', Icons.pets),
                     if (pet.ageInMonths != null)
                       _pill(
                         pet.ageInMonths! >= 12
@@ -181,7 +183,10 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
                         Icons.cake_outlined,
                       ),
                     if (pet.weightKg != null)
-                      _pill('${pet.weightKg} kg', Icons.monitor_weight_outlined),
+                      _pill(
+                        '${pet.weightKg} kg',
+                        Icons.monitor_weight_outlined,
+                      ),
                     if (pet.sex != null) _pill(pet.sex!, Icons.wc_outlined),
                   ],
                 ),
@@ -205,8 +210,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
         children: [
           Icon(icon, color: Colors.white, size: 12),
           const SizedBox(width: 4),
-          Text(text,
-              style: const TextStyle(color: Colors.white, fontSize: 11)),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 11)),
         ],
       ),
     );
@@ -230,9 +234,13 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
                 ),
               ),
               const Spacer(),
-              const AppBadge(
-                label: 'Auto-Alerts ON',
-                tone: AppBadgeTone.emerald,
+              AppBadge(
+                label: pet.reminderEnabled
+                    ? 'Reminders enabled'
+                    : 'Reminders off',
+                tone: pet.reminderEnabled
+                    ? AppBadgeTone.emerald
+                    : AppBadgeTone.neutral,
               ),
             ],
           ),
@@ -265,7 +273,11 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
   }
 
   Widget _reminderRow(
-      String label, DateTime? last, DateTime? next, IconData icon) {
+    String label,
+    DateTime? last,
+    DateTime? next,
+    IconData icon,
+  ) {
     final isDue = next != null && next.isBefore(DateTime.now());
     return Row(
       children: [
@@ -290,14 +302,18 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
             children: [
               Text(
                 label,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 last != null ? 'Last: ${formatDate(last)}' : 'Last: —',
                 style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12),
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
               Text(
                 next != null ? 'Next: ${formatDate(next)}' : 'Next: —',
@@ -310,11 +326,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
             ],
           ),
         ),
-        if (isDue)
-          const AppBadge(
-            label: 'DUE NOW',
-            tone: AppBadgeTone.coral,
-          ),
+        if (isDue) const AppBadge(label: 'DUE NOW', tone: AppBadgeTone.coral),
       ],
     );
   }
@@ -333,8 +345,11 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.menu_book_rounded,
-                  size: 16, color: AppColors.primaryDeep),
+              const Icon(
+                Icons.menu_book_rounded,
+                size: 16,
+                color: AppColors.primaryDeep,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -369,7 +384,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
       children: [
         Expanded(
           child: AppButton(
-            label: 'Consult Vet',
+            label: 'Care team chat',
             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 15),
             variant: AppButtonVariant.primary,
             size: AppButtonSize.md,
@@ -382,7 +397,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: AppButton(
-            label: 'Ask Dr. Paw',
+            label: 'Dr. Paw (AI)',
             icon: const Icon(Icons.auto_awesome, size: 15),
             variant: AppButtonVariant.outline,
             size: AppButtonSize.md,
@@ -407,7 +422,9 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           Future<void> pick(
-              DateTime? current, void Function(DateTime?) onPicked) async {
+            DateTime? current,
+            void Function(DateTime?) onPicked,
+          ) async {
             final picked = await showDatePicker(
               context: ctx,
               initialDate: current ?? DateTime.now(),
@@ -418,7 +435,10 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
           }
 
           Widget dateField(
-              String label, DateTime? value, void Function(DateTime?) onPicked) {
+            String label,
+            DateTime? value,
+            void Function(DateTime?) onPicked,
+          ) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: InkWell(
@@ -431,7 +451,9 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   child: Text(
                     value != null ? formatDate(value) : 'Select date',
@@ -456,22 +478,35 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  dateField('Last vaccination', lastVax,
-                      (d) => setDialogState(() => lastVax = d)),
-                  dateField('Next vaccination', nextVax,
-                      (d) => setDialogState(() => nextVax = d)),
+                  dateField(
+                    'Last vaccination',
+                    lastVax,
+                    (d) => setDialogState(() => lastVax = d),
+                  ),
+                  dateField(
+                    'Next vaccination',
+                    nextVax,
+                    (d) => setDialogState(() => nextVax = d),
+                  ),
                   const SizedBox(height: 6),
-                  dateField('Last deworming', lastDeworm,
-                      (d) => setDialogState(() => lastDeworm = d)),
-                  dateField('Next deworming', nextDeworm,
-                      (d) => setDialogState(() => nextDeworm = d)),
+                  dateField(
+                    'Last deworming',
+                    lastDeworm,
+                    (d) => setDialogState(() => lastDeworm = d),
+                  ),
+                  dateField(
+                    'Next deworming',
+                    nextDeworm,
+                    (d) => setDialogState(() => nextDeworm = d),
+                  ),
                 ],
               ),
             ),
             actions: [
               TextButton(
-                  onPressed: () => ctx.pop(false),
-                  child: const Text('Cancel')),
+                onPressed: () => ctx.pop(false),
+                child: const Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () => ctx.pop(true),
                 style: ElevatedButton.styleFrom(
@@ -493,8 +528,10 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
         'reminderEnabled': true,
         if (lastVax != null) 'lastVaccinationAt': lastVax!.toIso8601String(),
         if (nextVax != null) 'nextVaccinationAt': nextVax!.toIso8601String(),
-        if (lastDeworm != null) 'lastDewormingAt': lastDeworm!.toIso8601String(),
-        if (nextDeworm != null) 'nextDewormingAt': nextDeworm!.toIso8601String(),
+        if (lastDeworm != null)
+          'lastDewormingAt': lastDeworm!.toIso8601String(),
+        if (nextDeworm != null)
+          'nextDewormingAt': nextDeworm!.toIso8601String(),
       });
       showToast('Reminders updated');
       ref.invalidate(petDetailProvider(widget.id));
@@ -510,14 +547,20 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete this pet?'),
-        content: const Text('The care profile and its history will be removed.'),
+        content: const Text(
+          'The care profile and its history will be removed.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => ctx.pop(true),
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),

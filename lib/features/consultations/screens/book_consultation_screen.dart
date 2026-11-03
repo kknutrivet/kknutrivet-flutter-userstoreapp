@@ -114,7 +114,7 @@ class _BookConsultationScreenState
       backgroundColor: AppColors.homeCanvas,
       appBar: AppBar(
         title: Text(
-          'Book Consultation',
+          'Book a vet',
           style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         backgroundColor: Colors.white,
