@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../config/app_config.dart';
 import '../crashlytics/crashlytics_service.dart';
@@ -132,8 +133,31 @@ class ApiClient {
   Future<dynamic> upload(String path, String filePath,
       {String fileField = 'file', Map<String, dynamic>? fields}) async {
     try {
+      final lower = filePath.toLowerCase();
+      MediaType? contentType;
+      if (lower.endsWith('.mp4')) {
+        contentType = MediaType('video', 'mp4');
+      } else if (lower.endsWith('.mov') || lower.endsWith('.qt')) {
+        contentType = MediaType('video', 'quicktime');
+      } else if (lower.endsWith('.webm')) {
+        contentType = MediaType('video', 'webm');
+      } else if (lower.endsWith('.3gp') || lower.endsWith('.3gpp')) {
+        contentType = MediaType('video', '3gpp');
+      } else if (lower.endsWith('.png')) {
+        contentType = MediaType('image', 'png');
+      } else if (lower.endsWith('.webp')) {
+        contentType = MediaType('image', 'webp');
+      } else if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+        contentType = MediaType('image', 'jpeg');
+      } else if (lower.endsWith('.pdf')) {
+        contentType = MediaType('application', 'pdf');
+      }
+
       final formData = FormData.fromMap({
-        fileField: await MultipartFile.fromFile(filePath),
+        fileField: await MultipartFile.fromFile(
+          filePath,
+          contentType: contentType,
+        ),
         ...?fields,
       });
       final response = await _dio.post(path, data: formData);

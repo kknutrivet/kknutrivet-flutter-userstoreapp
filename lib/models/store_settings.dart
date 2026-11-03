@@ -1,3 +1,88 @@
+class AppUpdateConfig {
+  const AppUpdateConfig({
+    this.forceUpdateEnabled = false,
+    this.minBuildNumber = 1,
+    this.minAppVersion = '1.0.0',
+    this.latestVersion = '1.0.0',
+    this.forceUpdateTitle = 'App Update Required',
+    this.forceUpdateMessage =
+        'A new version of KK Nutrivet is available on Google Play Store with critical improvements and new features. Please update to continue.',
+    this.playStoreUrl =
+        'https://play.google.com/store/apps/details?id=com.kknutrivet.shop',
+    this.maintenanceMode = false,
+    this.maintenanceMessage =
+        'We are undergoing quick scheduled maintenance to serve your pets better. Please check back shortly.',
+  });
+
+  final bool forceUpdateEnabled;
+  final int minBuildNumber;
+  final String minAppVersion;
+  final String latestVersion;
+  final String forceUpdateTitle;
+  final String forceUpdateMessage;
+  final String playStoreUrl;
+  final bool maintenanceMode;
+  final String maintenanceMessage;
+
+  factory AppUpdateConfig.fromJson(Map<String, dynamic> json) {
+    return AppUpdateConfig(
+      forceUpdateEnabled: json['forceUpdateEnabled'] == true,
+      minBuildNumber: (json['minBuildNumber'] as num?)?.toInt() ?? 1,
+      minAppVersion: json['minAppVersion']?.toString() ?? '1.0.0',
+      latestVersion: json['latestVersion']?.toString() ?? '1.0.0',
+      forceUpdateTitle:
+          json['forceUpdateTitle']?.toString() ?? 'App Update Required',
+      forceUpdateMessage: json['forceUpdateMessage']?.toString() ??
+          'A new version of KK Nutrivet is available on Google Play Store with critical improvements and new features. Please update to continue.',
+      playStoreUrl: json['playStoreUrl']?.toString() ??
+          'https://play.google.com/store/apps/details?id=com.kknutrivet.shop',
+      maintenanceMode: json['maintenanceMode'] == true,
+      maintenanceMessage: json['maintenanceMessage']?.toString() ??
+          'We are undergoing quick scheduled maintenance to serve your pets better. Please check back shortly.',
+    );
+  }
+
+  /// Evaluates whether the installed app version or build number is outdated.
+  bool isOutdated({
+    required int currentBuildNumber,
+    required String currentVersion,
+  }) {
+    if (currentBuildNumber < minBuildNumber) {
+      return true;
+    }
+    return _isSemanticVersionLower(currentVersion, minAppVersion);
+  }
+
+  /// Compares semantic versions (e.g. "1.0.0" < "1.0.1").
+  static bool _isSemanticVersionLower(String current, String required) {
+    try {
+      final currentParts = current
+          .split('.')
+          .map((s) => int.tryParse(s.replaceAll(RegExp(r'\D'), '')) ?? 0)
+          .toList();
+      final requiredParts = required
+          .split('.')
+          .map((s) => int.tryParse(s.replaceAll(RegExp(r'\D'), '')) ?? 0)
+          .toList();
+
+      while (currentParts.length < 3) {
+        currentParts.add(0);
+      }
+      while (requiredParts.length < 3) {
+        requiredParts.add(0);
+      }
+
+      for (int i = 0; i < 3; i++) {
+        if (currentParts[i] < requiredParts[i]) return true;
+        if (currentParts[i] > requiredParts[i]) return false;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
 class StoreSettings {
   StoreSettings({
     required this.freeDeliveryThreshold,
@@ -14,6 +99,7 @@ class StoreSettings {
     this.codConfirmationEnabled = true,
     this.prescriptionDiscountPercent = 5,
     this.hiddenCategories = const [],
+    this.appUpdate = const AppUpdateConfig(),
   });
 
   final double freeDeliveryThreshold;
@@ -30,6 +116,7 @@ class StoreSettings {
   final bool codConfirmationEnabled;
   final int prescriptionDiscountPercent;
   final List<String> hiddenCategories;
+  final AppUpdateConfig appUpdate;
 
   static final RegExp _odishaPinRegex = RegExp(r'^(75|76|77)\d{4}$');
 
@@ -115,6 +202,14 @@ class StoreSettings {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      appUpdate: json['appUpdate'] is Map
+          ? AppUpdateConfig.fromJson(
+              Map<String, dynamic>.from(json['appUpdate'] as Map))
+          : (json['businessRules'] is Map &&
+                  (json['businessRules'] as Map)['appUpdate'] is Map
+              ? AppUpdateConfig.fromJson(Map<String, dynamic>.from(
+                  (json['businessRules'] as Map)['appUpdate'] as Map))
+              : const AppUpdateConfig()),
     );
   }
 

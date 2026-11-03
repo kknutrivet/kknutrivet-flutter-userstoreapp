@@ -148,33 +148,81 @@ class _ConsultationDetailScreenState
     }
   }
 
-  Future<void> _pickAndSendPhoto() async {
+  Future<void> _pickAndSendMedia() async {
     if (_uploadingMedia || _sending) return;
     AppHaptics.selection();
+
+    final choice = await showCareChatMediaPickerSheet(context);
+    if (choice == null || !mounted) return;
+
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 82,
-      maxWidth: 1600,
-    );
+    XFile? picked;
+    String messageType = 'IMAGE';
+    String defaultBody = 'Shared a photo';
+
+    switch (choice) {
+      case CareChatMediaChoice.cameraPhoto:
+        picked = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 82,
+          maxWidth: 1600,
+        );
+        messageType = 'IMAGE';
+        defaultBody = 'Shared a photo';
+        break;
+      case CareChatMediaChoice.cameraVideo:
+        picked = await picker.pickVideo(
+          source: ImageSource.camera,
+          maxDuration: const Duration(minutes: 2),
+        );
+        messageType = 'VIDEO';
+        defaultBody = 'Shared a video';
+        break;
+      case CareChatMediaChoice.galleryPhoto:
+        picked = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 82,
+          maxWidth: 1600,
+        );
+        messageType = 'IMAGE';
+        defaultBody = 'Shared a photo';
+        break;
+      case CareChatMediaChoice.galleryVideo:
+        picked = await picker.pickVideo(
+          source: ImageSource.gallery,
+          maxDuration: const Duration(minutes: 5),
+        );
+        messageType = 'VIDEO';
+        defaultBody = 'Shared a video';
+        break;
+    }
+
     if (picked == null) return;
+
+    if (messageType == 'VIDEO') {
+      final fileLength = await picked.length();
+      if (fileLength > 25 * 1024 * 1024) {
+        showToast('Please choose a video under 25 MB', isError: true);
+        return;
+      }
+    }
 
     setState(() => _uploadingMedia = true);
     try {
       final mediaUrl = await ref
           .read(uploadServiceProvider)
-          .uploadImage(picked.path, purpose: 'care-chat');
+          .uploadFile(picked.path, purpose: 'care-chat');
       await ref
           .read(consultationServiceProvider)
           .sendChatMessage(
             widget.id,
-            body: 'Shared a photo',
-            messageType: 'IMAGE',
+            body: defaultBody,
+            messageType: messageType,
             mediaUrl: mediaUrl,
           );
       if (!mounted) return;
       ref.invalidate(careChatMessagesProvider(widget.id));
-      showToast('Photo sent');
+      showToast(messageType == 'VIDEO' ? 'Video sent' : 'Photo sent');
     } catch (e) {
       if (!mounted) return;
       showToast(e.toString(), isError: true);
@@ -409,7 +457,7 @@ class _ConsultationDetailScreenState
               messageController: _messageController,
               sending: _sending,
               uploadingMedia: _uploadingMedia,
-              onPickAndSendPhoto: _pickAndSendPhoto,
+              onPickAndSendPhoto: _pickAndSendMedia,
               onSendTextMessage: _sendTextMessage,
             ) else SafeArea(top: false, child: Padding(padding: const EdgeInsets.all(16), child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text(page == null ? 'Checking conversation access…' : page.followUpRequested ? 'Follow-up awaiting care-team approval' : 'This conversation is read-only. Your history is saved.'),

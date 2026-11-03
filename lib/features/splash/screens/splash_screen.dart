@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/app_update_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../providers/app_providers.dart';
 
@@ -80,6 +81,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     final onboardingComplete = results[0] as bool;
+
+    final updateResult = ref.read(appUpdateCheckProvider).valueOrNull;
+    if (updateResult != null && updateResult.isBlocked) {
+      context.go('/update');
+      return;
+    }
+
     context.go(onboardingComplete ? '/home' : '/onboarding');
   }
 

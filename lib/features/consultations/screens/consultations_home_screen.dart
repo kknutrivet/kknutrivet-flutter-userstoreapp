@@ -12,6 +12,7 @@ import '../../../models/consultation.dart';
 import '../../../models/pet.dart';
 import '../../../providers/app_providers.dart';
 import '../widgets/care_chat_intake_steps.dart';
+import '../widgets/care_chat_thread_widgets.dart';
 import '../widgets/care_chat_workspace_header.dart';
 import '../widgets/past_consultations_list.dart';
 
@@ -51,6 +52,7 @@ class _ConsultationsHomeScreenState
   String? _selectedPetProfileId;
   String? _uploadedPhotoUrl;
   String? _uploadedPhotoName;
+  String? _uploadedMediaType;
   bool _uploadingPhoto = false;
   bool _submitting = false;
   String? _errorText;
@@ -122,13 +124,63 @@ class _ConsultationsHomeScreenState
   Future<void> _pickAndUploadPhoto() async {
     if (_uploadingPhoto || _submitting) return;
     AppHaptics.selection();
+
+    final user = ref.read(authProvider).valueOrNull;
+    if (user == null) {
+      showToast('Please sign in to attach photos or videos');
+      context.push('/login');
+      return;
+    }
+
+    final choice = await showCareChatMediaPickerSheet(context);
+    if (choice == null || !mounted) return;
+
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 82,
-      maxWidth: 1600,
-    );
+    XFile? picked;
+    String mediaType = 'IMAGE';
+
+    switch (choice) {
+      case CareChatMediaChoice.cameraPhoto:
+        picked = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 82,
+          maxWidth: 1600,
+        );
+        mediaType = 'IMAGE';
+        break;
+      case CareChatMediaChoice.cameraVideo:
+        picked = await picker.pickVideo(
+          source: ImageSource.camera,
+          maxDuration: const Duration(minutes: 2),
+        );
+        mediaType = 'VIDEO';
+        break;
+      case CareChatMediaChoice.galleryPhoto:
+        picked = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 82,
+          maxWidth: 1600,
+        );
+        mediaType = 'IMAGE';
+        break;
+      case CareChatMediaChoice.galleryVideo:
+        picked = await picker.pickVideo(
+          source: ImageSource.gallery,
+          maxDuration: const Duration(minutes: 5),
+        );
+        mediaType = 'VIDEO';
+        break;
+    }
+
     if (picked == null) return;
+
+    if (mediaType == 'VIDEO') {
+      final fileLength = await picked.length();
+      if (fileLength > 25 * 1024 * 1024) {
+        showToast('Please choose a video under 25 MB', isError: true);
+        return;
+      }
+    }
 
     setState(() {
       _uploadingPhoto = true;
@@ -137,13 +189,14 @@ class _ConsultationsHomeScreenState
     try {
       final url = await ref
           .read(uploadServiceProvider)
-          .uploadImage(picked.path, purpose: 'care-chat');
+          .uploadFile(picked.path, purpose: 'care-chat');
       if (!mounted) return;
       setState(() {
         _uploadedPhotoUrl = url;
-        _uploadedPhotoName = picked.name;
+        _uploadedPhotoName = picked!.name;
+        _uploadedMediaType = mediaType;
       });
-      showToast('Photo attached');
+      showToast(mediaType == 'VIDEO' ? 'Video attached' : 'Photo attached');
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString();
@@ -233,7 +286,8 @@ class _ConsultationsHomeScreenState
             concern: concern,
             language: _selectedLanguage,
             mediaUrl: _uploadedPhotoUrl,
-            mediaType: _uploadedPhotoUrl != null ? 'IMAGE' : null,
+            mediaType:
+                _uploadedMediaType ?? (_uploadedPhotoUrl != null ? 'IMAGE' : null),
             requestId: _requestId,
             petProfileId: _selectedPetProfileId,
           );
@@ -683,6 +737,7 @@ class _ConsultationsHomeScreenState
           onRemovePhoto: () => setState(() {
             _uploadedPhotoUrl = null;
             _uploadedPhotoName = null;
+            _uploadedMediaType = null;
           }),
           onStepBack: _goToStep,
           onSignInTap: _goToSignIn,

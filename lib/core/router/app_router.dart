@@ -6,6 +6,8 @@ import '../analytics/analytics_service.dart';
 import '../analytics/mixpanel_service.dart';
 import '../animations/app_animations.dart';
 import '../crashlytics/crashlytics_service.dart';
+import '../services/app_update_service.dart';
+import '../../features/system/screens/force_update_screen.dart';
 
 import '../../features/addresses/screens/address_form_screen.dart';
 import '../../features/addresses/screens/addresses_screen.dart';
@@ -92,6 +94,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Splash owns its own navigation once auth/onboarding state resolves.
       if (state.matchedLocation == '/splash') return null;
 
+      final updateCheck = ref.read(appUpdateCheckProvider).valueOrNull;
+      final onUpdateScreen = state.matchedLocation == '/update';
+      if (updateCheck != null && updateCheck.isBlocked) {
+        if (!onUpdateScreen) return '/update';
+        return null;
+      } else if (onUpdateScreen) {
+        return '/home';
+      }
+
       final onboardingState = ref.read(onboardingProvider);
       if (onboardingState.value == false &&
           state.matchedLocation != '/onboarding') {
@@ -127,6 +138,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/update',
+        builder: (context, state) => const ForceUpdateScreen(),
+      ),
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),

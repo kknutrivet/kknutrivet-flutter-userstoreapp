@@ -221,9 +221,89 @@ class CareChatBubble extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     message.body,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
-                      color: AppColors.textPrimary,
+                      color: isCustomer ? Colors.white : AppColors.textPrimary,
+                      height: 1.38,
+                    ),
+                  ),
+                ],
+              ] else if (message.messageType == 'VIDEO' &&
+                  message.mediaUrl != null &&
+                  message.mediaUrl!.isNotEmpty) ...[
+                GestureDetector(
+                  onTap: () => onOpenMedia(message.mediaUrl!),
+                  child: Container(
+                    height: 140,
+                    width: 240,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_circle_fill_rounded,
+                            size: 42,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          left: 10,
+                          right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.videocam_rounded,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 5),
+                                Text(
+                                  'Watch video clip',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (message.body.isNotEmpty &&
+                    message.body != 'Shared a video' &&
+                    message.body != 'Shared a photo') ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    message.body,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: isCustomer ? Colors.white : AppColors.textPrimary,
                       height: 1.38,
                     ),
                   ),
@@ -367,6 +447,192 @@ class InlinePrescriptionBubble extends StatelessWidget {
   }
 }
 
+enum CareChatMediaChoice {
+  cameraPhoto,
+  cameraVideo,
+  galleryPhoto,
+  galleryVideo,
+}
+
+Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) {
+  return showModalBottomSheet<CareChatMediaChoice>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderWarm,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Attach Photo or Video',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Capture live with camera or select from gallery',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _MediaOptionTile(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Take Photo',
+                    subtitle: 'Live capture',
+                    color: AppColors.primaryDeep,
+                    bg: AppColors.primaryWash,
+                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.cameraPhoto),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MediaOptionTile(
+                    icon: Icons.videocam_rounded,
+                    label: 'Record Video',
+                    subtitle: 'Live record',
+                    color: const Color(0xFFD97706),
+                    bg: const Color(0xFFFEF3C7),
+                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.cameraVideo),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _MediaOptionTile(
+                    icon: Icons.photo_library_rounded,
+                    label: 'Photo Gallery',
+                    subtitle: 'Pick image',
+                    color: const Color(0xFF2563EB),
+                    bg: const Color(0xFFEFF6FF),
+                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.galleryPhoto),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MediaOptionTile(
+                    icon: Icons.video_library_rounded,
+                    label: 'Video Gallery',
+                    subtitle: 'Pick video (≤25MB)',
+                    color: const Color(0xFF7C3AED),
+                    bg: const Color(0xFFF5F3FF),
+                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.galleryVideo),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _MediaOptionTile extends StatelessWidget {
+  const _MediaOptionTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.bg,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final Color bg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            color: bg.withValues(alpha: 0.65),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class CareChatComposer extends StatelessWidget {
   const CareChatComposer({
     super.key,
@@ -412,7 +678,7 @@ class CareChatComposer extends StatelessWidget {
                     onPressed: uploadingMedia || sending
                         ? null
                         : onPickAndSendPhoto,
-                    tooltip: 'Attach photo',
+                    tooltip: 'Attach photo or video',
                     icon: uploadingMedia
                         ? const SizedBox(
                             width: 20,

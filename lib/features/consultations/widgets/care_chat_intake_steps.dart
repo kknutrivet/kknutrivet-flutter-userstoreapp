@@ -540,7 +540,7 @@ class CareChatStep4Concern extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Add a photo (optional)',
+                'Add a photo or video (optional)',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -560,13 +560,13 @@ class CareChatStep4Concern extends StatelessWidget {
                             height: 15,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.add_a_photo_outlined, size: 17),
+                        : const Icon(Icons.perm_media_outlined, size: 17),
                     label: Text(
                       uploadingPhoto
                           ? 'Uploading…'
                           : (uploadedPhotoUrl != null
-                                ? 'Change Photo'
-                                : 'Attach Photo'),
+                                ? 'Change Media'
+                                : 'Attach Media'),
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(130, 42),
