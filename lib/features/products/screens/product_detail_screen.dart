@@ -2217,6 +2217,7 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
   final _controller = TextEditingController();
   DeliveryInfo? _info;
   bool _checking = false;
+  int _request = 0;
   String? _error;
 
   @override
@@ -2226,8 +2227,9 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
   }
 
   Future<void> _check() async {
+    final request = ++_request;
     final code = _controller.text.trim();
-    if (code.length != 6) {
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
       setState(() => _error = 'Enter a 6-digit pincode');
       return;
     }
@@ -2238,12 +2240,13 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
     });
     try {
       final info = await ref.read(deliveryServiceProvider).checkPincode(code);
+      if (!mounted || request != _request || _controller.text.trim() != code) return;
       ref.read(deliveryPincodeProvider.notifier).setPincode(code);
-      if (mounted) setState(() => _info = info);
+      if (mounted && request == _request) setState(() => _info = info);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted && request == _request) setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _checking = false);
+      if (mounted && request == _request) setState(() => _checking = false);
     }
   }
 
@@ -2268,6 +2271,7 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
               Expanded(
                 child: TextField(
                   controller: _controller,
+                  onChanged: (_) { setState(() { ++_request; _info = null; _error = null; _checking = false; }); },
                   keyboardType: TextInputType.number,
                   maxLength: 6,
                   decoration: const InputDecoration(

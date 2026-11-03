@@ -538,6 +538,7 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
 
   Future<void> _apply(String code) async {
     final trimmed = code.trim().toUpperCase();
+    final cartAtValidation = ref.read(cartProvider).value;
     if (trimmed.isEmpty) return;
     setState(() {
       _validating = true;
@@ -547,6 +548,9 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
       final result = await ref
           .read(orderServiceProvider)
           .validateCoupon(trimmed, widget.subtotal);
+      if (!identical(cartAtValidation, ref.read(cartProvider).value)) {
+        throw StateError('Cart changed. Please apply the coupon again.');
+      }
       final discount = (result['discount'] as num?)?.toDouble() ?? 0;
       final coupon = result['coupon'];
       final appliedCode = coupon is Map

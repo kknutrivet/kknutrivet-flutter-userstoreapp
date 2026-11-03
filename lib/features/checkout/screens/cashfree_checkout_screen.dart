@@ -31,6 +31,7 @@ class CashfreeCheckoutScreen extends StatefulWidget {
 class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
   late final WebViewController _controller;
   bool _loading = true;
+  String? _error;
   bool _resolved = false;
 
   @override
@@ -44,6 +45,9 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
+          onWebResourceError: (error) {
+            if (mounted && error.isForMainFrame == true) setState(() { _loading = false; _error = 'Could not load secure payment. Retry or return to your saved order.'; });
+          },
           onPageStarted: (_) {
             if (mounted) setState(() => _loading = true);
           },
@@ -64,9 +68,12 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
                 !uri.scheme.startsWith('about')) {
               try {
                 if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                }
-              } catch (_) {}
+                  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  if (!opened) throw StateError('unavailable');
+                } else { throw StateError('unavailable'); }
+              } catch (_) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open this payment app. Choose another payment method.')));
+              }
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
@@ -109,6 +116,7 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
           child: Stack(
             children: [
               WebViewWidget(controller: _controller),
+              if (_error != null) Positioned.fill(child: ColoredBox(color: Colors.white, child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), TextButton(onPressed: () { setState(() { _error = null; _loading = true; }); _controller.reload(); }, child: const Text('Retry')), TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Return to order'))]))))),
               if (_loading)
                 const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),

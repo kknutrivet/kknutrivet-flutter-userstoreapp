@@ -185,6 +185,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               children: [
                 const CheckoutStepHeader(),
+                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('After changing items, apply your coupon again. Coin savings adjust to your cart.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
                 const SizedBox(height: 16),
                 CheckoutOrderReviewSection(
                   items: items,
@@ -352,6 +353,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!_delivery!.serviceable) {
       return 'Delivery is unavailable here. Choose another address.';
     }
+    if ((ref.read(cartProvider).value ?? []).any((item) => item.hasStockIssue)) {
+      return 'Some quantities are unavailable. Review your cart.';
+    }
     if (_rxBlocked) {
       return 'An approved prescription is needed. Upload one or check its review status.';
     }
@@ -362,6 +366,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _resolveCheckoutBlock() {
+    if ((ref.read(cartProvider).value ?? []).any((item) => item.hasStockIssue)) {
+      context.push('/cart');
+      return;
+    }
     if (_selectedAddress == null || _delivery?.serviceable == false) {
       context.push<Address>('/addresses/new').then((address) {
         if (!mounted) return;
@@ -471,6 +479,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // ── Coupon validation ────────────────────────────────────────────────────
   Future<void> _validateCoupon(double subtotal) async {
     final code = _couponController.text.trim();
+    final cartAtValidation = ref.read(cartProvider).value;
     if (code.isEmpty) return;
     setState(() {
       _validatingCoupon = true;
@@ -480,6 +489,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final result = await ref
           .read(orderServiceProvider)
           .validateCoupon(code, subtotal);
+      if (!identical(cartAtValidation, ref.read(cartProvider).value)) {
+        throw StateError('Cart changed. Please apply the coupon again.');
+      }
       final discount = (result['discount'] as num?)?.toDouble() ?? 0;
       final coupon = result['coupon'];
       final appliedCode = coupon is Map
@@ -511,6 +523,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (_submitting || _checkingDelivery) return false;
     if (_selectedAddress == null) return false;
     if (_rxBlocked) return false;
+    if ((ref.read(cartProvider).value ?? []).any((item) => item.hasStockIssue)) return false;
     final info = _delivery;
     if (info == null ||
         info.pincode != _selectedAddress?.zipCode ||
@@ -646,12 +659,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             items: itemsPayload,
           );
       createdOrderId = order.id;
-      AnalyticsService.instance.logPurchase(
+      if (_paymentMethod == 'COD') { AnalyticsService.instance.logPurchase(
+        paymentMethod: 'COD',
         orderId: order.id,
         value: order.totalAmount,
         shipping: order.deliveryCharge,
         coupon: draft.couponCode,
-      );
+      ); }
 
       if (draft.pointsToRedeem > 0) {
         try {
@@ -757,6 +771,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
 
     if (isPaymentConfirmed(result)) {
+      AnalyticsService.instance.logPurchase(orderId: order.id, value: (order.paymentMethod == 'PARTIAL_COD') ? (order.advanceAmount ?? 0) : order.totalAmount, paymentMethod: (order.paymentMethod == 'PARTIAL_COD') ? 'advance' : 'prepaid');
       await ref.read(cartProvider.notifier).clear();
       if (!mounted) return;
       showToast('Payment successful! Order confirmed.');

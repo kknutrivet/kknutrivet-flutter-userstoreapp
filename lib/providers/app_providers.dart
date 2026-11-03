@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../features/referral/screens/referral_screen.dart' show referralSummaryProvider;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -804,7 +805,24 @@ class CheckoutDraft {
 }
 
 final checkoutDraftProvider =
-    StateProvider<CheckoutDraft>((ref) => const CheckoutDraft());
+    StateProvider<CheckoutDraft>((ref) {
+      ref.listen(referralSummaryProvider, (_, next) {
+        final balance = next.valueOrNull?.rewardsPoints;
+        if (balance != null && ref.controller.state.pointsToRedeem > balance) {
+          ref.controller.state = ref.controller.state.copyWith(pointsToRedeem: balance.clamp(0, 1 << 30));
+        }
+      });
+      ref.listen(cartProvider, (previous, next) {
+        if (!next.hasValue || previous?.value == null) return;
+        String signature(List<CartItem> items) => items.map((i) => '${i.productId}:${i.variantId}:${i.comboId}:${i.quantity}:${i.unitPrice}').join('|');
+        if (signature(previous!.value!) == signature(next.value!)) return;
+        final draft = ref.controller.state;
+        final subtotal = getCartSubtotal(next.value!, ref.read(homeCombosProvider).valueOrNull);
+        ref.controller.state = draft.copyWith(clearCoupon: true, couponDiscount: 0,
+          pointsToRedeem: draft.pointsToRedeem.clamp(0, (subtotal * .3).floor()));
+      });
+      return const CheckoutDraft();
+    });
 
 /// On-device wishlist (product id set) — see WishlistStorage for why this
 /// isn't synced to the account.

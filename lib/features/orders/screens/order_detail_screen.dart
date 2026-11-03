@@ -66,8 +66,8 @@ class OrderDetailScreen extends ConsumerWidget {
                     OrderJourneyTracker(order: order),
                   const SizedBox(height: 16),
                   OrderPaymentCard(order: order),
-                  if (order.paymentMethod == 'CASHFREE' &&
-                      order.paymentStatus != 'PAID' &&
+                  if ((order.paymentMethod == 'CASHFREE' || order.paymentMethod == 'PARTIAL_COD') &&
+                      order.paymentStatus != 'PAID' && order.paymentStatus != 'ADVANCE_PAID' &&
                       !order.isCancelled)
                     OrderPaymentRetryBanner(order: order),
                   OrderTrackingSection(order: order, orderId: id),

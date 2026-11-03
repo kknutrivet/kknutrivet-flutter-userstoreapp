@@ -40,7 +40,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       // Check maintenance or force update before navigating
       final updateResult = ref.read(appUpdateCheckProvider).valueOrNull;
       final settings = ref.read(storeSettingsProvider).valueOrNull;
-      final isBlocked = (updateResult != null && updateResult.isBlocked) ||
+      final isBlocked =
+          (updateResult != null && updateResult.isBlocked) ||
           (settings != null && settings.appUpdate.maintenanceMode);
 
       if (isBlocked) {
@@ -59,133 +60,80 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     return Scaffold(
       body: MascotWorldScene(
         shadowWidth: 160,
-        centerWidget: Semantics(
-          label: 'KK Nutrivet Logo',
-          child: Stack(
-            alignment: Alignment.center,
+        centerWidget: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Gentle ambient backlight glow for the logo
-              Container(
-                width: 260,
-                height: 96,
-                decoration: BoxDecoration(
-                  shape: BoxShape.rectangle,
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.20),
-                      blurRadius: 36,
-                      spreadRadius: 6,
+              Semantics(
+                label: 'KK Nutrivet Logo',
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Gentle ambient backlight glow for the logo
+                    Container(
+                      width: 260,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.rectangle,
+                        borderRadius: BorderRadius.circular(40),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.20),
+                            blurRadius: 36,
+                            spreadRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Brand Logo in crisp white silhouette on emerald world
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 84,
+                      fit: BoxFit.contain,
+                      color: Colors.white,
+                      errorBuilder: (_, _, _) => const Text(
+                        'KK NUTRIVET',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2.5,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              // Brand Logo in crisp white silhouette on emerald world
-              Image.asset(
-                'assets/images/logo.png',
-                height: 84,
-                fit: BoxFit.contain,
-                color: Colors.white,
-                errorBuilder: (_, _, _) => const Text(
-                  'KK NUTRIVET',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 2.5,
-                  ),
+              const SizedBox(height: 16),
+              Text(
+                'Nutrition. Wellness. Veterinary care.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
           ),
         ),
         bottomContent: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Clean Model Style Typography
-              const Text(
-                'KK NUTRIVET',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 3.0,
-                ),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Colors.white.withValues(alpha: 0.85),
               ),
-              const SizedBox(height: 6),
-
-              // Subtitle
-              Text(
-                'Nutrition. Wellness. Veterinary care.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.85),
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Trust pill badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 13,
-                      color: Color(0xFF86EFAC),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Care for every animal.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.95),
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Accessibility label for semantic testing
-              const Opacity(
-                opacity: 0.0,
-                child: SizedBox(
-                  height: 0,
-                  child: Text('KK Nutrivet'),
-                ),
-              ),
-
-              // Soft pulsing loader
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.white.withValues(alpha: 0.85),
-                  ),
-                  semanticsLabel: 'Opening KK Nutrivet',
-                ),
-              ),
-            ],
+              semanticsLabel: 'Opening KK Nutrivet',
+            ),
           ),
         ),
       ),

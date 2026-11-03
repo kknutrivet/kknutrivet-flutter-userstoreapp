@@ -11,71 +11,87 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('SplashScreen renders premium brand header and trust badge without overflow',
-      (tester) async {
-    tester.view.physicalSize = const Size(360 * 2, 780 * 2);
-    tester.view.devicePixelRatio = 2.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'SplashScreen places tagline beneath the logo and only the loader at the bottom',
+    (tester) async {
+      tester.view.physicalSize = const Size(360 * 2, 780 * 2);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final router = GoRouter(
-      initialLocation: '/splash',
-      routes: [
-        GoRoute(
-          path: '/splash',
-          builder: (context, state) => const SplashScreen(),
-        ),
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const Scaffold(body: Text('Home Page')),
-        ),
-        GoRoute(
-          path: '/onboarding',
-          builder: (context, state) => const Scaffold(body: Text('Onboarding Page')),
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          onboardingProvider.overrideWith(() => _MockOnboardingNotifier(true)),
-          authProvider.overrideWith(() => _MockAuthNotifier()),
+      final router = GoRouter(
+        initialLocation: '/splash',
+        routes: [
+          GoRoute(
+            path: '/splash',
+            builder: (context, state) => const SplashScreen(),
+          ),
+          GoRoute(
+            path: '/home',
+            builder: (context, state) =>
+                const Scaffold(body: Text('Home Page')),
+          ),
+          GoRoute(
+            path: '/onboarding',
+            builder: (context, state) =>
+                const Scaffold(body: Text('Onboarding Page')),
+          ),
         ],
-        child: MaterialApp.router(
-          routerConfig: router,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            onboardingProvider.overrideWith(
+              () => _MockOnboardingNotifier(true),
+            ),
+            authProvider.overrideWith(() => _MockAuthNotifier()),
+          ],
+          child: MaterialApp.router(routerConfig: router),
         ),
-      ),
-    );
+      );
 
-    // Initial frame
-    await tester.pump(const Duration(milliseconds: 100));
+      // Initial frame
+      await tester.pump(const Duration(milliseconds: 100));
 
-    // Verify brand assets and typography
-    expect(find.text('KK NUTRIVET'), findsOneWidget);
-    expect(find.text('KK Nutrivet'), findsOneWidget);
-    expect(find.text('Nutrition. Wellness. Veterinary care.'), findsOneWidget);
-    expect(find.text('Care for every animal.'), findsOneWidget);
+      // Verify brand assets and typography
+      expect(find.text('KK NUTRIVET'), findsNothing);
+      expect(find.text('KK Nutrivet'), findsNothing);
+      expect(
+        find.text('Nutrition. Wellness. Veterinary care.'),
+        findsOneWidget,
+      );
+      expect(find.text('Care for every animal.'), findsNothing);
 
-    // Verify company logo is displayed and not dr-paw mascot
-    final imageFinder = find.byType(Image);
-    expect(imageFinder, findsOneWidget);
-    final imageWidget = tester.widget<Image>(imageFinder);
-    final assetImage = imageWidget.image as AssetImage;
-    expect(assetImage.assetName, 'assets/images/logo.png');
-    expect(assetImage.assetName, isNot(contains('dr-paw')));
+      // Verify company logo is displayed and not dr-paw mascot
+      final imageFinder = find.byType(Image);
+      expect(imageFinder, findsOneWidget);
+      final imageWidget = tester.widget<Image>(imageFinder);
+      final assetImage = imageWidget.image as AssetImage;
+      expect(assetImage.assetName, 'assets/images/logo.png');
+      expect(assetImage.assetName, isNot(contains('dr-paw')));
 
-    // Verify horizontal centering on 360dp screen (center = 180dp)
-    final brandCenter = tester.getCenter(find.text('KK NUTRIVET'));
-    expect(brandCenter.dx, closeTo(180.0, 1.0));
+      // Verify horizontal centering on 360dp screen (center = 180dp)
+      final brandCenter = tester.getCenter(imageFinder);
+      expect(brandCenter.dx, closeTo(180.0, 1.0));
 
-    // Clean timer resolution
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pumpAndSettle();
+      final tagline = find.text('Nutrition. Wellness. Veterinary care.');
+      final gap =
+          tester.getTopLeft(tagline).dy - tester.getBottomLeft(imageFinder).dy;
+      expect(gap, inInclusiveRange(16.0, 30.0));
+      expect(
+        tester.getTopLeft(find.byType(CircularProgressIndicator)).dy,
+        greaterThan(tester.getBottomLeft(tagline).dy),
+      );
 
-    // Verify router navigation
-    expect(find.text('Home Page'), findsOneWidget);
-  });
+      // Clean timer resolution
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      // Verify router navigation
+      expect(find.text('Home Page'), findsOneWidget);
+    },
+  );
 }
 
 class _MockOnboardingNotifier extends OnboardingNotifier {

@@ -86,7 +86,7 @@ class CartScreen extends ConsumerWidget {
           final settings =
               settingsAsync.valueOrNull ?? StoreSettings.defaults();
           final outOfStock = items.any(
-            (i) => i.comboId == null && (i.product?.inStock == false),
+            (i) => i.hasStockIssue,
           );
           final discount = draft.couponDiscount + draft.pointsToRedeem;
           final merchandiseAfterDiscount = (subtotal - discount).clamp(
@@ -189,6 +189,7 @@ class CartScreen extends ConsumerWidget {
                 ),
               ),
               CartCouponRow(subtotal: subtotal),
+                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('After changing items, apply your coupon again. Coin savings adjust to your cart.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
               const SizedBox(height: 8),
               CartPointsRow(subtotal: subtotal),
               const SizedBox(height: 8),
@@ -252,7 +253,7 @@ class CartScreen extends ConsumerWidget {
           final deliveryInfo = ref.watch(deliveryEtaProvider).valueOrNull;
           final settings = settingsAsync.valueOrNull;
           final blocked = items.any(
-            (i) => i.comboId == null && (i.product?.inStock == false),
+            (i) => i.hasStockIssue,
           );
           final merchandiseAfterDiscount =
               (subtotal - draft.couponDiscount - draft.pointsToRedeem).clamp(

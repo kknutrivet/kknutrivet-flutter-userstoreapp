@@ -1,6 +1,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../crashlytics/crashlytics_service.dart';
 import 'mixpanel_service.dart';
@@ -233,6 +234,8 @@ class AnalyticsService {
     } catch (_) {}
   }
 
+  final Set<String> _reportedPayments = {};
+
   Future<void> logPurchase({
     required String orderId,
     required double value,
@@ -243,7 +246,17 @@ class AnalyticsService {
     List<String>? productIds,
     String paymentMethod = 'prepaid',
   }) async {
+    final key = 'reported_payment_${orderId}_$paymentMethod';
+    if (!_reportedPayments.add(key)) return;
     try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(key) == true) return;
+      await prefs.setBool(key, true);
+    } catch (_) {}
+    try {
+      if (paymentMethod == 'advance') {
+        await _analytics?.logEvent(name: 'advance_paid', parameters: {'order_id': orderId, 'value': value, 'currency': 'INR'});
+      } else {
       await _analytics?.logPurchase(
         transactionId: orderId,
         currency: 'INR',
@@ -252,11 +265,12 @@ class AnalyticsService {
         tax: tax,
         coupon: coupon,
       );
+      }
     } catch (_) {}
 
     try {
       final isCod = paymentMethod.toLowerCase().contains('cod');
-      final eventName = isCod ? 'cod_order_placed' : 'purchase_completed';
+      final eventName = paymentMethod == 'advance' ? 'advance_paid' : isCod ? 'cod_order_placed' : 'purchase_completed';
       await MixpanelService.instance.track(eventName, {
         'order_id': orderId,
         'value': value,

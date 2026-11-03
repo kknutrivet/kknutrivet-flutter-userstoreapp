@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
-import '../../../core/widgets/welcome_art.dart';
 import '../../../providers/app_providers.dart';
 
 class _OnboardingSlide {
@@ -142,39 +141,209 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isLast = _index == _slides.length - 1;
     return Scaffold(
       backgroundColor: AppColors.homeCanvas,
-      body: SafeArea(child: Center(child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Row(children: [
-            const Expanded(child: Text('KK Nutrivet', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
-            TextButton(onPressed: _finish, child: const Text('Skip')),
-          ])),
-          Expanded(child: PageView.builder(
-            controller: _controller,
-            onPageChanged: (value) => setState(() => _index = value),
-            itemCount: _slides.length,
-            itemBuilder: (context, index) {
-              final slide = _slides[index];
-              return SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 12, 24, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                WelcomeArt(icon: slide.fallbackIcon, label: 'EXPLORE · ${index + 1} OF ${_slides.length}'),
-                const SizedBox(height: 28),
-                Text(slide.title, style: AppTheme.serif(fontSize: 30)),
-                const SizedBox(height: 14),
-                Text(slide.description, style: const TextStyle(fontSize: 16, height: 1.6, color: AppColors.textSecondary)),
-                const SizedBox(height: 20),
-                for (final highlight in slide.highlights.take(2)) Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.check_circle_outline, size: 20, color: AppColors.primaryDeep), const SizedBox(width: 10), Expanded(child: Text(highlight, style: const TextStyle(fontSize: 14, height: 1.4)))])),
-              ]));
-            },
-          )),
-          Padding(padding: const EdgeInsets.all(24), child: Column(children: [
-            Text('Step ${_index + 1} of ${_slides.length}', style: const TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(value: (_index + 1) / _slides.length, minHeight: 3, borderRadius: BorderRadius.circular(4)),
-            const SizedBox(height: 20),
-            Row(children: [if (_index > 0) ...[IconButton(onPressed: _previous, tooltip: 'Back', icon: const Icon(Icons.arrow_back)), const SizedBox(width: 12)], Expanded(child: FilledButton(onPressed: isLast ? _finish : _next, child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(isLast ? 'Explore KK Nutrivet' : 'Continue'))))]),
-          ])),
-        ]),
-      ))),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: 38,
+                            semanticLabel: 'KK Nutrivet',
+                          ),
+                        ),
+                      ),
+                      TextButton(onPressed: _finish, child: const Text('Skip')),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _controller,
+                    onPageChanged: (value) => setState(() => _index = value),
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      final slide = _slides[index];
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(28),
+                              child: AspectRatio(
+                                aspectRatio: 1.12,
+                                child: index == 2
+                                    ? Container(
+                                        color: const Color(0xFFE9F1E8),
+                                        padding: const EdgeInsets.all(28),
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.all(24),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                            ),
+                                            child: const Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Icon(
+                                                  Icons.description_outlined,
+                                                  size: 42,
+                                                  color: AppColors.primaryDeep,
+                                                ),
+                                                SizedBox(height: 16),
+                                                Text(
+                                                  'Your prescription',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'Photo → Review → Products',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 20),
+                                                LinearProgressIndicator(
+                                                  value: .65,
+                                                  minHeight: 4,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        slide.imagePath,
+                                        fit: BoxFit.cover,
+                                        alignment: index == 0
+                                            ? Alignment.centerRight
+                                            : const Alignment(.45, 0),
+                                        excludeFromSemantics: true,
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              [
+                                'SHOP WITH CONFIDENCE',
+                                'CARE, WITH SUPPORT',
+                                'PRESCRIPTIONS MADE SIMPLE',
+                                'EVERYDAY WELLNESS',
+                              ][index],
+                              style: const TextStyle(
+                                fontSize: 11,
+                                letterSpacing: 1.4,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              slide.title,
+                              style: AppTheme.serif(fontSize: 30),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              [
+                                'Find nutrition, medicines and everyday essentials for your pets and farm animals.',
+                                'Share your concern with the care team and book veterinary support when you need it.',
+                                'Upload a clear photo of your prescription. Our team will review it and help you find the products you need.',
+                                'Keep animal profiles and care dates together, with Dr. Paw AI for everyday questions.',
+                              ][index],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                height: 1.6,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Step ${_index + 1} of ${_slides.length}',
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _slides.length,
+                          (i) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: i == _index ? 24 : 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: i == _index
+                                  ? AppColors.primaryDeep
+                                  : AppColors.border,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          if (_index > 0) ...[
+                            IconButton(
+                              onPressed: _previous,
+                              tooltip: 'Back',
+                              icon: const Icon(Icons.arrow_back),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: isLast ? _finish : _next,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                child: Text(
+                                  isLast ? 'Explore KK Nutrivet' : 'Continue',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

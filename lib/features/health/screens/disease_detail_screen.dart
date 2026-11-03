@@ -339,7 +339,7 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                         description:
                             'It may have moved, or it may not be available right now.',
                         actionLabel: 'Browse Health Concerns',
-                        onAction: () => context.pop(),
+                        onAction: () => context.go('/diseases'),
                       ),
                     ),
                   );

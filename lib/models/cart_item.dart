@@ -32,6 +32,12 @@ class CartItem {
   double get unitPrice => comboPrice ?? variant?.price ?? product?.effectivePrice ?? 0;
   double get lineTotal => unitPrice * quantity;
 
+  bool get hasStockIssue {
+    final selected = variant ?? product?.variants.where((v) => v.id == variantId).firstOrNull;
+    final available = selected?.stock ?? product?.stock;
+    return available != null && quantity > available;
+  }
+
   /// Dynamic server-driven minimum quantity requirement for this product / variant.
   int get minimumQuantity =>
       variant?.minimumQuantity ?? product?.minimumQuantity ?? 1;

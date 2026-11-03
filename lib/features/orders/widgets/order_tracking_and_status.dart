@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/analytics/analytics_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/order_status.dart';
 import '../../../core/widgets/common.dart';
@@ -816,6 +817,8 @@ class _OrderPaymentRetryBannerState
           result['status'] == 'ADVANCE_PAID' ||
           result['status'] == 'SUCCESS';
       if (isPaid) {
+        final partial = widget.order.paymentMethod == 'PARTIAL_COD';
+        AnalyticsService.instance.logPurchase(orderId: widget.order.id, value: partial ? (widget.order.advanceAmount ?? 0) : widget.order.totalAmount, paymentMethod: partial ? 'advance' : 'prepaid');
         showToast('Payment confirmed');
       } else {
         showToast('Payment not confirmed yet', isError: true);
@@ -872,8 +875,8 @@ class _OrderPaymentRetryBannerState
                       width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
-                      'Complete payment',
+                  : Text(
+                      widget.order.paymentMethod == 'PARTIAL_COD' ? 'Pay advance' : 'Complete payment',
                       style: TextStyle(fontSize: 12.5),
                     ),
             ),
