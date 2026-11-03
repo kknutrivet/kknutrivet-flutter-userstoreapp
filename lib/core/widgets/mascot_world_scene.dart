@@ -5,24 +5,30 @@ import 'package:flutter/material.dart';
 
 /// Renders a whimsical, high-polish brand world featuring floating clouds,
 /// twinkle sparkle stars, subtle curved horizon line, ground shadow, and an
-/// animated floating Dr. Paw mascot matching the modern model illustration style.
+/// animated floating mascot or brand logo matching the modern model illustration style.
 class MascotWorldScene extends StatefulWidget {
   const MascotWorldScene({
     super.key,
     this.mascotAsset = 'assets/images/dr-paw-genz.png',
+    this.centerWidget,
     this.mascotHeight = 240,
     this.bottomContent,
     this.topBadge,
     this.gradientColors,
     this.floating = true,
+    this.showGroundShadow = true,
+    this.shadowWidth,
   });
 
   final String mascotAsset;
+  final Widget? centerWidget;
   final double mascotHeight;
   final Widget? bottomContent;
   final Widget? topBadge;
   final List<Color>? gradientColors;
   final bool floating;
+  final bool showGroundShadow;
+  final double? shadowWidth;
 
   @override
   State<MascotWorldScene> createState() => _MascotWorldSceneState();
@@ -138,50 +144,54 @@ class _MascotWorldSceneState extends State<MascotWorldScene>
 
                           const Spacer(flex: 3),
 
-                          // 4. Center Character & Ground Shadow
+                          // 4. Center Character or Logo & Ground Shadow
                           AnimatedBuilder(
                             animation: _bobAnimation,
                             builder: (context, child) {
+                              final baseShadowWidth = widget.shadowWidth ??
+                                  (effectiveMascotHeight * 0.55);
                               return Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // Mascot Image with Bobbing Float
+                                  // Center Widget or Mascot Image with Bobbing Float
                                   Transform.translate(
                                     offset: Offset(0, _bobAnimation.value),
-                                    child: Image.asset(
-                                      widget.mascotAsset,
-                                      height: effectiveMascotHeight,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, _, _) => Icon(
-                                        Icons.pets_rounded,
-                                        size: effectiveMascotHeight * 0.7,
-                                        color: Colors.white70,
+                                    child: widget.centerWidget ??
+                                        Image.asset(
+                                          widget.mascotAsset,
+                                          height: effectiveMascotHeight,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, _, _) => Icon(
+                                            Icons.pets_rounded,
+                                            size: effectiveMascotHeight * 0.7,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                  ),
+                                  if (widget.showGroundShadow) ...[
+                                    const SizedBox(height: 6),
+
+                                    // Elliptical Ground Shadow
+                                    Container(
+                                      width: baseShadowWidth *
+                                          (1.0 -
+                                              (_bobAnimation.value.abs() / 45.0)),
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.rectangle,
+                                        borderRadius: BorderRadius.circular(50),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.28),
+                                            blurRadius: 16,
+                                            spreadRadius: 2,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-
-                                  // Elliptical Ground Shadow
-                                  Container(
-                                    width: effectiveMascotHeight *
-                                        0.55 *
-                                        (1.0 -
-                                            (_bobAnimation.value.abs() / 45.0)),
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.rectangle,
-                                      borderRadius: BorderRadius.circular(50),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.28),
-                                          blurRadius: 16,
-                                          spreadRadius: 2,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  ],
                                 ],
                               );
                             },

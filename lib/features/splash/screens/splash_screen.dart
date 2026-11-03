@@ -31,7 +31,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       final results = await Future.wait([
         ref.read(onboardingProvider.future),
         ref.read(authProvider.future),
-        Future.delayed(const Duration(milliseconds: 700)),
+        Future.delayed(const Duration(milliseconds: 1000)),
       ]);
       if (!mounted) return;
 
@@ -58,7 +58,47 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: MascotWorldScene(
-        mascotHeight: 250,
+        shadowWidth: 160,
+        centerWidget: Semantics(
+          label: 'KK Nutrivet Logo',
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Gentle ambient backlight glow for the logo
+              Container(
+                width: 260,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                      blurRadius: 36,
+                      spreadRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+              // Brand Logo in crisp white silhouette on emerald world
+              Image.asset(
+                'assets/images/logo.png',
+                height: 84,
+                fit: BoxFit.contain,
+                color: Colors.white,
+                errorBuilder: (_, _, _) => const Text(
+                  'KK NUTRIVET',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         bottomContent: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(

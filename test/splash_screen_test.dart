@@ -57,6 +57,14 @@ void main() {
     expect(find.text('Nutrition. Wellness. Veterinary care.'), findsOneWidget);
     expect(find.text('Care for every animal.'), findsOneWidget);
 
+    // Verify company logo is displayed and not dr-paw mascot
+    final imageFinder = find.byType(Image);
+    expect(imageFinder, findsOneWidget);
+    final imageWidget = tester.widget<Image>(imageFinder);
+    final assetImage = imageWidget.image as AssetImage;
+    expect(assetImage.assetName, 'assets/images/logo.png');
+    expect(assetImage.assetName, isNot(contains('dr-paw')));
+
     // Verify horizontal centering on 360dp screen (center = 180dp)
     final brandCenter = tester.getCenter(find.text('KK NUTRIVET'));
     expect(brandCenter.dx, closeTo(180.0, 1.0));
