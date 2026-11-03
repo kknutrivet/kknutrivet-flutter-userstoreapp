@@ -199,18 +199,41 @@ class OrderCancelledBanner extends StatelessWidget {
   }
 }
 
-/// Horizontal 6-step delivery journey tracker matching the website's
-/// STATUS_STEPS: Received -> Confirmed -> Packed -> Shipped -> Out for
-/// delivery -> Delivered.
+/// 4-milestone delivery journey tracker: Placed -> Packed -> Shipped -> Delivered.
+/// Clean, spacious, and modern layout that prevents awkward text wrapping on mobile.
 class OrderJourneyTracker extends StatelessWidget {
   const OrderJourneyTracker({super.key, required this.order});
   final Order order;
 
+  int _getCompletedCount(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return 0;
+      case 'CONFIRMED':
+        return 1;
+      case 'PROCESSING':
+      case 'PACKED':
+        return 2;
+      case 'SHIPPED':
+      case 'OUT_FOR_DELIVERY':
+        return 3;
+      case 'DELIVERED':
+        return 4;
+      default:
+        return 1;
+    }
+  }
+
+  static const _milestones = [
+    ('Placed', Icons.receipt_long_outlined),
+    ('Packed', Icons.inventory_2_outlined),
+    ('Shipped', Icons.local_shipping_outlined),
+    ('Delivered', Icons.home_outlined),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final currentStep = orderTrackerSteps.indexWhere(
-      (s) => s.$1 == order.status,
-    );
+    final completedCount = _getCompletedCount(order.status);
     final info = statusInfoFor(order.status);
 
     return Container(
@@ -232,24 +255,28 @@ class OrderJourneyTracker extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Delivery journey',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-                  Text(
-                    'Track your order progress',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11.5,
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Delivery journey',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 2),
+                    Text(
+                      'Track your order progress',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: info.bgColor,
                   borderRadius: BorderRadius.circular(20),
@@ -258,78 +285,170 @@ class OrderJourneyTracker extends StatelessWidget {
                   info.label,
                   style: TextStyle(
                     color: info.color,
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: List.generate(orderTrackerSteps.length * 2 - 1, (i) {
-              if (i.isOdd) {
-                final segmentIndex = i ~/ 2;
-                final done = segmentIndex < currentStep;
-                return Expanded(
-                  child: Container(
-                    height: 3,
-                    color: done ? AppColors.primary : AppColors.border,
-                  ),
-                );
-              }
-              final stepIndex = i ~/ 2;
-              final step = orderTrackerSteps[stepIndex];
-              final done = stepIndex < currentStep;
-              final active = stepIndex == currentStep;
-              return Column(
+          const SizedBox(height: 24),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final totalWidth = constraints.maxWidth;
+              final stepWidth = totalWidth / 4;
+              final firstCenter = stepWidth / 2;
+              final lastCenter = totalWidth - (stepWidth / 2);
+              final fillRatio = (completedCount >= 4 ? 1.0 : (completedCount / 3.0)).clamp(0.0, 1.0);
+
+              return Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color:
-                          done || active ? AppColors.primary : AppColors.border,
-                      border: active
-                          ? Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              width: 4,
-                            )
-                          : null,
-                    ),
-                    alignment: Alignment.center,
-                    child: done
-                        ? const Icon(Icons.check, size: 14, color: Colors.white)
-                        : Text(
-                            '${stepIndex + 1}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: active
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: 46,
-                    child: Text(
-                      step.$3,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                        color:
-                            active ? AppColors.primary : AppColors.textSecondary,
+                  // Background gray track
+                  Positioned(
+                    top: 14.5,
+                    left: firstCenter,
+                    right: firstCenter,
+                    child: Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
+                  // Completed green track
+                  Positioned(
+                    top: 14.5,
+                    left: firstCenter,
+                    child: Container(
+                      height: 3,
+                      width: (lastCenter - firstCenter) * fillRatio,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  // Step items
+                  Row(
+                    children: List.generate(4, (index) {
+                      final isDone = index < completedCount;
+                      final isActive = index == completedCount;
+                      final step = _milestones[index];
+
+                      return Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDone
+                                    ? AppColors.primary
+                                    : (isActive ? Colors.white : const Color(0xFFF3F4F6)),
+                                border: Border.all(
+                                  color: isDone
+                                      ? AppColors.primary
+                                      : (isActive ? AppColors.primary : const Color(0xFFD1D5DB)),
+                                  width: isActive ? 2.5 : 1.5,
+                                ),
+                                boxShadow: isActive
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(alpha: 0.25),
+                                          blurRadius: 6,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: isDone
+                                    ? const Icon(
+                                        Icons.check_rounded,
+                                        size: 18,
+                                        color: Colors.white,
+                                      )
+                                    : Icon(
+                                        step.$2,
+                                        size: 16,
+                                        color: isActive
+                                            ? AppColors.primary
+                                            : const Color(0xFF9CA3AF),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              step.$1,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isActive
+                                    ? FontWeight.w800
+                                    : (isDone ? FontWeight.w600 : FontWeight.w500),
+                                color: (isDone || isActive)
+                                    ? AppColors.textPrimary
+                                    : AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
                 ],
               );
-            }),
+            },
+          ),
+          const SizedBox(height: 16),
+          // Current status highlight box
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: info.bgColor.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: info.color.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  info.emoji,
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        info.label,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: info.color,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        info.description,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

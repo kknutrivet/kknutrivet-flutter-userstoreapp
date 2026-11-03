@@ -342,5 +342,40 @@ void main() {
       expect(navigatedLocation, '/home');
       expect(find.text('Home Page'), findsOneWidget);
     });
+
+    testWidgets('OrderJourneyTracker renders 4 spacious milestones without text overflow on narrow devices', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2, 600 * 2);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final fakeOrder = Order(
+        id: 'ord-journey-1',
+        orderNumber: 'KK-12345',
+        totalAmount: 1499,
+        status: 'CONFIRMED',
+        createdAt: DateTime.now(),
+        items: const [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OrderJourneyTracker(order: fakeOrder),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delivery journey'), findsOneWidget);
+      expect(find.text('Placed'), findsOneWidget);
+      expect(find.text('Packed'), findsOneWidget);
+      expect(find.text('Shipped'), findsOneWidget);
+      expect(find.text('Delivered'), findsOneWidget);
+      expect(find.text('Confirmed'), findsNWidgets(2)); // Header badge & status card
+    });
   });
 }
