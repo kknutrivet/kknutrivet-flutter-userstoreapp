@@ -206,5 +206,65 @@ Urgent delivery notification for coastal areas:
       expect(find.text('Important Health Update'), findsNothing);
       expect(await AnnouncementService.instance.isDismissed(announcement), isTrue);
     });
+
+    testWidgets('showInAppAnnouncementDialog opens FullscreenFestiveHeroOverlay for FESTIVE campaigns', (tester) async {
+      const festiveAnnouncement = InAppAnnouncement(
+        id: 'ann_diwali_hero',
+        isActive: true,
+        type: 'FESTIVE',
+        layoutMode: 'FULLSCREEN_HERO',
+        eyebrow: 'A LITTLE LIGHT. A LOT OF LOVE.',
+        title: 'Happy Diwali',
+        message: 'For you, your family and every little paw.',
+        highlightTitle: 'Celebrate bright. Keep pets safe.',
+        highlightMessage: 'More lights, less noise. Keep your pets cosy and safe.',
+        ctaText: 'Continue shopping',
+        ctaLink: '/products',
+        footerText: 'More light. Less noise. Love for every animal.',
+      );
+
+      expect(festiveAnnouncement.isFullscreenHero, isTrue);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showInAppAnnouncementDialog(context, festiveAnnouncement),
+                  child: const Text('Show Festive'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Open fullscreen overlay
+      await tester.tap(find.text('Show Festive'));
+      await tester.pumpAndSettle();
+
+      // Verify Fullscreen elements
+      expect(find.text('KK NUTRIVET'), findsOneWidget);
+      expect(find.text('HEALTH · CARE · TRUST'), findsOneWidget);
+      expect(find.text('A LITTLE LIGHT. A LOT OF LOVE.'), findsOneWidget);
+      expect(find.text('Happy Diwali'), findsOneWidget);
+      expect(find.text('For you, your family and every little paw.'), findsOneWidget);
+      expect(find.text('Celebrate bright. Keep pets safe.'), findsOneWidget);
+      expect(find.text('More lights, less noise. Keep your pets cosy and safe.'), findsOneWidget);
+      expect(find.text('Continue shopping'), findsOneWidget);
+      expect(find.text('More light. Less noise. Love for every animal.'), findsOneWidget);
+
+      // Verify close button
+      final closeBtn = find.byIcon(Icons.close_rounded);
+      expect(closeBtn, findsOneWidget);
+
+      // Tap close button
+      await tester.tap(closeBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Happy Diwali'), findsNothing);
+      expect(await AnnouncementService.instance.isDismissed(festiveAnnouncement), isTrue);
+    });
   });
 }

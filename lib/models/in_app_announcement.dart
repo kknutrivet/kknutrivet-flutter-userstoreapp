@@ -8,6 +8,11 @@ class InAppAnnouncement {
     required this.title,
     required this.message,
     this.imageUrl,
+    this.bgImageUrl,
+    this.eyebrow,
+    this.highlightTitle,
+    this.highlightMessage,
+    this.footerText,
     this.ctaText,
     this.ctaLink,
     this.target = 'ALL',
@@ -19,12 +24,17 @@ class InAppAnnouncement {
 
   final String id;
   final bool isActive;
-  final String type; // ALERT, FEATURE, OFFER, INFO
-  final String layoutMode; // TEXT_ONLY, IMAGE_AND_TEXT, LARGE_IMAGE_POSTER
+  final String type; // ALERT, FEATURE, OFFER, INFO, FESTIVE
+  final String layoutMode; // TEXT_ONLY, IMAGE_AND_TEXT, LARGE_IMAGE_POSTER, FULLSCREEN_HERO, FESTIVE_HERO
   final String imageFit; // CONTAIN, COVER
   final String title;
   final String message;
   final String? imageUrl;
+  final String? bgImageUrl;
+  final String? eyebrow;
+  final String? highlightTitle;
+  final String? highlightMessage;
+  final String? footerText;
   final String? ctaText;
   final String? ctaLink;
   final String target; // ALL, HOMEPAGE_ONLY, CHECKOUT_ONLY
@@ -33,11 +43,15 @@ class InAppAnnouncement {
   final int version;
   final String? updatedAt;
 
+  bool get isFullscreenHero =>
+      layoutMode == 'FULLSCREEN_HERO' ||
+      layoutMode == 'FESTIVE_HERO' ||
+      type == 'FESTIVE';
   bool get isLargePoster => layoutMode == 'LARGE_IMAGE_POSTER';
   bool get hasImage =>
       layoutMode != 'TEXT_ONLY' &&
-      imageUrl != null &&
-      imageUrl!.trim().isNotEmpty;
+      ((imageUrl != null && imageUrl!.trim().isNotEmpty) ||
+          (bgImageUrl != null && bgImageUrl!.trim().isNotEmpty));
   bool get hasCta =>
       ctaText != null &&
       ctaText!.trim().isNotEmpty &&
@@ -46,16 +60,19 @@ class InAppAnnouncement {
 
   factory InAppAnnouncement.fromJson(Map<String, dynamic> json) {
     final rawType = (json['type'] as String?)?.toUpperCase() ?? 'INFO';
-    final type = ['ALERT', 'FEATURE', 'OFFER', 'INFO'].contains(rawType)
+    final type = ['ALERT', 'FEATURE', 'OFFER', 'INFO', 'FESTIVE'].contains(rawType)
         ? rawType
         : 'INFO';
 
-    final hasImg = (json['imageUrl'] as String?)?.trim().isNotEmpty == true;
+    final hasImg = (json['imageUrl'] as String?)?.trim().isNotEmpty == true ||
+        (json['bgImageUrl'] as String?)?.trim().isNotEmpty == true;
     final hasTxt = (json['title'] as String?)?.trim().isNotEmpty == true ||
         (json['message'] as String?)?.trim().isNotEmpty == true;
 
     String fallbackLayout = 'TEXT_ONLY';
-    if (hasImg && hasTxt) {
+    if (type == 'FESTIVE') {
+      fallbackLayout = 'FULLSCREEN_HERO';
+    } else if (hasImg && hasTxt) {
       fallbackLayout = 'IMAGE_AND_TEXT';
     } else if (hasImg && !hasTxt) {
       fallbackLayout = 'LARGE_IMAGE_POSTER';
@@ -67,6 +84,8 @@ class InAppAnnouncement {
       'TEXT_ONLY',
       'IMAGE_AND_TEXT',
       'LARGE_IMAGE_POSTER',
+      'FULLSCREEN_HERO',
+      'FESTIVE_HERO',
     ].contains(rawLayout)
         ? rawLayout
         : fallbackLayout;
@@ -93,6 +112,12 @@ class InAppAnnouncement {
       title: (json['title'] as String?) ?? '',
       message: (json['message'] as String?) ?? '',
       imageUrl: (json['imageUrl'] as String?)?.trim(),
+      bgImageUrl: (json['bgImageUrl'] as String?)?.trim(),
+      eyebrow: (json['eyebrow'] as String?)?.trim() ??
+          (json['subtitle'] as String?)?.trim(),
+      highlightTitle: (json['highlightTitle'] as String?)?.trim(),
+      highlightMessage: (json['highlightMessage'] as String?)?.trim(),
+      footerText: (json['footerText'] as String?)?.trim(),
       ctaText: (json['ctaText'] as String?)?.trim(),
       ctaLink: (json['ctaLink'] as String?)?.trim(),
       target: target,
@@ -112,6 +137,11 @@ class InAppAnnouncement {
         'title': title,
         'message': message,
         'imageUrl': imageUrl,
+        'bgImageUrl': bgImageUrl,
+        'eyebrow': eyebrow,
+        'highlightTitle': highlightTitle,
+        'highlightMessage': highlightMessage,
+        'footerText': footerText,
         'ctaText': ctaText,
         'ctaLink': ctaLink,
         'target': target,

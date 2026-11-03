@@ -476,12 +476,406 @@ Future<void> showInAppAnnouncementDialog(
   BuildContext context,
   InAppAnnouncement announcement,
 ) {
+  if (announcement.isFullscreenHero) {
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: const Color(0xE6051510),
+      transitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (ctx, anim1, anim2) =>
+          FullscreenFestiveHeroOverlay(announcement: announcement),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic),
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.96, end: 1.0).animate(
+              CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
     barrierColor: const Color(0x8A000000), // slate-950/50
     builder: (ctx) => InAppAnnouncementDialog(announcement: announcement),
   );
+}
+
+/// Fullscreen Festive Hero Overlay matching web Diwali & festive campaign takeovers.
+class FullscreenFestiveHeroOverlay extends ConsumerStatefulWidget {
+  const FullscreenFestiveHeroOverlay({
+    super.key,
+    required this.announcement,
+  });
+
+  final InAppAnnouncement announcement;
+
+  @override
+  ConsumerState<FullscreenFestiveHeroOverlay> createState() =>
+      _FullscreenFestiveHeroOverlayState();
+}
+
+class _FullscreenFestiveHeroOverlayState
+    extends ConsumerState<FullscreenFestiveHeroOverlay> {
+  Future<void> _handleDismiss() async {
+    final service = ref.read(announcementServiceProvider);
+    await service.recordDismissal(widget.announcement);
+    if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
+  Future<void> _handleCta() async {
+    final service = ref.read(announcementServiceProvider);
+    await service.recordDismissal(widget.announcement);
+
+    if (!mounted) return;
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+
+    final targetLink = widget.announcement.ctaLink;
+    if (targetLink == null || targetLink.trim().isEmpty) return;
+
+    final trimmed = targetLink.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      try {
+        await launchUrlString(trimmed, mode: LaunchMode.externalApplication);
+      } catch (_) {}
+    } else {
+      try {
+        if (mounted) context.push(trimmed);
+      } catch (_) {
+        if (mounted) context.go(trimmed);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ann = widget.announcement;
+    final bg = ann.bgImageUrl ?? ann.imageUrl;
+    final hasHighlight = (ann.highlightTitle != null &&
+            ann.highlightTitle!.isNotEmpty) ||
+        (ann.highlightMessage != null && ann.highlightMessage!.isNotEmpty);
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          ref.read(announcementServiceProvider).recordDismissal(ann);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF071B14),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Background Festive Image or Ambient Gradient ───────────
+            if (bg != null && bg.isNotEmpty)
+              CachedNetworkImage(
+                imageUrl: bg,
+                fit: BoxFit.cover,
+                errorWidget: (_, _, _) => _buildAmbientGradient(),
+                placeholder: (_, _) => _buildAmbientGradient(),
+              )
+            else
+              _buildAmbientGradient(),
+
+            // ── Atmospheric Darkening / Vignette Overlay ─────────────────
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xD904120D),
+                    Color(0x8008241B),
+                    Color(0xCC051813),
+                    Color(0xF2030E0B),
+                  ],
+                  stops: [0.0, 0.35, 0.7, 1.0],
+                ),
+              ),
+            ),
+
+            // ── Main Content Scrollable Area ─────────────────────────────
+            SafeArea(
+              child: Column(
+                children: [
+                  // Top close button bar
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8, right: 16),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _handleDismiss,
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0x66000000),
+                              border: Border.all(
+                                color: const Color(0x40E5C07B),
+                                width: 1.2,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x33000000),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Center content
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Brand header
+                              const Text(
+                                'KK NUTRIVET',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2.4,
+                                  color: Color(0xFFF3D08A),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                'HEALTH · CARE · TRUST',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2.6,
+                                  color: Color(0xB3F3D08A),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+
+                              // Eyebrow
+                              Text(
+                                ann.eyebrow?.toUpperCase() ??
+                                    'A LITTLE LIGHT. A LOT OF LOVE.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2.0,
+                                  color: Color(0xFFE2C899),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Main festive title
+                              Text(
+                                ann.title,
+                                textAlign: TextAlign.center,
+                                style: AppTheme.serif(
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  height: 1.15,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Wish / message
+                              Text(
+                                ann.message,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  height: 1.45,
+                                  color: Color(0xFFE2EBE5),
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              const SizedBox(height: 22),
+
+                              // Pet safety highlight card
+                              if (hasHighlight)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xD90D2F23),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFF1E5B42),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x33000000),
+                                        blurRadius: 12,
+                                        offset: Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Padding(
+                                        padding:
+                                            EdgeInsets.only(top: 2, right: 12),
+                                        child: Icon(
+                                          Icons.favorite_outline_rounded,
+                                          color: Color(0xFF6EE7B7),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            if (ann.highlightTitle != null)
+                                              Text(
+                                                ann.highlightTitle!,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
+                                            if (ann.highlightMessage != null) ...[
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                ann.highlightMessage!,
+                                                style: const TextStyle(
+                                                  fontSize: 11.5,
+                                                  height: 1.35,
+                                                  color: Color(0xFFB8DACB),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              const SizedBox(height: 24),
+
+                              // CTA Button
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: _handleCta,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFE5C07B),
+                                    foregroundColor: const Color(0xFF07261C),
+                                    elevation: 4,
+                                    shadowColor: const Color(0x66E5C07B),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        ann.ctaText ?? 'Continue shopping',
+                                        style: const TextStyle(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.4,
+                                          color: Color(0xFF07261C),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 16,
+                                        color: Color(0xFF07261C),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              if (ann.footerText != null &&
+                                  ann.footerText!.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                Text(
+                                  ann.footerText!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0x99FFFFFF),
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmbientGradient() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(0.0, -0.2),
+          radius: 1.1,
+          colors: [
+            Color(0xFF134533),
+            Color(0xFF09291D),
+            Color(0xFF04120D),
+          ],
+          stops: [0.0, 0.55, 1.0],
+        ),
+      ),
+    );
+  }
 }
 
 /// Global coordinator to trigger in-app announcement when eligible.
