@@ -109,7 +109,7 @@ void main() {
       // Verify all 5 tab labels exist
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Shop'), findsOneWidget);
-      expect(find.text('Consult'), findsOneWidget);
+      expect(find.text('Care'), findsOneWidget);
       expect(find.text('Shots'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
 
@@ -117,7 +117,7 @@ void main() {
       expect(find.byIcon(Icons.medical_services_rounded), findsOneWidget);
 
       // Verify tap on Consult triggers index 2
-      await tester.tap(find.text('Consult'));
+      await tester.tap(find.text('Care'));
       await tester.pump();
       expect(tappedIndex, 2);
 

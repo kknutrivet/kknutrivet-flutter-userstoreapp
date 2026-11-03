@@ -48,15 +48,15 @@ class HomeBrandBar extends ConsumerWidget {
           button: true,
           label: 'Shopping Cart${cartCount > 0 ? " ($cartCount items)" : ""}',
           child: Container(
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             margin: const EdgeInsets.only(right: 16),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -143,8 +143,6 @@ class HomeTopBarCard extends ConsumerWidget {
     final cityLabel = (info?.city != null && info!.city!.trim().isNotEmpty)
         ? '${info.city} ($pincode)'
         : (pincode == null || pincode.isEmpty ? null : 'Pincode $pincode');
-    final serviceable =
-        info?.serviceable ?? (pincode != null && pincode.length == 6);
 
     return Container(
       color: Colors.white,
@@ -161,7 +159,7 @@ class HomeTopBarCard extends ConsumerWidget {
                 _showPincodeModalSheet(context);
               },
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 40),
+                constraints: const BoxConstraints(minHeight: 48),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 4,
@@ -179,14 +177,14 @@ class HomeTopBarCard extends ConsumerWidget {
                         child: cityLabel == null
                             ? const Row(
                                 children: [
-                                  Text(
+                                  Flexible(child: Text(
                                     'Set delivery location',
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimary,
                                     ),
-                                  ),
+                                  )),
                                   SizedBox(width: 2),
                                   Icon(
                                     Icons.keyboard_arrow_down_rounded,
@@ -231,38 +229,7 @@ class HomeTopBarCard extends ConsumerWidget {
                                 ],
                               ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryWash,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.local_shipping_outlined,
-                              size: 11,
-                              color: AppColors.primaryDeep,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              (cityLabel != null && serviceable)
-                                  ? 'Fast delivery'
-                                  : '⚡ 24h Dispatch',
-                              style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDeep,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+
                     ],
                   ),
                 ),
@@ -351,7 +318,7 @@ class HomeSearchField extends StatelessWidget {
           context.push('/search');
         },
         child: Container(
-          height: 46,
+          height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFE2EBE6)),
@@ -375,7 +342,7 @@ class HomeSearchField extends StatelessWidget {
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  'Search medicines, supplements, feed...',
+                  'Search products',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -519,7 +486,7 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
           children: [
             Center(
               child: Container(
-                width: 40,
+                width: 48,
                 height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.borderStrong,

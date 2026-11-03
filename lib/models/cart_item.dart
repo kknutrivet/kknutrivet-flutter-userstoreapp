@@ -29,55 +29,62 @@ class CartItem {
   final Product? product;
   final ProductVariant? variant;
 
-  double get unitPrice => comboPrice ?? variant?.price ?? product?.effectivePrice ?? 0;
+  double get unitPrice =>
+      comboPrice ?? variant?.price ?? product?.effectivePrice ?? 0;
   double get lineTotal => unitPrice * quantity;
 
-  bool get hasStockIssue {
-    final selected = variant ?? product?.variants.where((v) => v.id == variantId).firstOrNull;
-    final available = selected?.stock ?? product?.stock;
-    return available != null && quantity > available;
+  int? get availableStock {
+    final selected =
+        variant ??
+        product?.variants.where((v) => v.id == variantId).firstOrNull;
+    return selected?.stock ?? product?.stock;
   }
+
+  bool get hasStockIssue =>
+      availableStock != null && quantity > availableStock!;
 
   /// Dynamic server-driven minimum quantity requirement for this product / variant.
   int get minimumQuantity =>
       variant?.minimumQuantity ?? product?.minimumQuantity ?? 1;
 
   /// Maximum available stock limit if provided by backend catalog.
-  int get maxStock {
-    final vStock = variant?.stock;
-    if (vStock != null && vStock > 0) return vStock;
-    final pStock = product?.stock;
-    if (pStock != null && pStock > 0) return pStock;
-    return 999;
-  }
+  int get maxStock => availableStock ?? 999;
 
   factory CartItem.fromJson(Map<String, dynamic> json) => CartItem(
-        id: json['id'].toString(),
-        productId: json['productId']?.toString() ?? '',
-        variantId: json['variantId']?.toString(),
-        quantity: (json['quantity'] as num?)?.toInt() ?? 1,
-        comboId: json['comboId']?.toString(),
-        comboPrice: (json['comboPrice'] as num?)?.toDouble(),
-        comboName: json['comboName']?.toString(),
-        comboImage: json['comboImage']?.toString() ?? (json['combo'] is Map ? json['combo']['image']?.toString() : null),
-        comboDescription: json['comboDescription']?.toString(),
-        comboQuantity: (json['comboQuantity'] as num?)?.toInt(),
-        product: json['product'] != null ? Product.fromJson(Map<String, dynamic>.from(json['product'] as Map)) : null,
-        variant: json['variant'] != null ? ProductVariant.fromJson(Map<String, dynamic>.from(json['variant'] as Map)) : null,
-      );
+    id: json['id'].toString(),
+    productId: json['productId']?.toString() ?? '',
+    variantId: json['variantId']?.toString(),
+    quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+    comboId: json['comboId']?.toString(),
+    comboPrice: (json['comboPrice'] as num?)?.toDouble(),
+    comboName: json['comboName']?.toString(),
+    comboImage:
+        json['comboImage']?.toString() ??
+        (json['combo'] is Map ? json['combo']['image']?.toString() : null),
+    comboDescription: json['comboDescription']?.toString(),
+    comboQuantity: (json['comboQuantity'] as num?)?.toInt(),
+    product: json['product'] != null
+        ? Product.fromJson(Map<String, dynamic>.from(json['product'] as Map))
+        : null,
+    variant: json['variant'] != null
+        ? ProductVariant.fromJson(
+            Map<String, dynamic>.from(json['variant'] as Map),
+          )
+        : null,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'productId': productId,
-        if (variantId != null) 'variantId': variantId,
-        'quantity': quantity,
-        if (comboId != null) 'comboId': comboId,
-        if (comboPrice != null) 'comboPrice': comboPrice,
-        if (comboName != null) 'comboName': comboName,
-        if (comboImage != null) 'comboImage': comboImage,
-        if (comboDescription != null) 'comboDescription': comboDescription,
-        if (comboQuantity != null) 'comboQuantity': comboQuantity,
-        if (product != null) 'product': product!.toJson(),
-        if (variant != null) 'variant': variant!.toJson(),
-      };
+    'id': id,
+    'productId': productId,
+    if (variantId != null) 'variantId': variantId,
+    'quantity': quantity,
+    if (comboId != null) 'comboId': comboId,
+    if (comboPrice != null) 'comboPrice': comboPrice,
+    if (comboName != null) 'comboName': comboName,
+    if (comboImage != null) 'comboImage': comboImage,
+    if (comboDescription != null) 'comboDescription': comboDescription,
+    if (comboQuantity != null) 'comboQuantity': comboQuantity,
+    if (product != null) 'product': product!.toJson(),
+    if (variant != null) 'variant': variant!.toJson(),
+  };
 }

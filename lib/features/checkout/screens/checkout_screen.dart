@@ -41,6 +41,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _paymentSectionKey = GlobalKey();
+  final _addressSectionKey = GlobalKey();
   String? _selectedAddressId;
   bool _addressExpanded = false;
   bool _orderReviewExpanded = false;
@@ -138,6 +139,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
             ),
           ),
+          bottom: (_submitting || _checkingDelivery || _validatingCoupon)
+              ? const PreferredSize(
+                  preferredSize: Size.fromHeight(3.0),
+                  child: LinearProgressIndicator(
+                    minHeight: 3.0,
+                    backgroundColor: Colors.transparent,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primaryDeep),
+                  ),
+                )
+              : null,
         ),
         body: cartAsync.when(
           data: (items) {
@@ -185,7 +197,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               children: [
                 const CheckoutStepHeader(),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('After changing items, apply your coupon again. Coin savings adjust to your cart.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
                 const SizedBox(height: 16),
                 CheckoutOrderReviewSection(
                   items: items,
@@ -205,6 +216,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const SizedBox(height: 8),
                 CheckoutAddressSection(
+                  key: _addressSectionKey,
                   addressesAsync: addressesAsync,
                   selectedAddressId: _selectedAddressId,
                   addressExpanded: _addressExpanded,
@@ -289,7 +301,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           },
           loading: () => const LoadingView(),
           error: (e, _) => ErrorView(
-            message: 'Could not load this information. Check your connection and retry.',
+            message:
+                'Could not load this information. Check your connection and retry.',
             onRetry: () => ref.invalidate(cartProvider),
           ),
         ),
@@ -320,6 +333,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             return CheckoutStickyPlaceOrderBar(
               canPlace: _canPlace(),
               disabledReason: _checkoutBlockReason,
+              resolveLabel: _checkoutResolveLabel,
               onResolve: _checkingDelivery ? null : _resolveCheckoutBlock,
               submitting: _submitting,
               paymentMethod: _paymentMethod,
@@ -353,7 +367,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!_delivery!.serviceable) {
       return 'Delivery is unavailable here. Choose another address.';
     }
-    if ((ref.read(cartProvider).value ?? []).any((item) => item.hasStockIssue)) {
+    if ((ref.read(cartProvider).value ?? []).any(
+      (item) => item.hasStockIssue,
+    )) {
       return 'Some quantities are unavailable. Review your cart.';
     }
     if (_rxBlocked) {
@@ -365,23 +381,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return null;
   }
 
-  void _resolveCheckoutBlock() {
-    if ((ref.read(cartProvider).value ?? []).any((item) => item.hasStockIssue)) {
-      context.push('/cart');
-      return;
+  String get _checkoutResolveLabel {
+    if (_selectedAddress == null) return 'Choose address';
+    if (_checkingDelivery) return 'Checking delivery…';
+    if (_delivery == null || _delivery?.pincode != _selectedAddress?.zipCode) {
+      return 'Retry delivery check';
     }
-    if (_selectedAddress == null || _delivery?.serviceable == false) {
-      context.push<Address>('/addresses/new').then((address) {
-        if (!mounted) return;
-        ref.invalidate(addressesProvider);
-        if (address != null) {
-          setState(() => _selectedAddressId = address.id);
-          _scheduleDeliveryCheck(address.zipCode);
-        }
-      });
+    if (_delivery?.serviceable == false) return 'Choose address';
+    if ((ref.read(cartProvider).value ?? []).any(
+      (item) => item.hasStockIssue,
+    )) {
+      return 'Review cart';
+    }
+    if (_rxBlocked) return 'View prescription status';
+    return 'Choose payment method';
+  }
+
+  void _resolveCheckoutBlock() {
+    if (_selectedAddress == null) {
+      _showAddressChoices();
+    } else if (_checkingDelivery) {
+      return;
     } else if (_delivery == null ||
         _delivery?.pincode != _selectedAddress?.zipCode) {
       _scheduleDeliveryCheck(_selectedAddress!.zipCode);
+    } else if (!_delivery!.serviceable) {
+      _showAddressChoices();
+    } else if ((ref.read(cartProvider).value ?? []).any(
+      (item) => item.hasStockIssue,
+    )) {
+      context.push('/cart');
     } else if (_rxBlocked) {
       context.push('/prescriptions');
     } else if (_paymentSectionKey.currentContext != null) {
@@ -390,6 +419,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         duration: const Duration(milliseconds: 250),
       );
     }
+  }
+
+  void _showAddressChoices() {
+    setState(() => _addressExpanded = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = _addressSectionKey.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(
+          target,
+          duration: const Duration(milliseconds: 250),
+        );
+      }
+    });
   }
 
   // ── Delivery check ───────────────────────────────────────────────────────
@@ -523,7 +566,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (_submitting || _checkingDelivery) return false;
     if (_selectedAddress == null) return false;
     if (_rxBlocked) return false;
-    if ((ref.read(cartProvider).value ?? []).any((item) => item.hasStockIssue)) return false;
+    if ((ref.read(cartProvider).value ?? []).any(
+      (item) => item.hasStockIssue,
+    )) {
+      return false;
+    }
     final info = _delivery;
     if (info == null ||
         info.pincode != _selectedAddress?.zipCode ||
@@ -659,13 +706,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             items: itemsPayload,
           );
       createdOrderId = order.id;
-      if (_paymentMethod == 'COD') { AnalyticsService.instance.logPurchase(
-        paymentMethod: 'COD',
-        orderId: order.id,
-        value: order.totalAmount,
-        shipping: order.deliveryCharge,
-        coupon: draft.couponCode,
-      ); }
+      if (_paymentMethod == 'COD') {
+        AnalyticsService.instance.logPurchase(
+          paymentMethod: 'COD',
+          orderId: order.id,
+          value: order.totalAmount,
+          shipping: order.deliveryCharge,
+          coupon: draft.couponCode,
+        );
+      }
 
       if (draft.pointsToRedeem > 0) {
         try {
@@ -771,7 +820,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
 
     if (isPaymentConfirmed(result)) {
-      AnalyticsService.instance.logPurchase(orderId: order.id, value: (order.paymentMethod == 'PARTIAL_COD') ? (order.advanceAmount ?? 0) : order.totalAmount, paymentMethod: (order.paymentMethod == 'PARTIAL_COD') ? 'advance' : 'prepaid');
+      AnalyticsService.instance.logPurchase(
+        orderId: order.id,
+        value: (order.paymentMethod == 'PARTIAL_COD')
+            ? (order.advanceAmount ?? 0)
+            : order.totalAmount,
+        paymentMethod: (order.paymentMethod == 'PARTIAL_COD')
+            ? 'advance'
+            : 'prepaid',
+      );
       await ref.read(cartProvider.notifier).clear();
       if (!mounted) return;
       showToast('Payment successful! Order confirmed.');

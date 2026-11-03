@@ -59,6 +59,13 @@ class OrderDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 children: [
                   OrderHeroCard(order: order),
+                  if ((order.paymentMethod == 'CASHFREE' ||
+                          order.paymentMethod == 'PARTIAL_COD') &&
+                      order.paymentStatus != 'PAID' &&
+                      order.paymentStatus != 'ADVANCE_PAID' &&
+                      !order.isCancelled)
+                    OrderPaymentRetryBanner(order: order),
+
                   const SizedBox(height: 16),
                   if (order.isCancelled)
                     const OrderCancelledBanner()
@@ -66,10 +73,6 @@ class OrderDetailScreen extends ConsumerWidget {
                     OrderJourneyTracker(order: order),
                   const SizedBox(height: 16),
                   OrderPaymentCard(order: order),
-                  if ((order.paymentMethod == 'CASHFREE' || order.paymentMethod == 'PARTIAL_COD') &&
-                      order.paymentStatus != 'PAID' && order.paymentStatus != 'ADVANCE_PAID' &&
-                      !order.isCancelled)
-                    OrderPaymentRetryBanner(order: order),
                   OrderTrackingSection(order: order, orderId: id),
                   const SizedBox(height: 16),
                   OrderItemsCard(order: order),
@@ -83,7 +86,8 @@ class OrderDetailScreen extends ConsumerWidget {
             ),
             loading: () => const LoadingView(),
             error: (e, _) => ErrorView(
-              message: 'Could not load this information. Check your connection and retry.',
+              message:
+                  'Could not load this information. Check your connection and retry.',
               onRetry: () => ref.invalidate(orderDetailProvider(id)),
             ),
           ),

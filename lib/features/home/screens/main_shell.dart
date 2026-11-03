@@ -26,13 +26,14 @@ class MainShell extends ConsumerWidget {
     final cartTotal = ref.watch(cartTotalProvider);
     final user = ref.watch(authProvider).value;
     final rawName = user?.name?.trim() ?? '';
-    final isRealAccount = user != null &&
-        rawName.isNotEmpty &&
-        rawName.toLowerCase() != 'guest';
-    final displayUserName =
-        isRealAccount ? rawName.split(RegExp(r'\s+')).first : null;
+    final isRealAccount =
+        user != null && rawName.isNotEmpty && rawName.toLowerCase() != 'guest';
+    final displayUserName = isRealAccount
+        ? rawName.split(RegExp(r'\s+')).first
+        : null;
 
-    final showFloatingCart = cartCount > 0 &&
+    final showFloatingCart =
+        cartCount > 0 &&
         navigationShell.currentIndex != 2 &&
         navigationShell.currentIndex != 3 &&
         navigationShell.currentIndex != 4;
@@ -60,16 +61,12 @@ class MainShell extends ConsumerWidget {
                 child: AnimatedSlide(
                   duration: const Duration(milliseconds: 260),
                   curve: Curves.easeOutCubic,
-                  offset:
-                      showFloatingCart ? Offset.zero : const Offset(0, 1.4),
+                  offset: showFloatingCart ? Offset.zero : const Offset(0, 1.4),
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     opacity: showFloatingCart ? 1.0 : 0.0,
-                    child: CartFloatingBar(
-                      count: cartCount,
-                      total: cartTotal,
-                    ),
+                    child: CartFloatingBar(count: cartCount, total: cartTotal),
                   ),
                 ),
               ),
@@ -115,7 +112,7 @@ class WebsiteBottomNav extends StatefulWidget {
 class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
   final List<int> _tapCounts = [0, 0, 0, 0, 0];
 
-  static const _labels = ['Home', 'Shop', 'Consult', 'Shots', 'Account'];
+  static const _labels = ['Home', 'Shop', 'Care', 'Shots', 'Account'];
   static const _lottieIcons = [
     NavLottieIcon.home,
     NavLottieIcon.shop,
@@ -159,7 +156,9 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height:
+              64 +
+              2 * (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0, 36),
           child: Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.center,
@@ -168,17 +167,12 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: List.generate(5, (i) {
                   if (i == 2) {
-                    return Expanded(
-                      child: _consultNavItem(context),
-                    );
+                    return Expanded(child: _consultNavItem(context));
                   }
                   return Expanded(child: _standardNavItem(context, i));
                 }),
               ),
-              Positioned(
-                top: -18,
-                child: _floatingConsultButton(context),
-              ),
+              Positioned(top: -18, child: _floatingConsultButton(context)),
             ],
           ),
         ),
@@ -192,8 +186,7 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
     final isAccount = i == 4;
     final hasRealAccount =
         widget.userFirstName != null && widget.userFirstName!.isNotEmpty;
-    final displayLabel =
-        _labels[i];
+    final displayLabel = _labels[i];
 
     return Semantics(
       button: true,
@@ -216,8 +209,8 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
                 decoration: BoxDecoration(
                   color: selected
                       ? (isShots
-                          ? const Color(0x3310B981)
-                          : AppColors.primaryWash)
+                            ? const Color(0x3310B981)
+                            : AppColors.primaryWash)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -234,11 +227,11 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
                           size: 22,
                           color: selected
                               ? (isShots
-                                  ? const Color(0xFF34D399)
-                                  : const Color(0xFF137656))
+                                    ? const Color(0xFF34D399)
+                                    : const Color(0xFF137656))
                               : (isShots
-                                  ? Colors.white60
-                                  : AppColors.textSecondary),
+                                    ? Colors.white60
+                                    : AppColors.textSecondary),
                           playOnTapTrigger: _tapCounts[i],
                         ),
                       ),
@@ -267,17 +260,18 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
               const SizedBox(height: 3),
               Text(
                 displayLabel,
-                maxLines: 1,
+                textAlign: TextAlign.center,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTheme.sans(
-                  fontSize: 10.5,
+                  fontSize: 12,
                   height: 1.1,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   letterSpacing: -0.2,
                   color: selected
                       ? (isShots
-                          ? const Color(0xFF34D399)
-                          : const Color(0xFF137656))
+                            ? const Color(0xFF34D399)
+                            : const Color(0xFF137656))
                       : (isShots ? Colors.white60 : AppColors.textSecondary),
                 ),
               ),
@@ -314,8 +308,9 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
               border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF07583F)
-                      .withValues(alpha: selected ? 0.45 : 0.35),
+                  color: const Color(
+                    0xFF07583F,
+                  ).withValues(alpha: selected ? 0.45 : 0.35),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -353,11 +348,12 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                'Consult',
-                maxLines: 1,
+                'Care',
+                textAlign: TextAlign.center,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTheme.sans(
-                  fontSize: 10.5,
+                  fontSize: 12,
                   height: 1.1,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   letterSpacing: -0.2,
@@ -377,11 +373,7 @@ class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
 
 /// Floating cart pill matching the quick-commerce pill design (image thumbnail, two-line text, chevron).
 class CartFloatingBar extends ConsumerWidget {
-  const CartFloatingBar({
-    super.key,
-    required this.count,
-    required this.total,
-  });
+  const CartFloatingBar({super.key, required this.count, required this.total});
 
   final int count;
   final double total;
@@ -393,7 +385,8 @@ class CartFloatingBar extends ConsumerWidget {
     String? imageUrl;
     if (cartItems.isNotEmpty) {
       for (final item in cartItems.reversed) {
-        final candidate = item.comboImage ??
+        final candidate =
+            item.comboImage ??
             item.product?.image ??
             (item.product?.images.isNotEmpty == true
                 ? item.product!.images.first
@@ -406,8 +399,9 @@ class CartFloatingBar extends ConsumerWidget {
     }
 
     final String itemLabel = count == 1 ? '1 item' : '$count items';
-    final String subtitle =
-        total > 0 ? '$itemLabel · ₹${total.toStringAsFixed(0)}' : itemLabel;
+    final String subtitle = total > 0
+        ? '$itemLabel · ₹${total.toStringAsFixed(0)}'
+        : itemLabel;
 
     return Semantics(
       button: true,
@@ -448,93 +442,93 @@ class CartFloatingBar extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(5, 4, 12, 4),
                   child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x1A000000),
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      padding: const EdgeInsets.all(2.5),
-                      child: ClipOval(
-                        child: imageUrl != null && imageUrl.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.contain,
-                                placeholder: (_, _) => const Center(
-                                  child: SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 1.5,
-                                      color: Color(0xFF1E7E26),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0x1A000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        padding: const EdgeInsets.all(2.5),
+                        child: ClipOval(
+                          child: imageUrl != null && imageUrl.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.contain,
+                                  placeholder: (_, _) => const Center(
+                                    child: SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                        color: Color(0xFF1E7E26),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                errorWidget: (_, _, _) => const Icon(
+                                  errorWidget: (_, _, _) => const Icon(
+                                    Icons.shopping_bag_outlined,
+                                    size: 18,
+                                    color: Color(0xFF1E7E26),
+                                  ),
+                                )
+                              : const Icon(
                                   Icons.shopping_bag_outlined,
                                   size: 18,
                                   color: Color(0xFF1E7E26),
                                 ),
-                              )
-                            : const Icon(
-                                Icons.shopping_bag_outlined,
-                                size: 18,
-                                color: Color(0xFF1E7E26),
-                              ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 9),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'View cart',
-                          style: AppTheme.sans(
-                            color: Colors.white,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            height: 1.1,
-                            letterSpacing: -0.2,
+                      const SizedBox(width: 9),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'View cart',
+                            style: AppTheme.sans(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                              letterSpacing: -0.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 1.5),
-                        AppTextSwitcher(
-                          text: subtitle,
-                          style: AppTheme.sans(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            height: 1.1,
+                          const SizedBox(height: 1.5),
+                          AppTextSwitcher(
+                            text: subtitle,
+                            style: AppTheme.sans(
+                              color: Colors.white.withValues(alpha: 0.94),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

@@ -51,7 +51,7 @@ void main() {
       // Verify labels exist
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Shop'), findsOneWidget);
-      expect(find.text('Consult'), findsOneWidget);
+      expect(find.text('Care'), findsOneWidget);
       expect(find.text('Shots'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
 

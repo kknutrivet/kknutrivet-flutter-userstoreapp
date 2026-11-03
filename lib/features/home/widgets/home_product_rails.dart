@@ -184,11 +184,11 @@ class HomeShotsRail extends ConsumerWidget {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Quick video demos, usage guides and pet care essentials.',
-                        maxLines: 1,
+                        'Video demos and care guides',
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: AppColors.shotsRailSubtitle,
                         ),
                       ),
@@ -208,8 +208,8 @@ class HomeShotsRail extends ConsumerWidget {
                       context.go('/shots');
                     },
                     child: const SizedBox(
-                      width: 36,
-                      height: 36,
+                      width: 48,
+                      height: 48,
                       child: Icon(
                         Icons.arrow_forward_rounded,
                         size: 15,
@@ -223,7 +223,7 @@ class HomeShotsRail extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 236,
+            height: 236 + 100 * (MediaQuery.textScalerOf(context).scale(12) / 12 - 1).clamp(0, 2),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -244,7 +244,6 @@ class _HomeShotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final discount = shot.discountPercent;
     return SizedBox(
       width: 152,
       child: AppBounce(
@@ -332,7 +331,7 @@ class _HomeShotCard extends StatelessWidget {
                               Text(
                                 shot.hasVideo ? 'SHOT' : 'PREVIEW',
                                 style: const TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.5,
                                   color: Colors.white,
@@ -341,35 +340,7 @@ class _HomeShotCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.visibility_outlined,
-                                size: 10,
-                                color: Color(0xFF8BE2B9),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${shot.viewsCount}',
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+
                       ],
                     ),
                     Column(
@@ -408,7 +379,7 @@ class _HomeShotCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 12,
                                       color: Colors.white.withValues(
                                         alpha: 0.55,
                                       ),
@@ -418,25 +389,7 @@ class _HomeShotCard extends StatelessWidget {
                                 ),
                               ],
                               const Spacer(),
-                              if (discount > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 1.5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE0583C),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    '-$discount%',
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+
                             ],
                           ),
                         ],
@@ -463,79 +416,185 @@ class HomeConcernsRail extends ConsumerWidget {
     return concernsAsync.maybeWhen(
       data: (concerns) {
         if (concerns.isEmpty) return const SizedBox.shrink();
-        final shown = concerns.take(6).toList();
+        final shown = concerns.take(10).toList();
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
+          padding: const EdgeInsets.fromLTRB(16, 14, 0, 6),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: HomeSectionTitle(
-                  title: 'Care by Concern',
-                  route: '/diseases',
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              const Text(
+                                'VET-CURATED GUIDANCE',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.7,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Care by Health Concern',
+                            style: AppTheme.serif(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Material(
+                      color: AppColors.primaryWash,
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          Haptics.tap();
+                          context.push('/diseases');
+                        },
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          alignment: Alignment.center,
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View all',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 14,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 10),
               SizedBox(
-                height: 96,
+                height: 130 + 65 * (MediaQuery.textScalerOf(context).scale(12) / 12 - 1).clamp(0, 2),
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.only(right: 16),
                   itemCount: shown.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
                   itemBuilder: (context, i) {
                     final concern = shown[i];
                     return AppBounce(
-                      pressedScale: 0.92,
+                      pressedScale: 0.94,
                       onTap: () {
                         Haptics.tap();
                         context.push('/diseases/${concern.slug}');
                       },
                       child: Container(
-                        width: 94,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
+                        width: 114,
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryWashFaint,
-                          border: Border.all(
-                            color: AppColors.primaryWashDeep,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFF4FAF6), Color(0xFFFDFAF6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFD6EAE0),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0A17322B),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 50,
+                              height: 50,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x10000000),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child: concern.imageUrl != null && concern.imageUrl!.isNotEmpty
+                              child:
+                                  concern.imageUrl != null &&
+                                      concern.imageUrl!.isNotEmpty
                                   ? AppNetworkImage(
                                       imageUrl: concern.imageUrl!,
                                       fit: BoxFit.cover,
-                                      memCacheWidth: 100,
+                                      memCacheWidth: 120,
                                       errorWidget: (_, _, _) =>
                                           _concernFallback(concern),
                                     )
                                   : _concernFallback(concern),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Text(
                               concern.name,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                fontSize: 9.5,
+                                fontSize: 12,
                                 height: 1.2,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text(
+                              'Remedies →',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryDeep,
                               ),
                             ),
                           ],

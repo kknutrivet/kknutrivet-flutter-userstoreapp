@@ -8,6 +8,21 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
+  testWidgets('navigation remains labeled and usable at 200% on a small phone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final handle = tester.ensureSemantics();
+
+    await tester.pumpWidget(MaterialApp(home: MediaQuery(
+      data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+      child: Scaffold(bottomNavigationBar: WebsiteBottomNav(currentIndex: 0, onTap: (_) {})),
+    )));
+    expect(tester.takeException(), isNull);
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    handle.dispose();
+  });
+
   group('WebsiteBottomNav Tests', () {
     testWidgets('renders 5 bottom navigation items including raised center Consult button without overflow', (tester) async {
       int selectedTab = 0;
@@ -29,7 +44,7 @@ void main() {
       // Verify all 5 tab labels exist (5th tab displays 'Sign in' when unauthenticated, or name when signed in)
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Shop'), findsOneWidget);
-      expect(find.text('Consult'), findsOneWidget);
+      expect(find.text('Care'), findsOneWidget);
       expect(find.text('Shots'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
 
@@ -37,7 +52,7 @@ void main() {
       expect(find.byIcon(Icons.medical_services_rounded), findsOneWidget);
 
       // Tap Consult tab
-      await tester.tap(find.text('Consult'));
+      await tester.tap(find.text('Care'));
       await tester.pumpAndSettle();
       expect(selectedTab, 2);
     });

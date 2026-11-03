@@ -119,8 +119,11 @@ class ConsultationService {
   }
 
   Future<CareChatPage> fetchChatPage(String bookingId, {String? before}) async {
-    final data = _payload(await _client.get('/consultations/${Uri.encodeComponent(bookingId)}/messages',
-      query: {'before': before ?? DateTime.now().toUtc().toIso8601String()}));
+    final query = before != null ? {'before': before} : null;
+    final data = _payload(await _client.get(
+      '/consultations/${Uri.encodeComponent(bookingId)}/messages',
+      query: query,
+    ));
     if (data is! Map || data['messages'] is! List) throw ApiException('Could not load this conversation. Please retry.');
     return CareChatPage.fromJson(Map<String, dynamic>.from(data));
   }
@@ -129,6 +132,27 @@ class ConsultationService {
 
   Future<void> requestFollowUp(String bookingId, String reason) async {
     await _client.post('/consultations/${Uri.encodeComponent(bookingId)}/follow-up', data: {'action': 'request', 'reason': reason});
+  }
+
+  Future<List<ChatReaction>> toggleReaction(
+    String bookingId,
+    String messageId,
+    String emoji, {
+    required bool remove,
+  }) async {
+    final path =
+        '/consultations/${Uri.encodeComponent(bookingId)}/messages/${Uri.encodeComponent(messageId)}/reactions';
+    final response = remove
+        ? await _client.delete(path)
+        : await _client.put(path, data: {'emoji': emoji});
+    final data = _payload(response);
+    if (data is Map && data['reactions'] is List) {
+      return (data['reactions'] as List)
+          .whereType<Map>()
+          .map((r) => ChatReaction.fromJson(Map<String, dynamic>.from(r)))
+          .toList();
+    }
+    return [];
   }
 
   Future<CareChatMessage> sendChatMessage(

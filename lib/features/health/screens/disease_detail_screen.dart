@@ -165,6 +165,23 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
     }
   }
 
+  String _animalEmoji(String animal) {
+    switch (animal.toLowerCase()) {
+      case 'dog':
+        return '🐶';
+      case 'cat':
+        return '🐱';
+      case 'cattle':
+        return '🐮';
+      case 'poultry':
+        return '🐔';
+      case 'goat':
+        return '🐐';
+      default:
+        return '🐾';
+    }
+  }
+
   List<Product> _applyFilters(List<Product> allProducts) {
     var list = allProducts;
     if (_selectedAnimal != 'All') {
@@ -219,12 +236,13 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
     final cartTotal = ref.watch(cartTotalProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.homeCanvas,
       appBar: AppBar(
-        toolbarHeight: 54,
+        toolbarHeight: 56,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -240,19 +258,51 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
           },
         ),
         title: concernAsync.when(
-          data: (concern) => Text(
-            concern?.name ?? 'Health Concern',
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-              color: AppColors.textPrimary,
-            ),
+          data: (concern) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Text(
+                    'HEALTH CONCERN',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: AppColors.primaryDeep,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 1),
+              Text(
+                concern?.name ?? 'Health Concern',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
           loading: () => const Text(
             'Health Concern',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
               color: AppColors.textPrimary,
@@ -261,7 +311,7 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
           error: (error, stack) => const Text(
             'Health Concern',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
               color: AppColors.textPrimary,
@@ -449,9 +499,8 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
 
               // Catalogue Controls Row: Sort & Quick filters
               SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 6),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -470,10 +519,17 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                               border: Border.all(
                                 color: _sortBy != 'relevance'
                                     ? AppColors.primaryDeep
-                                    : AppColors.border,
+                                    : const Color(0xFFD9E2DC),
                                 width: _sortBy != 'relevance' ? 1.2 : 1,
                               ),
                               borderRadius: BorderRadius.circular(20),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0A000000),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -585,6 +641,10 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
+                          avatar: Text(
+                            _animalEmoji(animal),
+                            style: const TextStyle(fontSize: 13),
+                          ),
                           selected: selected,
                           label: Text('$animal ($count)'),
                           labelStyle: TextStyle(
@@ -596,15 +656,19 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                                 : AppColors.textSecondary,
                           ),
                           backgroundColor: Colors.white,
-                          selectedColor: AppColors.primaryWash,
+                          selectedColor: const Color(0xFFE3F3EC),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                             side: BorderSide(
                               color: selected
-                                  ? AppColors.primary
-                                  : AppColors.borderWarm,
+                                  ? AppColors.primaryDeep
+                                  : const Color(0xFFD9E2DC),
+                              width: selected ? 1.2 : 1,
                             ),
                           ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                           onSelected: (_) {
                             AppHaptics.selection();
                             setState(() => _selectedAnimal = animal);
@@ -725,10 +789,17 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
           decoration: BoxDecoration(
             color: active ? AppColors.primaryWash : Colors.white,
             border: Border.all(
-              color: active ? AppColors.primaryDeep : AppColors.border,
+              color: active ? AppColors.primaryDeep : const Color(0xFFD9E2DC),
               width: active ? 1.2 : 1,
             ),
             borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 4,
+                offset: Offset(0, 1),
+              ),
+            ],
           ),
           alignment: Alignment.center,
           child: Row(
@@ -757,117 +828,151 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
 
   Widget _prescriptionSupportCard(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          AppHaptics.light();
-          context.push('/prescriptions');
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0F7F4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFCDE4D8)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.receipt_long_rounded,
-                          size: 13,
-                          color: AppColors.primaryDeep,
-                        ),
-                        const SizedBox(width: 4),
-                        const Flexible(
-                          child: Text(
-                            'PRESCRIPTION SUPPORT',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                              color: AppColors.primaryDeep,
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            AppHaptics.light();
+            context.push('/prescriptions');
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF2F9F5), Color(0xFFFDFAF5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD6EAE0), width: 1),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0817322B),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Icon badge
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F2E9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBCE3CE)),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.receipt_long_rounded,
+                      size: 20,
+                      color: AppColors.primaryDeep,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Texts
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Flexible(
+                            child: Text(
+                              'Have a vet prescription?',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFFBEB),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Text('🪙 ', style: TextStyle(fontSize: 10)),
-                        Text(
-                          '+5% KK Coins',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFB45309),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFBEB),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color: const Color(0xFFFDE68A), width: 0.8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🪙 ', style: TextStyle(fontSize: 8)),
+                                Text(
+                                  '+5% Coins',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFB45309),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Upload photo • Care team fulfills remedies',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Have a vet prescription?',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
                 ),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Photo from camera or gallery. Reviewed by our care team.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                const SizedBox(width: 8),
+                // Upload CTA button
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDeep,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x2417322B),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryDeep,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Upload',
-                      style: TextStyle(
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Upload',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(width: 2),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 13,
                         color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -926,18 +1031,48 @@ class _DetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-      child: AppCard(
-        variant: AppCardVariant.elevated,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      child: Container(
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFE8F6EF),
+              Color(0xFFFBFDFB),
+              Color(0xFFFFF7ED),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD6EAE0), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0C17322B),
+              blurRadius: 16,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                width: 64,
-                height: 64,
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x18000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
                 child: concern.imageUrl != null &&
                         concern.imageUrl!.isNotEmpty
                     ? CachedNetworkImage(
@@ -953,19 +1088,42 @@ class _DetailHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AppBadge(
-                    label: 'HEALTH CONCERN',
-                    icon: Icon(Icons.healing_rounded,
-                        size: 11, color: AppColors.primaryDeep),
-                    tone: AppBadgeTone.emerald,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: const Color(0xFFBFE0D0), width: 0.8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified_outlined,
+                            size: 11, color: AppColors.primaryDeep),
+                        SizedBox(width: 4),
+                        Text(
+                          'VET-CURATED CONCERN',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.7,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     concern.name,
                     style: AppTheme.serif(
                       fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                       color: AppColors.textPrimary,
+                      height: 1.2,
                     ),
                   ),
                   if (concern.description != null &&
@@ -974,7 +1132,7 @@ class _DetailHeader extends StatelessWidget {
                     Text(
                       concern.description!,
                       style: const TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         color: AppColors.textSecondary,
                         height: 1.35,
                       ),
@@ -1068,8 +1226,12 @@ class _VetAdviceBanner extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Severe symptoms require qualified veterinary diagnosis. You can chat with a licensed doctor or get instant preliminary advice from Dr. Paw.',
+              'For severe symptoms, contact a veterinarian. Care team chat offers support; a booked vet consultation is a separate service. Dr. Paw AI provides general information, not a diagnosis.',
               style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+            ),
+            TextButton(
+              onPressed: () => context.push('/consultations/book'),
+              child: const Text('Book a vet consultation'),
             ),
             const SizedBox(height: 12),
             Row(

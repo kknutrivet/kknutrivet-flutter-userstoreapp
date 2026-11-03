@@ -142,7 +142,7 @@ void main() {
       );
 
       // Verify "Consult" label and medical icon exist
-      expect(find.text('Consult'), findsOneWidget);
+      expect(find.text('Care'), findsOneWidget);
       final consultIconFinder = find.byIcon(Icons.medical_services_rounded);
       expect(consultIconFinder, findsOneWidget);
 
@@ -153,7 +153,7 @@ void main() {
 
       // Verify tapping "Consult" label also triggers onTap(2)
       tappedIndex = -1;
-      await tester.tap(find.text('Consult'));
+      await tester.tap(find.text('Care'));
       await tester.pumpAndSettle();
       expect(tappedIndex, 2);
 

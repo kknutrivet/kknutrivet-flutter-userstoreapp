@@ -1,6 +1,10 @@
 package com.kknutrivet.shop
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -14,6 +18,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        createNotificationChannels()
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, hapticsChannel)
             .setMethodCallHandler { call, result ->
                 try {
@@ -23,6 +28,40 @@ class MainActivity : FlutterActivity() {
                     result.success(false)
                 }
             }
+    }
+
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+
+            val urgentChannel = NotificationChannel(
+                "urgent_alerts_v3",
+                "Care & Order Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Critical alerts for consultations, vet replies, and orders"
+                enableVibration(true)
+                setSound(soundUri, audioAttributes)
+            }
+
+            val defaultChannel = NotificationChannel(
+                "default_channel",
+                "General Notifications",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "General notifications and updates"
+                enableVibration(true)
+            }
+
+            notificationManager.createNotificationChannel(urgentChannel)
+            notificationManager.createNotificationChannel(defaultChannel)
+        }
     }
 
     private fun vibrator(): Vibrator? {

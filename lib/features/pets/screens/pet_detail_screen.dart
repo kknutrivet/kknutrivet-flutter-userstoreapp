@@ -1,4 +1,6 @@
+import '../../../core/utils/customer_error.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,8 +26,36 @@ class PetDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<PetDetailScreen> createState() => _PetDetailScreenState();
 }
 
-class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
+class _PetDetailScreenState extends ConsumerState<PetDetailScreen>
+    with WidgetsBindingObserver {
   bool _busy = false;
+  PermissionStatus? _notificationPermission;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshNotificationPermission();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshNotificationPermission();
+  }
+
+  Future<void> _refreshNotificationPermission() async {
+    try {
+      final status = await Permission.notification.status;
+      if (mounted) setState(() => _notificationPermission = status);
+    } catch (_) {
+      if (mounted) setState(() => _notificationPermission = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +142,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
               child: AppEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load profile',
-                description: e.toString(),
+                description: customerError(e),
                 actionLabel: 'Retry',
                 onAction: () => ref.invalidate(petDetailProvider(widget.id)),
               ),
@@ -223,7 +253,9 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               Text(
                 'Care Reminders',
@@ -233,10 +265,9 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
                   color: AppColors.primaryDeep,
                 ),
               ),
-              const Spacer(),
               AppBadge(
                 label: pet.reminderEnabled
-                    ? 'Reminders enabled'
+                    ? 'Reminder preference on'
                     : 'Reminders off',
                 tone: pet.reminderEnabled
                     ? AppBadgeTone.emerald
@@ -244,6 +275,26 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
               ),
             ],
           ),
+          if (pet.reminderEnabled) ...[
+            const SizedBox(height: 8),
+            Text(
+              _notificationPermission == null
+                  ? 'Device notification status unavailable.'
+                  : _notificationPermission!.isGranted ||
+                        _notificationPermission!.isProvisional
+                  ? 'Device notifications allowed. Reminder delivery depends on your saved dates and service availability.'
+                  : 'Device notifications are off. Enable them in settings to receive push reminders.',
+            ),
+            if (_notificationPermission != null &&
+                !_notificationPermission!.isGranted &&
+                !_notificationPermission!.isProvisional)
+              TextButton(
+                onPressed: () async {
+                  await openAppSettings();
+                },
+                child: const Text('Open notification settings'),
+              ),
+          ],
           const SizedBox(height: 14),
           _reminderRow(
             'Vaccination',
@@ -536,7 +587,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
       showToast('Reminders updated');
       ref.invalidate(petDetailProvider(widget.id));
     } catch (e) {
-      showToast(e.toString(), isError: true);
+      showToast(customerError(e), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -572,7 +623,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen> {
       showToast('Pet deleted');
       if (mounted) context.go('/pets');
     } catch (e) {
-      showToast(e.toString(), isError: true);
+      showToast(customerError(e), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

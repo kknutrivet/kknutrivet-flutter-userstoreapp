@@ -131,6 +131,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: HomeCategorySelector(selectedAnimal: selectedAnimal),
               ),
+              const SliverToBoxAdapter(child: HomeConcernsRail()),
               SliverToBoxAdapter(
                 child: HomeFeaturedProductsRail(selectedAnimal: selectedAnimal),
               ),
@@ -152,7 +153,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: HomeCombosRail(selectedAnimal: selectedAnimal),
               ),
-              const SliverToBoxAdapter(child: HomeConcernsRail()),
               SliverToBoxAdapter(
                 child: HomeAnimalProductRail(entry: kHomeAnimals[4]),
               ),

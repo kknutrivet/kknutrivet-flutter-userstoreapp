@@ -3300,7 +3300,7 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
                 child: SizedBox(
                   height: 48,
                   child: FilledButton(
-                    onPressed: stock <= 0
+                    onPressed: (stock <= 0 || widget.adding)
                         ? null
                         : () => widget.onBuyNow(product),
                     style: FilledButton.styleFrom(
@@ -3313,13 +3313,22 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Buy Now',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    child: widget.adding
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Buy Now',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                   ),
                 ),
               ),

@@ -223,11 +223,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                                         AppColors.textSecondary,
                                                   ),
                                                 ),
-                                                SizedBox(height: 20),
-                                                LinearProgressIndicator(
-                                                  value: .65,
-                                                  minHeight: 4,
-                                                ),
                                               ],
                                             ),
                                           ),

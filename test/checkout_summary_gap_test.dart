@@ -81,7 +81,7 @@ void main() {
           tester.widget<ElevatedButton>(payButtonFinder).onPressed,
           isNull,
         );
-        expect(find.text('Review and continue'), findsOneWidget);
+        expect(find.text('Choose address'), findsOneWidget);
       },
     );
   });

@@ -78,8 +78,12 @@ class _KkNutrivetAppState extends ConsumerState<KkNutrivetApp> {
               ),
       onTapRoute: (route) {
         try {
-          ref.read(routerProvider).go(route);
-        } catch (_) {}
+          ref.read(routerProvider).push(route);
+        } catch (_) {
+          try {
+            ref.read(routerProvider).go(route);
+          } catch (_) {}
+        }
       },
       onForeground: (title, body, route) {
         _scaffoldMessengerKey.currentState?.showSnackBar(
@@ -94,8 +98,12 @@ class _KkNutrivetAppState extends ConsumerState<KkNutrivetApp> {
               label: 'View',
               onPressed: () {
                 try {
-                  ref.read(routerProvider).go(route);
-                } catch (_) {}
+                  ref.read(routerProvider).push(route);
+                } catch (_) {
+                  try {
+                    ref.read(routerProvider).go(route);
+                  } catch (_) {}
+                }
               },
             ),
           ),
@@ -106,6 +114,14 @@ class _KkNutrivetAppState extends ConsumerState<KkNutrivetApp> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authProvider, (previous, next) {
+      final prevUser = previous?.valueOrNull;
+      final nextUser = next.valueOrNull;
+      if (nextUser != null && nextUser.id != prevUser?.id) {
+        PushService.instance.resyncToken();
+      }
+    });
+
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'KK Nutrivet - Nutrition & Vet Care',

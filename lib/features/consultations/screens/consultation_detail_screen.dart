@@ -56,6 +56,7 @@ class _ConsultationDetailScreenState
   bool _sending = false;
   bool _uploadingMedia = false;
   bool _busyAction = false;
+  String? _busyPaymentMessageId;
   bool _submittingReview = false;
   bool _reviewSubmitted = false;
   int _selectedRating = 5;
@@ -126,6 +127,28 @@ class _ConsultationDetailScreenState
       ref.read(consultationDetailProvider(widget.id).future),
       ref.read(careChatMessagesProvider(widget.id).future),
     ]);
+  }
+
+  Future<void> _handleReaction(CareChatMessage message, String emoji) async {
+    if (message.isSystem) return;
+    final hasReacted =
+        message.reactions.any((r) => r.emoji == emoji && r.mine);
+    try {
+      final updatedReactions = await ref
+          .read(consultationServiceProvider)
+          .toggleReaction(
+            widget.id,
+            message.id,
+            emoji,
+            remove: hasReacted,
+          );
+      if (!mounted) return;
+      setState(() {
+        _history[message.id] = message.copyWith(reactions: updatedReactions);
+      });
+    } catch (e) {
+      if (mounted) showToast(e.toString(), isError: true);
+    }
   }
 
   Future<void> _sendTextMessage() async {
@@ -272,7 +295,11 @@ class _ConsultationDetailScreenState
 
   Future<void> _payOrUnlock(ConsultationBooking booking, {String? prescriptionMessageId, bool video = false}) async {
     if (_busyAction) return;
-    setState(() => _busyAction = true);
+    AppHaptics.selection();
+    setState(() {
+      _busyAction = true;
+      _busyPaymentMessageId = prescriptionMessageId ?? (video ? 'video' : 'booking');
+    });
     try {
       final service = ref.read(consultationServiceProvider);
       if (booking.isFreeFollowUp) {
@@ -313,7 +340,12 @@ class _ConsultationDetailScreenState
     } catch (e) {
       showToast(e.toString(), isError: true);
     } finally {
-      if (mounted) setState(() => _busyAction = false);
+      if (mounted) {
+        setState(() {
+          _busyAction = false;
+          _busyPaymentMessageId = null;
+        });
+      }
     }
   }
 
@@ -347,9 +379,58 @@ class _ConsultationDetailScreenState
     final messagesAsync = ref.watch(careChatMessagesProvider(widget.id));
     final booking = bookingAsync.valueOrNull;
     final page = messagesAsync.valueOrNull;
-    final merged = {..._history};
-    for (final message in page?.messages ?? <CareChatMessage>[]) { merged[message.id] = message; }
-    final messages = merged.values.toList()..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final merged = <String, CareChatMessage>{};
+    for (final message in page?.messages ?? <CareChatMessage>[]) {
+      merged[message.id] = message;
+    }
+    merged.addAll(_history);
+
+    // Ensure system messages for doctor assignment and video consultation recommendation
+    // are visible even if omitted by older message pagination or backend sync.
+    if (booking != null && booking.isDoctorAssigned) {
+      final hasDoctorAssignedMessage = merged.values.any(
+        (m) => m.body.contains('has been assigned to your care chat'),
+      );
+      if (!hasDoctorAssignedMessage) {
+        final assignedAt = booking.careChatAssignedAt ?? booking.createdAt;
+        final synthetic = CareChatMessage(
+          id: 'sys_doctor_assigned_${booking.id}',
+          senderId: 'system',
+          senderRole: 'SYSTEM',
+          senderName: 'System',
+          messageType: 'TEXT',
+          body: '${booking.doctorDisplayName} has been assigned to your care chat.',
+          createdAt: assignedAt,
+        );
+        merged[synthetic.id] = synthetic;
+      }
+    }
+
+    if (booking != null && page?.videoEligible == true) {
+      final hasVideoReqMessage = merged.values.any(
+        (m) =>
+            m.messageType == 'VIDEO_REQUEST' ||
+            m.body.contains('recommends a video consultation'),
+      );
+      if (!hasVideoReqMessage) {
+        final syntheticVideo = CareChatMessage(
+          id: 'sys_video_req_${booking.id}',
+          senderId: 'system',
+          senderRole: 'SYSTEM',
+          senderName: 'System',
+          messageType: 'VIDEO_REQUEST',
+          body:
+              'Your doctor recommends a video consultation. Review the video fee and pay to continue. The prescription is included with paid video.',
+          createdAt: (booking.careChatAssignedAt ?? booking.createdAt).add(
+            const Duration(seconds: 1),
+          ),
+        );
+        merged[syntheticVideo.id] = syntheticVideo;
+      }
+    }
+
+    final messages = merged.values.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final canMessage = page?.canMessage == true;
 
     final hasVetReplied = messages.any(
@@ -377,11 +458,102 @@ class _ConsultationDetailScreenState
       body: bookingAsync.when(
         data: (bookingData) => Column(
           children: [
+            if (_busyAction || _uploadingMedia || _sending)
+              const LinearProgressIndicator(
+                minHeight: 3,
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
             if (isWaitingForReply && canMessage) const CareChatWaitingRuleBanner(),
             if (page?.videoEligible == true && page?.videoAvailable != true)
-              Padding(padding: const EdgeInsets.all(12), child: FilledButton.icon(
-                onPressed: _busyAction ? null : () => _payOrUnlock(bookingData, video: true), icon: const Icon(Icons.videocam_outlined),
-                label: Text(page?.videoAmount == null ? 'Review video consultation payment' : 'Pay ₹${page!.videoAmount} for video consultation'))),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2FAF6),
+                    borderRadius: BorderRadius.circular(14),
+                    border:
+                        Border.all(color: const Color(0xFF2E7D59), width: 1.2),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.videocam_rounded,
+                          size: 20, color: Color(0xFF1E5B40)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Video requested · awaiting payment',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1E5B40),
+                              ),
+                            ),
+                            Text(
+                              page?.videoAmount == null
+                                  ? 'Review video consultation fee to continue'
+                                  : 'Pay ₹${page!.videoAmount} to unlock video call & prescription',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E5B40),
+                          disabledBackgroundColor:
+                              const Color(0xFF1E5B40).withValues(alpha: 0.65),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: _busyAction
+                            ? null
+                            : () => _payOrUnlock(bookingData, video: true),
+                        child: _busyAction && _busyPaymentMessageId == 'video'
+                            ? const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 13,
+                                    height: 13,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Opening…',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                page?.videoAmount == null
+                                    ? 'Review'
+                                    : 'Pay ₹${page!.videoAmount}',
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (bookingData.status == 'HOLD' ||
                 bookingData.status == 'PENDING_PAYMENT')
               CareChatPaymentBanner(
@@ -407,6 +579,10 @@ class _ConsultationDetailScreenState
                       isLoading: messagesAsync.isLoading,
                       messages: messages,
                       booking: bookingData,
+                      canReact: canMessage,
+                      onReact: _handleReaction,
+                      busyAction: _busyAction,
+                      busyMessageId: _busyPaymentMessageId,
                       onUnlockPrescription: (message) => _payOrUnlock(bookingData, prescriptionMessageId: message.id),
                       onOpenMedia: _openExternalUrl,
                     ),
@@ -416,6 +592,7 @@ class _ConsultationDetailScreenState
                         prescription: bookingData.prescription!,
                         locked: bookingData.prescriptionLocked,
                         unlockAmount: bookingData.unlockAmount,
+                        busyAction: _busyAction && (_busyPaymentMessageId == null || _busyPaymentMessageId == 'booking'),
                         onDownloadPdf: bookingData.prescription!.pdfUrl != null
                             ? () => _openExternalUrl(
                                 bookingData.prescription!.pdfUrl!,
@@ -453,6 +630,34 @@ class _ConsultationDetailScreenState
                 ),
               ),
             ),
+            if (_uploadingMedia)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: const Color(0xFFE8F5E9),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.primaryDeep),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Uploading photo/video… please wait',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (canMessage) CareChatComposer(
               messageController: _messageController,
               sending: _sending,

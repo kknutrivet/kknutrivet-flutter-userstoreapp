@@ -92,7 +92,8 @@ class CheckoutAddressSection extends ConsumerWidget {
             ],
             Align(
               alignment: Alignment.centerLeft,
-              child: Row(
+              child: Wrap(
+                spacing: 8,
                 children: [
                   TextButton.icon(
                     onPressed: onToggleExpanded,
@@ -129,7 +130,7 @@ class CheckoutAddressSection extends ConsumerWidget {
       },
       loading: () => const LoadingView(),
       error: (e, _) => ErrorView(
-        message: e.toString(),
+        message: 'Could not load your addresses. Check your connection and retry.',
         onRetry: () => ref.invalidate(addressesProvider),
       ),
     );
@@ -272,8 +273,7 @@ class CheckoutDeliveryStatusRow extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            'Delivery to ${info.pincode} · ${info.etaLabel}'
-            '${info.cod ? ' · COD available' : ''}',
+            'Delivery to ${info.pincode} · ${info.etaLabel}',
             style: const TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,

@@ -140,18 +140,27 @@ class ConsultationDetailAppBar extends StatelessWidget
                 : (videoEligible
                     ? 'Video consultation available · Tap to unlock'
                     : 'Video consultation status'),
-            icon: Icon(
-              videoAvailable
-                  ? Icons.videocam_rounded
-                  : Icons.videocam_outlined,
-              color: videoAvailable ||
-                      (currentBooking.meetingUrl != null &&
-                          currentBooking.meetingUrl!.isNotEmpty)
-                  ? AppColors.primaryDeep
-                  : (videoEligible
-                      ? AppColors.warning
-                      : AppColors.textSecondary),
-            ),
+            icon: busyAction
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primaryDeep,
+                    ),
+                  )
+                : Icon(
+                    videoAvailable
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_outlined,
+                    color: videoAvailable ||
+                            (currentBooking.meetingUrl != null &&
+                                currentBooking.meetingUrl!.isNotEmpty)
+                        ? AppColors.primaryDeep
+                        : (videoEligible
+                            ? AppColors.warning
+                            : AppColors.textSecondary),
+                  ),
           ),
         IconButton(
           onPressed: () {
@@ -277,6 +286,7 @@ class ConsultationPrescriptionCard extends StatelessWidget {
     this.onDownloadPdf,
     required this.onOrderMedicines,
     required this.onUnlock,
+    this.busyAction = false,
   });
 
   final ConsultationPrescription prescription;
@@ -285,6 +295,7 @@ class ConsultationPrescriptionCard extends StatelessWidget {
   final VoidCallback? onDownloadPdf;
   final VoidCallback onOrderMedicines;
   final VoidCallback onUnlock;
+  final bool busyAction;
 
   @override
   Widget build(BuildContext context) {
@@ -361,17 +372,31 @@ class ConsultationPrescriptionCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: onUnlock,
-              icon: const Icon(Icons.lock_open_rounded,
-                  size: 17, color: Colors.white),
+              onPressed: busyAction ? null : onUnlock,
+              icon: busyAction
+                  ? const SizedBox(
+                      width: 17,
+                      height: 17,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.lock_open_rounded,
+                      size: 17, color: Colors.white),
               label: Text(
-                unlockAmount != null
-                    ? 'Unlock Prescription for ${formatPrice(unlockAmount!)}'
-                    : 'Unlock Prescription',
+                busyAction
+                    ? 'Opening payment gateway…'
+                    : unlockAmount != null
+                        ? 'Unlock Prescription for ${formatPrice(unlockAmount!)}'
+                        : 'Unlock Prescription',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryDeep,
+                disabledBackgroundColor:
+                    AppColors.primaryDeep.withValues(alpha: 0.65),
                 foregroundColor: Colors.white,
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.9),
                 iconColor: Colors.white,
                 minimumSize: const Size.fromHeight(46),
               ),

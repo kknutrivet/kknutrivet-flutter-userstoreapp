@@ -38,17 +38,11 @@ class _DrPawFloatingButtonState extends State<DrPawFloatingButton>
     )..repeat(reverse: true);
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeInOutSine,
-      ),
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOutSine),
     );
 
     _glowAnimation = Tween<double>(begin: 4.0, end: 12.0).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeInOutSine,
-      ),
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOutSine),
     );
   }
 
@@ -118,7 +112,9 @@ class _DrPawFloatingButtonState extends State<DrPawFloatingButton>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF6954A2).withValues(alpha: 0.40),
+                                color: const Color(
+                                  0xFF6954A2,
+                                ).withValues(alpha: 0.40),
                                 blurRadius: _glowAnimation.value,
                                 spreadRadius: 1,
                                 offset: const Offset(0, 3),
@@ -179,7 +175,7 @@ class _DrPawFloatingButtonState extends State<DrPawFloatingButton>
                         child: const Text(
                           'AI',
                           style: TextStyle(
-                            fontSize: 8,
+                            fontSize: 12,
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF17322B),
                             height: 1.0,

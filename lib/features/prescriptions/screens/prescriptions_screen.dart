@@ -77,6 +77,17 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
           ),
           const SizedBox(width: 4),
         ],
+        bottom: _uploading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(3.0),
+                child: LinearProgressIndicator(
+                  minHeight: 3.0,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.primaryDeep),
+                ),
+              )
+            : null,
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryDeep,

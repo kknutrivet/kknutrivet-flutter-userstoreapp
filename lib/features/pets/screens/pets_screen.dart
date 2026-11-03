@@ -1,3 +1,4 @@
+import '../../../core/utils/customer_error.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,8 +11,7 @@ import '../../../core/widgets/common.dart';
 import '../../../models/pet.dart';
 import '../../../providers/app_providers.dart';
 
-final petsListProvider =
-    FutureProvider.autoDispose<List<PetProfile>>((ref) {
+final petsListProvider = FutureProvider.autoDispose<List<PetProfile>>((ref) {
   return ref.read(petServiceProvider).fetchPets();
 });
 
@@ -51,77 +51,79 @@ class PetsScreen extends ConsumerWidget {
         top: false,
         child: petsAsync.when(
           data: (pets) {
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async {
-              ref.invalidate(petsListProvider);
-              await ref.read(petsListProvider.future);
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // Hero Banner
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-                    child: _PetsHeroBanner(
-                      count: pets.length,
-                      onAddPet: () async {
-                        AppHaptics.light();
-                        await context.push('/pets/new');
-                        ref.invalidate(petsListProvider);
-                      },
-                    ),
-                  ),
-                ),
-
-                if (pets.isEmpty)
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                ref.invalidate(petsListProvider);
+                await ref.read(petsListProvider.future);
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // Hero Banner
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 24),
-                      child: AppEmptyState(
-                        icon: Icons.pets_rounded,
-                        title: 'No pet profiles yet',
-                        description:
-                            'Create a personalized profile to track vaccinations, deworming cycles, weight records, and tailored veterinary nutrition.',
-                        actionLabel: 'Create First Pet Profile',
-                        onAction: () async {
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                      child: _PetsHeroBanner(
+                        count: pets.length,
+                        onAddPet: () async {
                           AppHaptics.light();
                           await context.push('/pets/new');
                           ref.invalidate(petsListProvider);
                         },
                       ),
                     ),
-                  )
-                else ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Your Animals & Pets',
-                            style: AppTheme.serif(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDeep,
+                  ),
+
+                  if (pets.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 24,
+                        ),
+                        child: AppEmptyState(
+                          icon: Icons.pets_rounded,
+                          title: 'No pet profiles yet',
+                          description:
+                              'Create a personalized profile to track vaccinations, deworming cycles, weight records, and tailored veterinary nutrition.',
+                          actionLabel: 'Create First Pet Profile',
+                          onAction: () async {
+                            AppHaptics.light();
+                            await context.push('/pets/new');
+                            ref.invalidate(petsListProvider);
+                          },
+                        ),
+                      ),
+                    )
+                  else ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Your Animals & Pets',
+                              style: AppTheme.serif(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryDeep,
+                              ),
                             ),
-                          ),
-                          const Spacer(),
-                          AppBadge(
-                            label: '${pets.length} ${pets.length == 1 ? 'profile' : 'profiles'}',
-                            tone: AppBadgeTone.neutral,
-                          ),
-                        ],
+                            const Spacer(),
+                            AppBadge(
+                              label:
+                                  '${pets.length} ${pets.length == 1 ? 'profile' : 'profiles'}',
+                              tone: AppBadgeTone.neutral,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 80),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, i) {
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 80),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, i) {
                           final pet = pets[i];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
@@ -134,33 +136,31 @@ class PetsScreen extends ConsumerWidget {
                               },
                             ),
                           );
-                        },
-                        childCount: pets.length,
+                        }, childCount: pets.length),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(child: AppLoader.large()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: AppEmptyState(
-              icon: Icons.error_outline_rounded,
-              title: 'Unable to load pet profiles',
-              description: e.toString(),
-              actionLabel: 'Try Again',
-              onAction: () => ref.invalidate(petsListProvider),
+              ),
+            );
+          },
+          loading: () => const Center(child: AppLoader.large()),
+          error: (e, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: AppEmptyState(
+                icon: Icons.error_outline_rounded,
+                title: 'Unable to load pet profiles',
+                description: customerError(e),
+                actionLabel: 'Try Again',
+                onAction: () => ref.invalidate(petsListProvider),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _PetsHeroBanner extends StatelessWidget {
@@ -182,15 +182,15 @@ class _PetsHeroBanner extends StatelessWidget {
             children: [
               const AppBadge(
                 label: 'PET WELLNESS PASSPORT',
-                icon: Icon(Icons.verified_rounded,
-                    size: 11, color: AppColors.primaryDeep),
+                icon: Icon(
+                  Icons.verified_rounded,
+                  size: 11,
+                  color: AppColors.primaryDeep,
+                ),
                 tone: AppBadgeTone.emerald,
               ),
               const Spacer(),
-              AppBadge(
-                label: '$count registered',
-                tone: AppBadgeTone.neutral,
-              ),
+              AppBadge(label: '$count registered', tone: AppBadgeTone.neutral),
             ],
           ),
           const SizedBox(height: 10),
@@ -316,10 +316,7 @@ class _PetCard extends StatelessWidget {
                         tone: AppBadgeTone.neutral,
                       ),
                     if (nextCareLabel != null)
-                      AppBadge(
-                        label: nextCareLabel,
-                        tone: nextCareTone,
-                      ),
+                      AppBadge(label: nextCareLabel, tone: nextCareTone),
                   ],
                 ),
               ],
@@ -331,11 +328,6 @@ class _PetCard extends StatelessWidget {
   }
 
   Widget _fallbackEmoji(String emoji) {
-    return Center(
-      child: Text(
-        emoji,
-        style: const TextStyle(fontSize: 28),
-      ),
-    );
+    return Center(child: Text(emoji, style: const TextStyle(fontSize: 28)));
   }
 }

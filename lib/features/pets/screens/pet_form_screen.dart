@@ -1,3 +1,4 @@
+import '../../../core/utils/customer_error.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,6 +33,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   String? _photoUrl;
   String? _localPhotoPath;
   bool _saving = false;
+  String? _submitError;
 
   static const _animalTypes = ['Dog', 'Cat', 'Cattle', 'Poultry', 'Goat/Sheep'];
 
@@ -79,8 +81,9 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                           labelText: 'Pet name *',
                           hintText: 'e.g. Bruno, Bella, Shanti',
                         ),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Name is required'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -141,7 +144,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                               controller: _weight,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                      decimal: true),
+                                    decimal: true,
+                                  ),
                               decoration: const InputDecoration(
                                 labelText: 'Weight (kg)',
                                 hintText: 'e.g. 12.5',
@@ -156,7 +160,10 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                               child: InputDecorator(
                                 decoration: const InputDecoration(
                                   labelText: 'Date of birth',
-                                  suffixIcon: Icon(Icons.cake_outlined, size: 18),
+                                  suffixIcon: Icon(
+                                    Icons.cake_outlined,
+                                    size: 18,
+                                  ),
                                 ),
                                 child: Text(
                                   _dob == null
@@ -233,6 +240,17 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                if (_submitError != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _submitError!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ),
                 AppButton(
                   label: 'Save Pet Profile',
                   icon: const Icon(Icons.check_rounded, size: 16),
@@ -262,10 +280,13 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
             backgroundImage: _localPhotoPath != null
                 ? FileImage(File(_localPhotoPath!))
                 : (_photoUrl != null ? NetworkImage(_photoUrl!) : null)
-                    as ImageProvider?,
+                      as ImageProvider?,
             child: _localPhotoPath == null && _photoUrl == null
-                ? const Icon(Icons.pets_rounded,
-                    size: 40, color: AppColors.primaryDeep)
+                ? const Icon(
+                    Icons.pets_rounded,
+                    size: 40,
+                    color: AppColors.primaryDeep,
+                  )
                 : null,
           ),
           Positioned(
@@ -277,7 +298,11 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 color: AppColors.primaryDeep,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.camera_alt, color: Colors.white, size: 15),
+              child: const Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: 15,
+              ),
             ),
           ),
         ],
@@ -316,7 +341,10 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       return;
     }
 
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _submitError = null;
+    });
     try {
       String? uploadedUrl;
       if (_localPhotoPath != null) {
@@ -353,7 +381,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       showToast('Pet profile created successfully!');
       if (mounted) context.pop();
     } catch (e) {
-      showToast(e.toString(), isError: true);
+      if (mounted) setState(() => _submitError = customerError(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

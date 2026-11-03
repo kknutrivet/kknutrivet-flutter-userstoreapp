@@ -1,3 +1,4 @@
+import '../../../core/utils/customer_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,18 +24,21 @@ class AddressFormScreen extends ConsumerStatefulWidget {
 class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final _label = TextEditingController(text: widget.address?.label ?? '');
-  late final _fullName =
-      TextEditingController(text: widget.address?.fullName ?? '');
+  late final _fullName = TextEditingController(
+    text: widget.address?.fullName ?? '',
+  );
   late final _phone = TextEditingController(text: widget.address?.phone ?? '');
-  late final _buildingNumber =
-      TextEditingController(text: widget.address?.buildingNumber ?? '');
-  late final _fullAddress =
-      TextEditingController(text: widget.address?.fullAddress ?? '');
+  late final _buildingNumber = TextEditingController(
+    text: widget.address?.buildingNumber ?? '',
+  );
+  late final _fullAddress = TextEditingController(
+    text: widget.address?.fullAddress ?? '',
+  );
   late final _city = TextEditingController(text: widget.address?.city ?? '');
   late final _state = TextEditingController(text: widget.address?.state ?? '');
-  late final _zip =
-      TextEditingController(text: widget.address?.zipCode ?? '');
+  late final _zip = TextEditingController(text: widget.address?.zipCode ?? '');
   bool _saving = false;
+  String? _submitError;
   bool _detectingGps = false;
   String? _locationMessage;
 
@@ -95,7 +99,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       if (!mounted) return;
 
       setState(() {
-        if (location.buildingName != null && location.buildingName!.isNotEmpty) {
+        if (location.buildingName != null &&
+            location.buildingName!.isNotEmpty) {
           _buildingNumber.text = location.buildingName!;
         }
         if (location.fullAddress != null && location.fullAddress!.isNotEmpty) {
@@ -116,7 +121,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       showToast('GPS location detected');
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString().replaceFirst('Exception: ', '');
+      final msg = customerError(e, action: 'find your location');
       showToast(msg, isError: true);
       setState(() => _locationMessage = msg);
     } finally {
@@ -195,8 +200,11 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.explore_rounded,
-                              size: 16, color: AppColors.primaryDeep),
+                          Icon(
+                            Icons.explore_rounded,
+                            size: 16,
+                            color: AppColors.primaryDeep,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'Quick Address Fill',
@@ -221,8 +229,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed:
-                                  _detectingGps ? null : _detectGpsLocation,
+                              onPressed: _detectingGps
+                                  ? null
+                                  : _detectGpsLocation,
                               icon: _detectingGps
                                   ? const SizedBox(
                                       width: 14,
@@ -232,8 +241,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                                         color: AppColors.primaryDeep,
                                       ),
                                     )
-                                  : const Icon(Icons.my_location_rounded,
-                                      size: 16),
+                                  : const Icon(
+                                      Icons.my_location_rounded,
+                                      size: 16,
+                                    ),
                               label: Text(
                                 _detectingGps ? 'Locating…' : 'Use Current GPS',
                                 style: const TextStyle(
@@ -245,12 +256,15 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                                 foregroundColor: AppColors.primaryDeep,
                                 backgroundColor: Colors.white,
                                 side: const BorderSide(
-                                    color: Color(0xFFB5D8C7)),
+                                  color: Color(0xFFB5D8C7),
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 10),
+                                  horizontal: 8,
+                                  vertical: 10,
+                                ),
                               ),
                             ),
                           ),
@@ -269,13 +283,14 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.textPrimary,
                                 backgroundColor: Colors.white,
-                                side:
-                                    const BorderSide(color: AppColors.border),
+                                side: const BorderSide(color: AppColors.border),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 10),
+                                  horizontal: 8,
+                                  vertical: 10,
+                                ),
                               ),
                             ),
                           ),
@@ -285,7 +300,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                         const SizedBox(height: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
@@ -294,8 +311,11 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  size: 15, color: AppColors.primary),
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                size: 15,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -335,7 +355,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       Wrap(
                         spacing: 8,
                         children: _labelOptions.map((opt) {
-                          final isSelected = _label.text.trim().toLowerCase() ==
+                          final isSelected =
+                              _label.text.trim().toLowerCase() ==
                               opt.toLowerCase();
                           return ChoiceChip(
                             label: Text(opt),
@@ -366,7 +387,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                         controller: _fullName,
                         decoration: const InputDecoration(
                           labelText: 'Recipient Full Name *',
-                          prefixIcon: Icon(Icons.person_outline_rounded, size: 20),
+                          prefixIcon: Icon(
+                            Icons.person_outline_rounded,
+                            size: 20,
+                          ),
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Name is required'
@@ -376,7 +400,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       TextFormField(
                         controller: _phone,
                         keyboardType: TextInputType.phone,
-                    autofillHints: const [AutofillHints.telephoneNumberNational],
+                        autofillHints: const [
+                          AutofillHints.telephoneNumberNational,
+                        ],
                         maxLength: 10,
                         decoration: const InputDecoration(
                           labelText: 'Mobile Number (10 digits) *',
@@ -392,8 +418,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       TextFormField(
                         controller: _buildingNumber,
                         decoration: const InputDecoration(
-                          labelText: 'House / Flat / Building / Apartment No. *',
-                          hintText: 'e.g. Flat 302, Sai Residency / House No. 12',
+                          labelText:
+                              'House / Flat / Building / Apartment No. *',
+                          hintText:
+                              'e.g. Flat 302, Sai Residency / House No. 12',
                           prefixIcon: Icon(Icons.apartment_rounded, size: 20),
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
@@ -421,8 +449,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                               controller: _city,
                               decoration: const InputDecoration(
                                 labelText: 'City / Town *',
-                                prefixIcon: Icon(Icons.location_city_rounded,
-                                    size: 20),
+                                prefixIcon: Icon(
+                                  Icons.location_city_rounded,
+                                  size: 20,
+                                ),
                               ),
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? 'Required'
@@ -435,8 +465,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                               controller: _state,
                               decoration: const InputDecoration(
                                 labelText: 'State *',
-                                prefixIcon:
-                                    Icon(Icons.map_outlined, size: 20),
+                                prefixIcon: Icon(Icons.map_outlined, size: 20),
                               ),
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? 'Required'
@@ -472,10 +501,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(
-              color: AppColors.borderWarmSoft,
-              width: 1,
-            ),
+            top: BorderSide(color: AppColors.borderWarmSoft, width: 1),
           ),
           boxShadow: [
             BoxShadow(
@@ -495,17 +521,30 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         ),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            height: 52,
-            child: AppButton(
-              label: isEdit ? 'Update Address' : 'Save Delivery Address',
-              icon: const Icon(Icons.check_rounded, size: 16),
-              variant: AppButtonVariant.primary,
-              size: AppButtonSize.lg,
-              fullWidth: true,
-              isLoading: _saving,
-              onPressed: _saving ? null : _save,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_submitError != null)
+                Semantics(
+                  liveRegion: true,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      _submitError!,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                  ),
+                ),
+              AppButton(
+                label: isEdit ? 'Update Address' : 'Save Delivery Address',
+                icon: const Icon(Icons.check_rounded, size: 16),
+                variant: AppButtonVariant.primary,
+                size: AppButtonSize.lg,
+                fullWidth: true,
+                isLoading: _saving,
+                onPressed: _saving ? null : _save,
+              ),
+            ],
           ),
         ),
       ),
@@ -514,7 +553,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _submitError = null;
+    });
     try {
       final address = Address(
         id: widget.address?.id ?? '',
@@ -537,17 +579,17 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
             .updateAddress(widget.address!.id, address);
         showToast('Address updated successfully');
       } else {
-        savedAddress =
-            await ref.read(addressServiceProvider).addAddress(address);
+        savedAddress = await ref
+            .read(addressServiceProvider)
+            .addAddress(address);
         showToast('Address added successfully');
       }
       ref.invalidate(addressesProvider);
       if (mounted) context.pop(savedAddress);
     } catch (e) {
-      showToast(e.toString(), isError: true);
+      if (mounted) setState(() => _submitError = customerError(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 }
-

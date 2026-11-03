@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
 import '../../../models/consultation.dart';
 
@@ -99,6 +100,8 @@ class CareChatPaymentBanner extends StatelessWidget {
   }
 }
 
+const kChatReactions = ["👍", "❤️", "😊", "🙏", "🎉", "😢"];
+
 class CareChatBubble extends StatelessWidget {
   const CareChatBubble({
     super.key,
@@ -106,12 +109,65 @@ class CareChatBubble extends StatelessWidget {
     required this.booking,
     required this.onUnlockPrescription,
     required this.onOpenMedia,
+    this.canReact = true,
+    this.onReact,
+    this.busyAction = false,
   });
 
   final CareChatMessage message;
   final ConsultationBooking booking;
   final ValueChanged<CareChatMessage> onUnlockPrescription;
   final ValueChanged<String> onOpenMedia;
+  final bool canReact;
+  final void Function(CareChatMessage message, String emoji)? onReact;
+  final bool busyAction;
+
+  void _showReactionSheet(BuildContext context) {
+    AppHaptics.selection();
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 20,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              for (final emoji in kChatReactions)
+                InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTap: () {
+                    AppHaptics.light();
+                    Navigator.pop(ctx);
+                    onReact?.call(message, emoji);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 26),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,18 +175,23 @@ class CareChatBubble extends StatelessWidget {
       return Center(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.88,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xFFEEF4F1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFDCE8E1), width: 0.8),
           ),
           child: Text(
             message.body.isEmpty ? 'System update' : message.body,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+              color: Color(0xFF566B60),
             ),
           ),
         ),
@@ -147,28 +208,40 @@ class CareChatBubble extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.82,
         ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-          decoration: BoxDecoration(
-            color: bubbleColor,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(isCustomer ? 16 : 4),
-              topRight: Radius.circular(isCustomer ? 4 : 16),
-              bottomLeft: const Radius.circular(16),
-              bottomRight: const Radius.circular(16),
-            ),
-            border: isCustomer ? null : Border.all(color: AppColors.borderWarm),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0D173C32),
-                blurRadius: 4,
-                offset: Offset(0, 1),
-              ),
-            ],
-          ),
+        child: GestureDetector(
+          onLongPress: canReact && onReact != null
+              ? () => _showReactionSheet(context)
+              : null,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                isCustomer ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                decoration: BoxDecoration(
+                  color: bubbleColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(isCustomer ? 16 : 4),
+                    topRight: Radius.circular(isCustomer ? 4 : 16),
+                    bottomLeft: const Radius.circular(16),
+                    bottomRight: const Radius.circular(16),
+                  ),
+                  border: isCustomer
+                      ? null
+                      : Border.all(color: AppColors.borderWarm),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0D173C32),
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               if (!isCustomer) ...[
                 Text(
                   message.senderName,
@@ -184,6 +257,7 @@ class CareChatBubble extends StatelessWidget {
                 InlinePrescriptionBubble(
                   message: message,
                   booking: booking,
+                  busyAction: busyAction,
                   onUnlock: () => onUnlockPrescription(message),
                   onOpenUrl: onOpenMedia,
                 )
@@ -341,9 +415,92 @@ class CareChatBubble extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
+        // Reactions row & quick react button:
+        if (message.reactions.isNotEmpty || (canReact && onReact != null))
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (final reaction in message.reactions)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: canReact && onReact != null
+                        ? () => onReact!(message, reaction.emoji)
+                        : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: reaction.mine
+                            ? const Color(0xFFE2F4EB)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: reaction.mine
+                              ? AppColors.primary
+                              : const Color(0xFFD6E2DB),
+                          width: reaction.mine ? 1.2 : 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            reaction.emoji,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${reaction.count}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: reaction.mine
+                                  ? AppColors.primaryDeep
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (canReact && onReact != null)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _showReactionSheet(context),
+                    child: Container(
+                      width: 24,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFD6E2DB),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.add_reaction_outlined,
+                        size: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    ),
+  ),
+),
+);
+}
 }
 
 class InlinePrescriptionBubble extends StatelessWidget {
@@ -353,12 +510,14 @@ class InlinePrescriptionBubble extends StatelessWidget {
     required this.booking,
     required this.onUnlock,
     required this.onOpenUrl,
+    this.busyAction = false,
   });
 
   final CareChatMessage message;
   final ConsultationBooking booking;
   final VoidCallback onUnlock;
   final ValueChanged<String> onOpenUrl;
+  final bool busyAction;
 
   @override
   Widget build(BuildContext context) {
@@ -422,17 +581,31 @@ class InlinePrescriptionBubble extends StatelessWidget {
             )
           else if (!(message.prescriptionUnlocked ?? !booking.prescriptionLocked))
             ElevatedButton.icon(
-              onPressed: onUnlock,
-              icon: const Icon(Icons.lock_open_rounded,
-                  size: 16, color: Colors.white),
+              onPressed: busyAction ? null : onUnlock,
+              icon: busyAction
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.lock_open_rounded,
+                      size: 16, color: Colors.white),
               label: Text(
-                (message.unlockAmount ?? booking.unlockAmount) != null
-                    ? 'Unlock Prescription (${formatPrice((message.unlockAmount ?? booking.unlockAmount)!)})'
-                    : 'Unlock Prescription',
+                busyAction
+                    ? 'Opening payment gateway…'
+                    : (message.unlockAmount ?? booking.unlockAmount) != null
+                        ? 'Unlock Prescription (${formatPrice((message.unlockAmount ?? booking.unlockAmount)!)})'
+                        : 'Unlock Prescription',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryDeep,
+                disabledBackgroundColor:
+                    AppColors.primaryDeep.withValues(alpha: 0.65),
                 foregroundColor: Colors.white,
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.9),
                 iconColor: Colors.white,
                 minimumSize: const Size.fromHeight(38),
                 textStyle: const TextStyle(
@@ -775,6 +948,10 @@ class CareChatMessagesSection extends StatelessWidget {
     required this.booking,
     required this.onUnlockPrescription,
     required this.onOpenMedia,
+    this.canReact = true,
+    this.onReact,
+    this.busyAction = false,
+    this.busyMessageId,
   });
 
   final bool isLoading;
@@ -782,6 +959,10 @@ class CareChatMessagesSection extends StatelessWidget {
   final ConsultationBooking booking;
   final ValueChanged<CareChatMessage> onUnlockPrescription;
   final ValueChanged<String> onOpenMedia;
+  final bool canReact;
+  final void Function(CareChatMessage message, String emoji)? onReact;
+  final bool busyAction;
+  final String? busyMessageId;
 
   @override
   Widget build(BuildContext context) {
@@ -814,6 +995,10 @@ class CareChatMessagesSection extends StatelessWidget {
               child: CareChatBubble(
                 message: msg,
                 booking: booking,
+                canReact: canReact,
+                onReact: onReact,
+                busyAction: busyAction &&
+                    (busyMessageId == null || busyMessageId == msg.id),
                 onUnlockPrescription: onUnlockPrescription,
                 onOpenMedia: onOpenMedia,
               ),

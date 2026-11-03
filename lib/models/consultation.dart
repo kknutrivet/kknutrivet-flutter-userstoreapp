@@ -92,6 +92,30 @@ class CareChatPage {
   );
 }
 
+class ChatReaction {
+  const ChatReaction({
+    required this.emoji,
+    required this.count,
+    required this.mine,
+  });
+
+  final String emoji;
+  final int count;
+  final bool mine;
+
+  factory ChatReaction.fromJson(Map<String, dynamic> json) => ChatReaction(
+        emoji: json['emoji']?.toString() ?? '',
+        count: (json['count'] as num?)?.toInt() ?? 0,
+        mine: json['mine'] == true,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'emoji': emoji,
+        'count': count,
+        'mine': mine,
+      };
+}
+
 class CareChatMessage {
   CareChatMessage({
     required this.id,
@@ -103,6 +127,7 @@ class CareChatMessage {
     this.mediaUrl,
     this.prescriptionUnlocked,
     this.unlockAmount,
+    this.reactions = const [],
     required this.createdAt,
   });
 
@@ -116,14 +141,76 @@ class CareChatMessage {
   final String? mediaUrl;
   final bool? prescriptionUnlocked;
   final double? unlockAmount;
+  final List<ChatReaction> reactions;
   final DateTime createdAt;
 
-  bool get isCustomer => senderRole.toUpperCase() == 'CUSTOMER';
-  bool get isSystem => senderRole.toUpperCase() == 'SYSTEM';
+  CareChatMessage copyWith({
+    String? id,
+    String? senderId,
+    String? senderRole,
+    String? senderName,
+    String? messageType,
+    String? body,
+    String? mediaUrl,
+    bool? prescriptionUnlocked,
+    double? unlockAmount,
+    List<ChatReaction>? reactions,
+    DateTime? createdAt,
+  }) {
+    return CareChatMessage(
+      id: id ?? this.id,
+      senderId: senderId ?? this.senderId,
+      senderRole: senderRole ?? this.senderRole,
+      senderName: senderName ?? this.senderName,
+      messageType: messageType ?? this.messageType,
+      body: body ?? this.body,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      prescriptionUnlocked: prescriptionUnlocked ?? this.prescriptionUnlocked,
+      unlockAmount: unlockAmount ?? this.unlockAmount,
+      reactions: reactions ?? this.reactions,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  bool get isSystem {
+    final role = senderRole.toUpperCase();
+    if (role == 'SYSTEM') return true;
+    final type = messageType.toUpperCase();
+    if (type == 'CALL_REQUEST' || type == 'VIDEO_REQUEST') return true;
+    final text = body.trim();
+    if (text.isEmpty) return false;
+    return text.contains('has been assigned to your care chat') ||
+        text.contains('recommends a video consultation') ||
+        text.contains('Video call requested') ||
+        text.contains('Payment successful! Your video consultation is now unlocked') ||
+        text.contains('looking for a doctor') ||
+        text.contains('awaiting care-team review') ||
+        text.contains('awaiting admin review');
+  }
+
+  bool get isCustomer => !isSystem && senderRole.toUpperCase() == 'CUSTOMER';
 
   factory CareChatMessage.fromJson(Map<String, dynamic> json) {
-    final rawRole = (json['senderRole'] ?? 'CUSTOMER').toString().toUpperCase();
-    final defaultName = switch (rawRole) {
+    final rawRole = (json['senderRole'] ?? '').toString().toUpperCase();
+    final rawType = (json['messageType'] ?? json['type'] ?? 'TEXT').toString().toUpperCase();
+    final rawBody = (json['body'] ?? json['text'] ?? '').toString();
+
+    final isSystemMessage = rawRole == 'SYSTEM' ||
+        rawType == 'CALL_REQUEST' ||
+        rawType == 'VIDEO_REQUEST' ||
+        rawBody.contains('has been assigned to your care chat') ||
+        rawBody.contains('recommends a video consultation') ||
+        rawBody.contains('Video call requested') ||
+        rawBody.contains('Payment successful! Your video consultation is now unlocked') ||
+        rawBody.contains('looking for a doctor') ||
+        rawBody.contains('awaiting care-team review') ||
+        rawBody.contains('awaiting admin review');
+
+    final effectiveRole = isSystemMessage
+        ? 'SYSTEM'
+        : (rawRole.isEmpty ? 'CUSTOMER' : rawRole);
+
+    final defaultName = switch (effectiveRole) {
       'VET' => 'Veterinarian',
       'ADMIN' => 'KK Nutrivet Care Team',
       'AI' || 'AI_SUMMARY' => 'Dr. Paw AI Intake',
@@ -133,18 +220,21 @@ class CareChatMessage {
     return CareChatMessage(
       id: json['id']?.toString() ?? '',
       senderId: json['senderId']?.toString() ?? '',
-      senderRole: rawRole,
+      senderRole: effectiveRole,
       senderName:
           json['senderName']?.toString() ??
           (json['sender'] is Map ? json['sender']['name']?.toString() : null) ??
           defaultName,
-      messageType:
-          (json['messageType'] ?? json['type'] ?? 'TEXT').toString().toUpperCase(),
-      body: (json['body'] ?? json['text'] ?? '').toString(),
+      messageType: rawType,
+      body: rawBody,
       prescriptionUnlocked: json['prescriptionUnlocked'] as bool?,
       unlockAmount: (json['unlockAmount'] as num?)?.toDouble(),
       mediaUrl:
           (json['mediaUrl'] ?? json['prescriptionUrl'])?.toString(),
+      reactions: (json['reactions'] as List? ?? [])
+          .whereType<Map>()
+          .map((r) => ChatReaction.fromJson(Map<String, dynamic>.from(r)))
+          .toList(),
       createdAt:
           DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),

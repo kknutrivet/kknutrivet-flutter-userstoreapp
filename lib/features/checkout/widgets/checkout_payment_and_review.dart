@@ -1362,6 +1362,7 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
     super.key,
     required this.canPlace,
     this.disabledReason,
+    this.resolveLabel = 'Review and continue',
     this.onResolve,
     required this.submitting,
     required this.paymentMethod,
@@ -1372,6 +1373,7 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
 
   final bool canPlace;
   final String? disabledReason;
+  final String resolveLabel;
   final VoidCallback? onResolve;
   final bool submitting;
   final String paymentMethod;
@@ -1406,17 +1408,24 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
                   child: Text(disabledReason!, textAlign: TextAlign.center),
                 ),
                 if (onResolve != null)
-                  TextButton(
-                    onPressed: onResolve,
-                    child: const Text('Review and continue'),
-                  ),
+                  TextButton(onPressed: onResolve, child: Text(resolveLabel)),
                 const SizedBox(height: 8),
               ],
-              SizedBox(
-                width: double.infinity,
-                height: 48,
+              if (paymentMethod == 'PARTIAL_COD')
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '₹${formatInr(advanceAmount)} now · ₹${formatInr((total - advanceAmount).clamp(0.0, total).toDouble())} on delivery',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: double.infinity,
+                  minHeight: 48,
+                ),
                 child: ElevatedButton(
-                  onPressed: canPlace ? onPlaceOrder : null,
+                  onPressed: (canPlace && !submitting) ? onPlaceOrder : null,
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -1424,13 +1433,29 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
                     ),
                   ),
                   child: submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              paymentMethod == 'COD'
+                                  ? 'Placing order…'
+                                  : 'Opening payment gateway…',
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         )
                       : Text(
                           paymentMethod == 'COD'

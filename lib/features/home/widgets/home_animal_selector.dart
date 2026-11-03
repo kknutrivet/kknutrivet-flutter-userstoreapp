@@ -61,7 +61,7 @@ class HomeAnimalSelector extends ConsumerWidget {
                       context.push('/products');
                     },
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 36),
+                      constraints: const BoxConstraints(minHeight: 48),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                         child: Text(
@@ -82,7 +82,7 @@ class HomeAnimalSelector extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 102,
+            height: 102 + 55 * (MediaQuery.textScalerOf(context).scale(12) / 12 - 1).clamp(0, 2),
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
@@ -103,7 +103,7 @@ class HomeAnimalSelector extends ConsumerWidget {
                           selected: isSelected,
                           label: 'Shop for $label',
                           child: SizedBox(
-                            width: 72,
+                            width: 72 + 48 * (MediaQuery.textScalerOf(context).scale(12) / 12 - 1).clamp(0, 2),
                             child: AppBounce(
                               pressedScale: 0.92,
                               onTap: () {
@@ -261,7 +261,7 @@ class HomeCategorySelector extends ConsumerWidget {
                     context.push('/products');
                   },
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 36),
+                    constraints: const BoxConstraints(minHeight: 48),
                     child: const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                       child: Text(
@@ -291,11 +291,11 @@ class HomeCategorySelector extends ConsumerWidget {
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.textScalerOf(context).scale(12) > 16 ? 2 : 4,
               crossAxisSpacing: 8,
               mainAxisSpacing: 10,
-              mainAxisExtent: 98,
+              mainAxisExtent: 98 + 55 * (MediaQuery.textScalerOf(context).scale(12) / 12 - 1).clamp(0, 2),
             ),
             itemCount: visible.length,
             itemBuilder: (context, i) {
@@ -448,7 +448,7 @@ class HomeScrollProductSection extends StatelessWidget {
       margin: const EdgeInsets.only(top: 12,bottom: 6),
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: surface.background,
+        color: surface.background,  
         border: Border(
           top: BorderSide(color: surface.border),
           bottom: BorderSide(color: surface.border),

@@ -35,7 +35,7 @@ void main() {
     );
     await tester.pump();
 
-    final searchText = find.text('Search medicines, supplements, feed...');
+    final searchText = find.text('Search products');
     expect(searchText, findsOneWidget);
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1500));

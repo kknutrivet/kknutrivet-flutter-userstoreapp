@@ -11,15 +11,17 @@ import '../../../providers/app_providers.dart';
 import '../../checkout/screens/cashfree_checkout_screen.dart';
 import 'order_items_and_summary.dart';
 
-final orderDetailProvider =
-    FutureProvider.autoDispose.family<Order, String>((ref, id) {
+final orderDetailProvider = FutureProvider.autoDispose.family<Order, String>((
+  ref,
+  id,
+) {
   return ref.read(orderServiceProvider).fetchOrder(id);
 });
 
-final orderTrackingProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, id) {
-  return ref.read(orderServiceProvider).fetchTracking(id);
-});
+final orderTrackingProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, String>((ref, id) {
+      return ref.read(orderServiceProvider).fetchTracking(id);
+    });
 
 /// Dark hero card: order number, placed date, total, invoice + current status.
 class OrderHeroCard extends StatelessWidget {
@@ -262,7 +264,10 @@ class OrderJourneyTracker extends StatelessWidget {
                   children: [
                     Text(
                       'Delivery journey',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                     SizedBox(height: 2),
                     Text(
@@ -277,7 +282,10 @@ class OrderJourneyTracker extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: info.bgColor,
                   borderRadius: BorderRadius.circular(20),
@@ -300,7 +308,11 @@ class OrderJourneyTracker extends StatelessWidget {
               final stepWidth = totalWidth / 4;
               final firstCenter = stepWidth / 2;
               final lastCenter = totalWidth - (stepWidth / 2);
-              final fillRatio = (completedCount >= 4 ? 1.0 : (completedCount / 3.0)).clamp(0.0, 1.0);
+              final fillRatio =
+                  (completedCount >= 4 ? 1.0 : (completedCount / 3.0)).clamp(
+                    0.0,
+                    1.0,
+                  );
 
               return Stack(
                 clipBehavior: Clip.none,
@@ -349,17 +361,23 @@ class OrderJourneyTracker extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 color: isDone
                                     ? AppColors.primary
-                                    : (isActive ? Colors.white : const Color(0xFFF3F4F6)),
+                                    : (isActive
+                                          ? Colors.white
+                                          : const Color(0xFFF3F4F6)),
                                 border: Border.all(
                                   color: isDone
                                       ? AppColors.primary
-                                      : (isActive ? AppColors.primary : const Color(0xFFD1D5DB)),
+                                      : (isActive
+                                            ? AppColors.primary
+                                            : const Color(0xFFD1D5DB)),
                                   width: isActive ? 2.5 : 1.5,
                                 ),
                                 boxShadow: isActive
                                     ? [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(alpha: 0.25),
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.25,
+                                          ),
                                           blurRadius: 6,
                                           spreadRadius: 1,
                                         ),
@@ -391,7 +409,9 @@ class OrderJourneyTracker extends StatelessWidget {
                                 fontSize: 12,
                                 fontWeight: isActive
                                     ? FontWeight.w800
-                                    : (isDone ? FontWeight.w600 : FontWeight.w500),
+                                    : (isDone
+                                          ? FontWeight.w600
+                                          : FontWeight.w500),
                                 color: (isDone || isActive)
                                     ? AppColors.textPrimary
                                     : AppColors.textTertiary,
@@ -413,16 +433,11 @@ class OrderJourneyTracker extends StatelessWidget {
             decoration: BoxDecoration(
               color: info.bgColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: info.color.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: info.color.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
-                Text(
-                  info.emoji,
-                  style: const TextStyle(fontSize: 18),
-                ),
+                Text(info.emoji, style: const TextStyle(fontSize: 18)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -479,8 +494,8 @@ class OrderPaymentCard extends StatelessWidget {
                     order.partialCod
                         ? 'Advance + COD'
                         : order.paymentMethod == 'CASHFREE'
-                            ? 'Online Payment'
-                            : 'Cash on Delivery',
+                        ? 'Online Payment'
+                        : 'Cash on Delivery',
                   ),
                 ),
                 Expanded(
@@ -489,18 +504,19 @@ class OrderPaymentCard extends StatelessWidget {
                     order.paymentStatus == 'PAID'
                         ? 'Paid'
                         : order.paymentStatus == 'ADVANCE_PAID'
-                            ? 'Advance Paid'
-                            : order.paymentStatus == 'FAILED'
-                                ? 'Failed'
-                                : order.paymentMethod == 'COD'
-                                    ? 'Pending'
-                                    : (order.paymentStatus ?? 'Pending'),
-                    color: (order.paymentStatus == 'PAID' ||
+                        ? 'Advance Paid'
+                        : order.paymentStatus == 'FAILED'
+                        ? 'Failed'
+                        : order.paymentMethod == 'COD'
+                        ? 'Pending'
+                        : (order.paymentStatus ?? 'Pending'),
+                    color:
+                        (order.paymentStatus == 'PAID' ||
                             order.paymentStatus == 'ADVANCE_PAID')
                         ? AppColors.primary
                         : order.paymentStatus == 'FAILED'
-                            ? AppColors.error
-                            : AppColors.textSecondary,
+                        ? AppColors.error
+                        : AppColors.textSecondary,
                   ),
                 ),
                 Expanded(
@@ -551,7 +567,10 @@ class OrderPaymentCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11.5,
+          ),
         ),
         const SizedBox(height: 3),
         Text(
@@ -689,10 +708,11 @@ class OrderTrackingSection extends ConsumerWidget {
                     final e = entry.value;
                     final status = e is Map
                         ? (e['status'] ?? e['description'] ?? 'Update')
-                            .toString()
+                              .toString()
                         : '$e';
-                    final location =
-                        e is Map ? (e['location'] ?? '').toString() : '';
+                    final location = e is Map
+                        ? (e['location'] ?? '').toString()
+                        : '';
                     final time = e is Map
                         ? (e['timestamp'] ?? e['updatedAt'] ?? '').toString()
                         : '';
@@ -739,9 +759,10 @@ class OrderTrackingSection extends ConsumerWidget {
                                   ),
                                   if (location.isNotEmpty || time.isNotEmpty)
                                     Text(
-                                      [location, time]
-                                          .where((s) => s.isNotEmpty)
-                                          .join(' · '),
+                                      [
+                                        location,
+                                        time,
+                                      ].where((s) => s.isNotEmpty).join(' · '),
                                       style: const TextStyle(
                                         color: AppColors.textSecondary,
                                         fontSize: 11.5,
@@ -802,23 +823,30 @@ class _OrderPaymentRetryBannerState
 
       final merchantOrderId =
           (session['orderId'] as String?)?.isNotEmpty == true
-              ? session['orderId'] as String
-              : (widget.order.cashfreeMerchantOrderId?.isNotEmpty == true
-                  ? widget.order.cashfreeMerchantOrderId!
-                  : widget.order.orderNumber);
+          ? session['orderId'] as String
+          : (widget.order.cashfreeMerchantOrderId?.isNotEmpty == true
+                ? widget.order.cashfreeMerchantOrderId!
+                : widget.order.orderNumber);
 
       final result = await ref
           .read(orderServiceProvider)
           .verifyCashfreePayment(merchantOrderId);
       if (!mounted) return;
-      final isPaid = result['paid'] == true ||
+      final isPaid =
+          result['paid'] == true ||
           result['confirmed'] == true ||
           result['status'] == 'PAID' ||
           result['status'] == 'ADVANCE_PAID' ||
           result['status'] == 'SUCCESS';
       if (isPaid) {
         final partial = widget.order.paymentMethod == 'PARTIAL_COD';
-        AnalyticsService.instance.logPurchase(orderId: widget.order.id, value: partial ? (widget.order.advanceAmount ?? 0) : widget.order.totalAmount, paymentMethod: partial ? 'advance' : 'prepaid');
+        AnalyticsService.instance.logPurchase(
+          orderId: widget.order.id,
+          value: partial
+              ? (widget.order.advanceAmount ?? 0)
+              : widget.order.totalAmount,
+          paymentMethod: partial ? 'advance' : 'prepaid',
+        );
         showToast('Payment confirmed');
       } else {
         showToast('Payment not confirmed yet', isError: true);
@@ -833,7 +861,8 @@ class _OrderPaymentRetryBannerState
 
   @override
   Widget build(BuildContext context) {
-    final failed = widget.order.paymentStatus == 'FAILED' ||
+    final failed =
+        widget.order.paymentStatus == 'FAILED' ||
         widget.order.paymentStatus == 'USER_DROPPED';
     final color = failed ? AppColors.error : AppColors.orderPending;
     final bg = failed ? AppColors.errorBg : AppColors.orderPendingBg;
@@ -847,7 +876,8 @@ class _OrderPaymentRetryBannerState
           border: Border.all(color: color.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Icon(
               failed ? Icons.error_outline : Icons.hourglass_bottom,
@@ -855,7 +885,8 @@ class _OrderPaymentRetryBannerState
               size: 20,
             ),
             const SizedBox(width: 10),
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 failed
                     ? "Payment wasn't completed for this order"
@@ -867,16 +898,38 @@ class _OrderPaymentRetryBannerState
                 ),
               ),
             ),
+            if (widget.order.paymentMethod == 'PARTIAL_COD' &&
+                widget.order.advanceAmount != null)
+              Text(
+                '${formatPrice((widget.order.totalAmount - widget.order.advanceAmount!).clamp(0, widget.order.totalAmount))} due on delivery',
+              ),
             TextButton(
               onPressed: _busy ? null : _retry,
               child: _busy
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 15,
+                          width: 15,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Opening payment gateway…',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     )
                   : Text(
-                      widget.order.paymentMethod == 'PARTIAL_COD' ? 'Pay advance' : 'Complete payment',
+                      widget.order.paymentMethod == 'PARTIAL_COD'
+                          ? (widget.order.advanceAmount == null
+                                ? 'Continue to payment'
+                                : 'Pay ${formatPrice(widget.order.advanceAmount!)} advance')
+                          : 'Pay ${formatPrice(widget.order.totalAmount)}',
                       style: TextStyle(fontSize: 12.5),
                     ),
             ),

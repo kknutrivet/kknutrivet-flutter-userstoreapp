@@ -1,3 +1,4 @@
+import '../../../core/utils/customer_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,94 +43,109 @@ class AddressesScreen extends ConsumerWidget {
         label: const Text(
           'Add Address',
           style: TextStyle(
-              fontWeight: FontWeight.w800, fontSize: 13, color: Colors.white),
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+            color: Colors.white,
+          ),
         ),
       ),
       body: SafeArea(
         top: false,
         child: addressesAsync.when(
           data: (addresses) {
-          if (addresses.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: AppEmptyState(
-                  icon: Icons.location_off_outlined,
-                  title: 'No saved addresses yet',
-                  description:
-                      'Add your delivery address for faster veterinary ordering, medicine dispatch, and doorstep tracking.',
-                  actionLabel: 'Add Delivery Address',
-                  onAction: () async {
-                    AppHaptics.light();
-                    await context.push('/addresses/new');
-                    ref.invalidate(addressesProvider);
-                  },
+            if (addresses.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: AppEmptyState(
+                    icon: Icons.location_off_outlined,
+                    title: 'No saved addresses yet',
+                    description:
+                        'Add your delivery address for faster veterinary ordering, medicine dispatch, and doorstep tracking.',
+                    actionLabel: 'Add Delivery Address',
+                    onAction: () async {
+                      AppHaptics.light();
+                      await context.push('/addresses/new');
+                      ref.invalidate(addressesProvider);
+                    },
+                  ),
                 ),
+              );
+            }
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                ref.invalidate(addressesProvider);
+                await ref.read(addressesProvider.future);
+              },
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                itemCount: addresses.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, i) {
+                  final address = addresses[i];
+                  return _AddressTile(
+                    address: address,
+                    onEdit: () async {
+                      AppHaptics.light();
+                      await context.push(
+                        '/addresses/${address.id}/edit',
+                        extra: address,
+                      );
+                      ref.invalidate(addressesProvider);
+                    },
+                    onDelete: () => _deleteAddress(context, ref, address.id),
+                    onSetDefault: () => _setDefault(context, ref, address),
+                  );
+                },
               ),
             );
-          }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async {
-              ref.invalidate(addressesProvider);
-              await ref.read(addressesProvider.future);
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-              itemCount: addresses.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, i) {
-                final address = addresses[i];
-                return _AddressTile(
-                  address: address,
-                  onEdit: () async {
-                    AppHaptics.light();
-                    await context.push('/addresses/${address.id}/edit',
-                        extra: address);
-                    ref.invalidate(addressesProvider);
-                  },
-                  onDelete: () => _deleteAddress(context, ref, address.id),
-                  onSetDefault: () => _setDefault(context, ref, address),
-                );
-              },
-            ),
-          );
-        },
-        loading: () => const Center(child: AppLoader.large()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: AppEmptyState(
-              icon: Icons.error_outline_rounded,
-              title: 'Unable to load addresses',
-              description: e.toString(),
-              actionLabel: 'Try Again',
-              onAction: () => ref.invalidate(addressesProvider),
+          },
+          loading: () => const Center(child: AppLoader.large()),
+          error: (e, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: AppEmptyState(
+                icon: Icons.error_outline_rounded,
+                title: 'Unable to load addresses',
+                description: customerError(e),
+                actionLabel: 'Try Again',
+                onAction: () => ref.invalidate(addressesProvider),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _deleteAddress(
-      BuildContext context, WidgetRef ref, String id) async {
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+  ) async {
     AppHaptics.light();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete address?',
-            style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700)),
+        title: Text(
+          'Delete address?',
+          style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
         content: const Text(
-            'This address will be removed from your saved delivery locations.'),
+          'This address will be removed from your saved delivery locations.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => ctx.pop(true),
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -140,13 +156,16 @@ class AddressesScreen extends ConsumerWidget {
         showToast('Address deleted');
         ref.invalidate(addressesProvider);
       } catch (e) {
-        showToast(e.toString(), isError: true);
+        showToast(customerError(e), isError: true);
       }
     }
   }
 
   Future<void> _setDefault(
-      BuildContext context, WidgetRef ref, Address address) async {
+    BuildContext context,
+    WidgetRef ref,
+    Address address,
+  ) async {
     AppHaptics.selection();
     try {
       final updated = Address(
@@ -165,7 +184,7 @@ class AddressesScreen extends ConsumerWidget {
       showToast('Default address updated');
       ref.invalidate(addressesProvider);
     } catch (e) {
-      showToast(e.toString(), isError: true);
+      showToast(customerError(e), isError: true);
     }
   }
 }
@@ -213,10 +232,7 @@ class _AddressTile extends StatelessWidget {
                 ),
               ),
               if (address.isDefault)
-                const AppBadge(
-                  label: 'DEFAULT',
-                  tone: AppBadgeTone.emerald,
-                ),
+                const AppBadge(label: 'DEFAULT', tone: AppBadgeTone.emerald),
             ],
           ),
           const SizedBox(height: 8),
@@ -240,8 +256,11 @@ class _AddressTile extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.phone_outlined,
-                  size: 13, color: AppColors.textSecondary),
+              const Icon(
+                Icons.phone_outlined,
+                size: 13,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 4),
               Text(
                 address.phone,
@@ -263,9 +282,13 @@ class _AddressTile extends StatelessWidget {
                     minimumSize: const Size(60, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Set as default',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.primaryDeep)),
+                  child: const Text(
+                    'Set as default',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primaryDeep,
+                    ),
+                  ),
                 ),
               const Spacer(),
               TextButton.icon(
@@ -276,10 +299,15 @@ class _AddressTile extends StatelessWidget {
               const SizedBox(width: 4),
               TextButton.icon(
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded,
-                    size: 14, color: AppColors.error),
-                label: const Text('Delete',
-                    style: TextStyle(fontSize: 12, color: AppColors.error)),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  size: 14,
+                  color: AppColors.error,
+                ),
+                label: const Text(
+                  'Delete',
+                  style: TextStyle(fontSize: 12, color: AppColors.error),
+                ),
               ),
             ],
           ),
