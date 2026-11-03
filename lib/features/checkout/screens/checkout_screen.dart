@@ -667,8 +667,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (_paymentMethod == 'CASHFREE' || _paymentMethod == 'PARTIAL_COD') {
         await _payOnline(order);
       } else if (mounted) {
-        await showCheckoutOrderSuccessSheet(context, order);
-        if (mounted) context.go('/orders');
+        showToast('Order placed successfully!');
+        context.go('/order/${order.id}');
       }
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -759,8 +759,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (isPaymentConfirmed(result)) {
       await ref.read(cartProvider.notifier).clear();
       if (!mounted) return;
-      await showCheckoutOrderSuccessSheet(context, order);
-      if (mounted) context.go('/order/${order.id}');
+      showToast('Payment successful! Order confirmed.');
+      context.go('/order/${order.id}');
     } else {
       showToast(
         'We could not confirm your payment yet. Check your order for the latest status.',

@@ -8,7 +8,6 @@ import '../../../providers/app_providers.dart';
 import '../widgets/home_animal_selector.dart';
 import '../widgets/home_combos_and_rx.dart';
 import '../widgets/home_community_and_footer.dart';
-import '../widgets/home_hero_carousel.dart';
 import '../widgets/home_models_and_data.dart';
 import '../widgets/home_product_rails.dart';
 import '../widgets/home_story_and_trust.dart';
@@ -127,12 +126,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             slivers: [
               const HomeBrandBar(),
               const SliverToBoxAdapter(child: HomeTopBarCard()),
+              const HomePinnedSearchBar(),
               const SliverToBoxAdapter(child: HomeAnimalSelector()),
               SliverToBoxAdapter(
                 child: HomeCategorySelector(selectedAnimal: selectedAnimal),
-              ),
-              SliverToBoxAdapter(
-                child: HomeHeroCarousel(selectedAnimal: selectedAnimal),
               ),
               SliverToBoxAdapter(
                 child: HomeFeaturedProductsRail(selectedAnimal: selectedAnimal),

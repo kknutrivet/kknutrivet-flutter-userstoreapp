@@ -1236,27 +1236,6 @@ class CheckoutSummaryCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 4),
-          const Row(
-            children: [
-              Icon(
-                Icons.local_shipping_outlined,
-                size: 13,
-                color: AppColors.primaryDeep,
-              ),
-              SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  'Standard Delivery: 5–7 business days',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 6),
           _feeJokeRow('Platform fees', "We're not those guys"),
           const SizedBox(height: 4),

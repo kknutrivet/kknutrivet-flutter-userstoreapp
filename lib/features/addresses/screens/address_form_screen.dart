@@ -495,14 +495,17 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         ),
         child: SafeArea(
           top: false,
-          child: AppButton(
-            label: isEdit ? 'Update Address' : 'Save Delivery Address',
-            icon: const Icon(Icons.check_rounded, size: 16),
-            variant: AppButtonVariant.primary,
-            size: AppButtonSize.lg,
-            fullWidth: true,
-            isLoading: _saving,
-            onPressed: _saving ? null : _save,
+          child: SizedBox(
+            height: 52,
+            child: AppButton(
+              label: isEdit ? 'Update Address' : 'Save Delivery Address',
+              icon: const Icon(Icons.check_rounded, size: 16),
+              variant: AppButtonVariant.primary,
+              size: AppButtonSize.lg,
+              fullWidth: true,
+              isLoading: _saving,
+              onPressed: _saving ? null : _save,
+            ),
           ),
         ),
       ),

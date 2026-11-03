@@ -47,6 +47,7 @@ const catalogueSortOptions = [
 void showCatalogueSortSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     showDragHandle: false,
     backgroundColor: Colors.transparent,
@@ -57,6 +58,7 @@ void showCatalogueSortSheet(BuildContext context) {
 void showCatalogueFilterSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => const CatalogueFilterSheet(),

@@ -176,37 +176,6 @@ class CartSummaryCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 6),
-          const Row(
-            children: [
-              Icon(
-                Icons.local_shipping_outlined,
-                size: 14,
-                color: Color(0xFF047857),
-              ),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    text: 'Standard Delivery: ',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '5–7 business days',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
           if (showInlinePincodeChecker) ...[
             const SizedBox(height: 8),
             const CartDeliveryCheckerCard(),

@@ -88,84 +88,106 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
       onTap: () => context.push(
         '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
       ),
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1407271F),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Material(
             color: Colors.white,
-            border: Border.all(color: const Color(0xFFE8ECE9), width: 1),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A173C32),
-                blurRadius: 14,
-                offset: Offset(0, 4),
-              ),
-              BoxShadow(
-                color: Color(0x05000000),
-                blurRadius: 4,
-                offset: Offset(0, 1),
-              ),
-            ],
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final imageStack = Stack(
-                children: [
-                  Positioned.fill(
-                    child: widget.heroTag != null
-                        ? Hero(
-                            tag: widget.heroTag!,
-                            child: ProductImageCover(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final imageStack = Stack(
+                  children: [
+                    Positioned.fill(
+                      child: widget.heroTag != null
+                          ? Hero(
+                              tag: widget.heroTag!,
+                              child: ProductImageCover(
+                                imageUrl: image,
+                                showPlaceholderOnLoading: false,
+                                enableBackdrop: false,
+                                fit: BoxFit.cover,
+                                innerPadding: EdgeInsets.zero,
+                                backgroundColor: Colors.white,
+                                border: const Border(
+                                  bottom: BorderSide(
+                                    color: Color(0xFFF1F5F9),
+                                    width: 1,
+                                  ),
+                                ),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(15),
+                                ),
+                              ),
+                            )
+                          : ProductImageCover(
                               imageUrl: image,
                               showPlaceholderOnLoading: false,
-                              backdropOpacity: 0.85,
-                              innerPadding: const EdgeInsets.all(6),
+                              enableBackdrop: false,
+                              fit: BoxFit.cover,
+                              innerPadding: EdgeInsets.zero,
+                              backgroundColor: Colors.white,
+                              border: const Border(
+                                bottom: BorderSide(
+                                  color: Color(0xFFF1F5F9),
+                                  width: 1,
+                                ),
+                              ),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(15),
+                              ),
                             ),
-                          )
-                        : ProductImageCover(
-                            imageUrl: image,
-                            showPlaceholderOnLoading: false,
-                            backdropOpacity: 0.85,
-                            innerPadding: const EdgeInsets.all(6),
-                          ),
-                  ),
+                    ),
                   if (hasDiscount &&
                       discountPercent > 0 &&
                       !product.requiresPrescription)
                     Positioned(
-                      top: 6,
-                      left: 6,
+                      top: 8,
+                      left: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2.5,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5EE),
-                          borderRadius: BorderRadius.circular(20),
+                          color: const Color(0xFFE6F3EA),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          '$discountPercent% OFF',
+                          !isCatalogue
+                              ? 'Save $discountPercent%'
+                              : '$discountPercent% OFF',
                           style: const TextStyle(
-                            fontSize: 10.5,
-                            height: 1.15,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                            color: Color(0xFF0E7A53),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF176448),
                           ),
                         ),
                       ),
                     ),
                   if (product.requiresPrescription)
                     Positioned(
-                      top: 6,
-                      right: 6,
+                      top: 8,
+                      right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 8,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
@@ -176,7 +198,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                         child: const Text(
                           'Rx required',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             color: AppColors.rxText,
                             fontWeight: FontWeight.w800,
                           ),
@@ -195,7 +217,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                   else
                     AspectRatio(aspectRatio: 1.25, child: imageStack),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 7),
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -227,7 +249,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                               }
                             },
                             child: Container(
-                              constraints: const BoxConstraints(minHeight: 48),
+                              constraints: const BoxConstraints(minHeight: 22),
                               alignment: Alignment.centerLeft,
                               child: Row(
                                 children: [
@@ -286,7 +308,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                         ),
                         const SizedBox(height: 8),
                         SizedBox(
-                          height: 48,
+                          height: 34,
                           width: double.infinity,
                           child: _CompactAddButton(
                             product: product,
@@ -306,7 +328,8 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -472,7 +495,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
         key: const ValueKey('stepper'),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(17),
           border: isMintStepper
               ? Border.all(color: const Color(0xFFBDD6C9), width: 1.2)
               : null,
@@ -487,50 +510,54 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                 ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            SizedBox(
-              width: 48,
+            Expanded(
               child: Semantics(
                 button: true,
                 label: 'Decrease quantity of ${product.name}',
                 child: AppBounce(
                   pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(-1),
-                  child: Center(child: Icon(Icons.remove, size: 14, color: fg)),
+                  child: Container(
+                    color: Colors.transparent,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.remove, size: 14, color: fg),
+                  ),
                 ),
               ),
             ),
-            Expanded(
-              child: Center(
-                child: _busy
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: fg,
-                        ),
-                      )
-                    : Text(
-                        '${widget.quantity}',
-                        style: TextStyle(
-                          color: fg,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: _busy
+                  ? SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: fg,
                       ),
-              ),
+                    )
+                  : Text(
+                      '${widget.quantity}',
+                      style: TextStyle(
+                        color: fg,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
-            SizedBox(
-              width: 48,
+            Expanded(
               child: Semantics(
                 button: true,
                 label: 'Increase quantity of ${product.name}',
                 child: AppBounce(
                   pressedScale: 0.85,
                   onTap: _busy ? null : () => _updateQuantity(1),
-                  child: Center(child: Icon(Icons.add, size: 14, color: fg)),
+                  child: Container(
+                    color: Colors.transparent,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.add, size: 14, color: fg),
+                  ),
                 ),
               ),
             ),
@@ -549,9 +576,15 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           onTap: _busy ? null : _handleInitialAdd,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.catalogueGreen, width: 1.2),
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFF07583F),
+              borderRadius: BorderRadius.circular(17),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF07583F).withValues(alpha: 0.22),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Center(
               child: _busy
@@ -560,7 +593,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.catalogueGreen,
+                        color: Colors.white,
                       ),
                     )
                   : Row(
@@ -570,7 +603,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                           const Icon(
                             Icons.add,
                             size: 13,
-                            color: AppColors.catalogueGreen,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 2),
                         ],
@@ -579,7 +612,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.catalogueGreen,
+                            color: Colors.white,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -588,7 +621,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                           const Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 14,
-                            color: AppColors.catalogueGreen,
+                            color: Colors.white,
                           ),
                         ],
                       ],
@@ -610,12 +643,12 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF07583F),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(17),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF07583F).withValues(alpha: 0.22),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),

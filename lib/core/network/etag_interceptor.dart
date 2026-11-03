@@ -123,10 +123,7 @@ class ETagInterceptor extends Interceptor {
     }
 
     // 3. Handle Mutations -> Invalidate related cached collections
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].contains(method) &&
-        response.statusCode != null &&
-        response.statusCode! >= 200 &&
-        response.statusCode! < 300) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
       await _invalidateRelatedCaches(path);
     }
 
@@ -140,6 +137,13 @@ class ETagInterceptor extends Interceptor {
   ) async {
     final method = err.requestOptions.method.toUpperCase();
     final path = err.requestOptions.path;
+
+    // Mutations that return 404 (e.g. item/combo already deleted on server)
+    // must still invalidate local cached collections so stale data isn't served.
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].contains(method) &&
+        err.response?.statusCode == 404) {
+      await _invalidateRelatedCaches(path);
+    }
 
     // Check if server replied with 304 inside an error (fallback if validateStatus didn't catch)
     if (err.response?.statusCode == 304) {

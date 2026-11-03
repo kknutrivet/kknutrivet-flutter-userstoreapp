@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
-import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/compact_product_card.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
 import '../../products/widgets/catalogue_controls.dart';
@@ -30,59 +30,63 @@ class HomeAnimalSelector extends ConsumerWidget {
     }).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.only(top: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Expanded(
-                child: Text(
-                  'Shop by animal',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Shop by animal',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () {
-                    Haptics.selection();
-                    ref.read(selectedHomeAnimalProvider.notifier).state = null;
-                    ref.read(productFilterProvider.notifier).state =
-                        ProductFilter();
-                    context.push('/products');
-                  },
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 36),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                      child: Text(
-                        'All animals',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDeep,
-                          decoration: TextDecoration.underline,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      Haptics.selection();
+                      ref.read(selectedHomeAnimalProvider.notifier).state = null;
+                      ref.read(productFilterProvider.notifier).state =
+                          ProductFilter();
+                      context.push('/products');
+                    },
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 36),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        child: Text(
+                          'All animals',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDeep,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
             height: 102,
             child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -284,6 +288,7 @@ class HomeCategorySelector extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           GridView.builder(
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -440,8 +445,8 @@ class HomeScrollProductSection extends StatelessWidget {
     final shown = products.take(8).toList();
 
     return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      margin: const EdgeInsets.only(top: 12,bottom: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: surface.background,
         border: Border(
@@ -449,7 +454,7 @@ class HomeScrollProductSection extends StatelessWidget {
           bottom: BorderSide(color: surface.border),
         ),
       ),
-      child: Column(
+      child: Column( 
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -461,7 +466,7 @@ class HomeScrollProductSection extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: tone,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: const [
                       BoxShadow(
@@ -521,8 +526,6 @@ class HomeScrollProductSection extends StatelessWidget {
                 Material(
                   color: surface.accent,
                   shape: const CircleBorder(),
-                  elevation: 2,
-                  shadowColor: const Color(0x291C4637),
                   child: InkWell(
                     customBorder: const CircleBorder(),
                     onTap: () {
@@ -530,11 +533,11 @@ class HomeScrollProductSection extends StatelessWidget {
                       context.push(route);
                     },
                     child: const SizedBox(
-                      width: 36,
-                      height: 36,
+                      width: 44,
+                      height: 44,
                       child: Icon(
                         Icons.arrow_forward_rounded,
-                        size: 15,
+                        size: 17,
                         color: Colors.white,
                       ),
                     ),
@@ -545,17 +548,18 @@ class HomeScrollProductSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 264 + 70 * MediaQuery.textScalerOf(context).scale(1),
+            height: 252 + 35 * MediaQuery.textScalerOf(context).scale(1),
             child: ListView.separated(
+              physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: shown.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, i) => SizedBox(
-                width: 152,
+                width: 168,
                 child: CompactProductCard(
                   product: shown[i],
-                  variant: CompactCardVariant.homeGrid,
+                  variant: CompactCardVariant.catalogue,
                 ),
               ),
             ),
@@ -565,3 +569,4 @@ class HomeScrollProductSection extends StatelessWidget {
     );
   }
 }
+

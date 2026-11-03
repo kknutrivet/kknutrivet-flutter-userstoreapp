@@ -1,8 +1,10 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nvit_app/core/network/api_client.dart';
+import 'package:nvit_app/core/storage/token_storage.dart';
 import 'package:nvit_app/models/cart_item.dart';
 import 'package:nvit_app/models/product.dart';
 import 'package:nvit_app/models/user.dart';
@@ -38,6 +40,11 @@ class Throwing401CartService extends CartService {
   }) async {
     throw ApiException('Unauthorized', statusCode: 401);
   }
+
+  @override
+  Future<void> mergeGuestCart(List<Map<String, dynamic>> items) async {
+    throw ApiException('Unauthorized', statusCode: 401);
+  }
 }
 
 void main() {
@@ -53,8 +60,14 @@ void main() {
   );
 
   group('CartNotifier Guest Cart Tests', () {
-    setUp(() {
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+        return null;
+      });
+      await TokenStorage.instance.clearToken();
     });
 
     test('guest can add item to cart without throwing unhandled exception', () async {

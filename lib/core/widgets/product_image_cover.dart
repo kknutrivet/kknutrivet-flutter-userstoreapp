@@ -22,6 +22,9 @@ class ProductImageCover extends StatelessWidget {
     this.backdropOpacity = 0.85,
     this.blurSigma = 12.0,
     this.showPlaceholderOnLoading = true,
+    this.enableBackdrop = true,
+    this.border,
+    this.fit = BoxFit.contain,
   });
 
   final String? imageUrl;
@@ -31,24 +34,28 @@ class ProductImageCover extends StatelessWidget {
   final double backdropOpacity;
   final double blurSigma;
   final bool showPlaceholderOnLoading;
+  final bool enableBackdrop;
+  final BoxBorder? border;
+  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
     final resolvedUrl = AppNetworkImage.resolveUrl(imageUrl);
     final hasImage = resolvedUrl != null && resolvedUrl.isNotEmpty;
+    final showBackdrop = hasImage && enableBackdrop && backdropOpacity > 0;
 
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: borderRadius,
-        border: Border.all(color: const Color(0xFFE3ECE6)),
+        border: border ?? Border.all(color: const Color(0xFFE3ECE6)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
           // 1. Ambient blurred packaging backdrop (lightweight downsampled decode for RAM efficiency)
-          if (hasImage)
+          if (showBackdrop)
             Positioned(
               left: -12,
               top: -12,
@@ -71,28 +78,31 @@ class ProductImageCover extends StatelessWidget {
             ),
 
           // 2. Subtle radial vignette to keep foreground packaging crisp while preserving rich color
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
-                  radius: 0.85,
+          if (showBackdrop)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.10),
+                      Colors.transparent,
+                    ],
+                    radius: 0.85,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 3. Crisp centered foreground image with auto-retry and tap-to-retry
-          Padding(
-            padding: innerPadding,
-            child: Center(
+          // 3. Foreground image with auto-retry and tap-to-retry
+          Positioned.fill(
+            child: Padding(
+              padding: innerPadding,
               child: hasImage
                   ? AppNetworkImage(
                       imageUrl: resolvedUrl,
-                      fit: BoxFit.contain,
+                      fit: fit,
+                      width: double.infinity,
+                      height: double.infinity,
                       memCacheWidth: 600,
                       showPlaceholderOnLoading: showPlaceholderOnLoading,
                       enableManualRetry: true,

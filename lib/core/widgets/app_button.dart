@@ -167,6 +167,7 @@ class _AppButtonState extends State<AppButton>
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: minHeight,
+          maxHeight: minHeight,
           minWidth: widget.fullWidth
               ? double.infinity
               : (widget.size == AppButtonSize.sm ? 48.0 : 64.0),
@@ -186,6 +187,7 @@ class _AppButtonState extends State<AppButton>
               borderRadius: BorderRadius.circular(effectiveRadius),
               clipBehavior: Clip.antiAlias,
               child: Container(
+                height: minHeight,
                 padding: EdgeInsets.symmetric(
                   horizontal: horizontalPadding,
                   vertical: widget.size == AppButtonSize.sm ? 6 : 10,

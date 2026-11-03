@@ -31,17 +31,36 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(ordersProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.homeCanvas,
-      appBar: AppBar(
-        title: Text(
-          'My Orders',
-          style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+    void handleBack() {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/home');
+      }
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          handleBack();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.homeCanvas,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: handleBack,
+          ),
+          title: Text(
+            'My Orders',
+            style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-      ),
       body: SafeArea(
         top: false,
         child: ordersAsync.when(
@@ -179,8 +198,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         ),
       ),
     ),
+    ),
   );
-}
+  }
 }
 
 class _OrderCard extends StatelessWidget {

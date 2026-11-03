@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/analytics/analytics_service.dart';
 import '../core/auth/firebase_auth_service.dart';
+import '../core/database/local_database.dart';
 import '../core/network/api_client.dart';
 import '../core/storage/delivery_pincode_storage.dart';
 import '../core/storage/guest_cart_storage.dart';
@@ -400,7 +401,7 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
     }
 
     // Watch authProvider so CartNotifier automatically updates on login/logout
-    final user = ref.watch(authProvider).valueOrNull;
+    final user = ref.watch(authProvider.select((a) => a.valueOrNull));
     if (user == null) return List.unmodifiable(_guestCart);
 
     // If items were added while browsing as guest, merge them into the user's account
@@ -416,40 +417,32 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
           .toList();
       try {
         await ref.read(cartServiceProvider).mergeGuestCart(guestSnapshot);
-        clearGuestCart();
       } catch (_) {
         // Merge is best-effort: failure here should not block loading account cart
       }
+      clearGuestCart();
     }
 
     try {
       final items = await ref.read(cartServiceProvider).fetchCart();
-      if (items.isEmpty && _guestCart.isNotEmpty) {
-        return List.unmodifiable(_guestCart);
-      }
       return items;
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         Future.microtask(() => ref.read(authProvider.notifier).logout());
         return List.unmodifiable(_guestCart);
       }
-      if (_guestCart.isNotEmpty) {
-        return List.unmodifiable(_guestCart);
-      }
-      rethrow;
-    } catch (_) {
-      if (_guestCart.isNotEmpty) {
-        return List.unmodifiable(_guestCart);
-      }
       rethrow;
     }
   }
 
-  Future<void> refresh() async {
+  Future<void> refresh({bool force = false}) async {
     final user = ref.read(authProvider).value;
     if (user == null) {
       state = AsyncData(List.unmodifiable(_guestCart));
       return;
+    }
+    if (force) {
+      await LocalDatabase.instance.invalidateMatching('/cart');
     }
     try {
       final items = await ref.read(cartServiceProvider).fetchCart();
@@ -458,17 +451,11 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
       if (e.statusCode == 401) {
         Future.microtask(() => ref.read(authProvider.notifier).logout());
         state = AsyncData(List.unmodifiable(_guestCart));
-      } else if (_guestCart.isNotEmpty) {
-        state = AsyncData(List.unmodifiable(_guestCart));
       } else {
         state = AsyncError(e, StackTrace.current);
       }
     } catch (e, st) {
-      if (_guestCart.isNotEmpty) {
-        state = AsyncData(List.unmodifiable(_guestCart));
-      } else {
-        state = AsyncError(e, st);
-      }
+      state = AsyncError(e, st);
     }
   }
 
@@ -497,7 +484,8 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
             variantId: variantId,
             quantity: quantity,
           );
-      await refresh();
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      await refresh(force: true);
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         _addToGuestCart(
@@ -536,7 +524,8 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
             variantId: variantId,
             quantity: quantity,
           );
-      await refresh();
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      await refresh(force: true);
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         _setGuestQuantity(
@@ -571,7 +560,8 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
     }
     try {
       await ref.read(cartServiceProvider).addCombo(comboId);
-      await refresh();
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      await refresh(force: true);
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         _addGuestCombo(
@@ -596,13 +586,42 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
       return;
     }
     try {
-      await ref.read(cartServiceProvider).setComboQuantity(comboId, quantity);
-      await refresh();
+      if (quantity <= 0) {
+        await ref.read(cartServiceProvider).removeCombo(comboId);
+      } else {
+        await ref.read(cartServiceProvider).setComboQuantity(comboId, quantity);
+      }
+      _guestCart.removeWhere((i) => i.comboId == comboId);
+      _persistGuestCart();
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      await refresh(force: true);
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         _setGuestComboQuantity(comboId, quantity);
         state = AsyncData(List.unmodifiable(_guestCart));
         Future.microtask(() => ref.read(authProvider.notifier).logout());
+        return;
+      }
+      // If server returned 404 (combo not found or not in cart), it means
+      // the server cart no longer has this combo. Clear it locally!
+      if (e.statusCode == 404 || quantity <= 0) {
+        _guestCart.removeWhere((i) => i.comboId == comboId);
+        _persistGuestCart();
+        await LocalDatabase.instance.invalidateMatching('/cart');
+        final current = state.valueOrNull ?? const [];
+        state = AsyncData(current.where((i) => i.comboId != comboId).toList());
+        await refresh(force: true);
+        return;
+      }
+      rethrow;
+    } catch (_) {
+      if (quantity <= 0) {
+        _guestCart.removeWhere((i) => i.comboId == comboId);
+        _persistGuestCart();
+        await LocalDatabase.instance.invalidateMatching('/cart');
+        final current = state.valueOrNull ?? const [];
+        state = AsyncData(current.where((i) => i.comboId != comboId).toList());
+        await refresh(force: true);
         return;
       }
       rethrow;
@@ -619,7 +638,10 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
     }
     try {
       await ref.read(cartServiceProvider).removeItem(cartItemId);
-      await refresh();
+      _guestCart.removeWhere((i) => i.id == cartItemId);
+      _persistGuestCart();
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      await refresh(force: true);
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
         _guestCart.removeWhere((i) => i.id == cartItemId);
@@ -628,7 +650,23 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
         Future.microtask(() => ref.read(authProvider.notifier).logout());
         return;
       }
+      if (e.statusCode == 404) {
+        _guestCart.removeWhere((i) => i.id == cartItemId);
+        _persistGuestCart();
+        await LocalDatabase.instance.invalidateMatching('/cart');
+        final current = state.valueOrNull ?? const [];
+        state = AsyncData(current.where((i) => i.id != cartItemId).toList());
+        await refresh(force: true);
+        return;
+      }
       rethrow;
+    } catch (_) {
+      _guestCart.removeWhere((i) => i.id == cartItemId);
+      _persistGuestCart();
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      final current = state.valueOrNull ?? const [];
+      state = AsyncData(current.where((i) => i.id != cartItemId).toList());
+      await refresh(force: true);
     }
   }
 
@@ -641,16 +679,11 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
     }
     try {
       await ref.read(cartServiceProvider).clearCart();
+    } finally {
       clearGuestCart();
-      await refresh();
-    } on ApiException catch (e) {
-      if (e.statusCode == 401) {
-        clearGuestCart();
-        state = const AsyncData([]);
-        Future.microtask(() => ref.read(authProvider.notifier).logout());
-        return;
-      }
-      rethrow;
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      state = const AsyncData([]);
+      await refresh(force: true);
     }
   }
 }

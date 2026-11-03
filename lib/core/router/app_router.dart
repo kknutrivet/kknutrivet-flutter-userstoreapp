@@ -325,16 +325,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/addresses',
-        builder: (context, state) => const AddressesScreen(),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const AddressesScreen(),
+        ),
       ),
       GoRoute(
         path: '/addresses/new',
-        builder: (context, state) => const AddressFormScreen(),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const AddressFormScreen(),
+        ),
       ),
       GoRoute(
         path: '/addresses/:id/edit',
-        builder: (context, state) =>
-            AddressFormScreen(address: state.extra as Address?),
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: AddressFormScreen(address: state.extra as Address?),
+        ),
       ),
       GoRoute(
         path: '/pets/new',

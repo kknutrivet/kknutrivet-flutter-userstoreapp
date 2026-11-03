@@ -166,5 +166,43 @@ void main() {
       }
       expect(caughtDetails, isNull);
     });
+
+    testWidgets('stepper inside narrow homeGrid card does not overflow when item is added to cart', (tester) async {
+      FlutterErrorDetails? caughtDetails;
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        caughtDetails = details;
+      };
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 156,
+                child: CompactProductCard(
+                  product: testProductSingle,
+                  variant: CompactCardVariant.homeGrid,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap ADD button to transition to stepper (quantity = 1)
+      final addButton = find.byKey(const ValueKey('add_filled'));
+      expect(addButton, findsOneWidget);
+      await tester.tap(addButton);
+      await tester.pumpAndSettle();
+
+      // Stepper must be displayed without overflow
+      final stepper = find.byKey(const ValueKey('stepper'));
+      expect(stepper, findsOneWidget);
+
+      FlutterError.onError = originalOnError;
+      expect(caughtDetails, isNull);
+    });
   });
 }

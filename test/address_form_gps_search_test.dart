@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nvit_app/core/theme/app_theme.dart';
+import 'package:nvit_app/core/widgets/app_button.dart';
 import 'package:nvit_app/features/addresses/screens/address_form_screen.dart';
 import 'package:nvit_app/models/user.dart';
 import 'package:nvit_app/providers/app_providers.dart';
@@ -69,16 +70,22 @@ void main() {
       findsOneWidget,
     );
 
-    // Verify Save button is anchored in bottomNavigationBar
+    // Verify Save button is anchored in bottomNavigationBar and bounded in height
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
     expect(scaffold.bottomNavigationBar, isNotNull);
-    expect(
-      find.descendant(
-        of: find.byWidget(scaffold.bottomNavigationBar!),
-        matching: find.text('Save Delivery Address'),
-      ),
-      findsOneWidget,
+    final buttonFinder = find.descendant(
+      of: find.byWidget(scaffold.bottomNavigationBar!),
+      matching: find.text('Save Delivery Address'),
     );
+    expect(buttonFinder, findsOneWidget);
+
+    final buttonSize = tester.getSize(find.byType(AppButton));
+    expect(buttonSize.height, lessThanOrEqualTo(56.0));
+    expect(buttonSize.height, greaterThanOrEqualTo(48.0));
+
+    // Verify AppBar and Quick Address Fill are visible on screen simultaneously
+    expect(find.text('Add Delivery Address'), findsOneWidget);
+    expect(find.text('Quick Address Fill'), findsOneWidget);
 
     // Verify button check icon renders with white color
     final iconFinder = find.byIcon(Icons.check_rounded);

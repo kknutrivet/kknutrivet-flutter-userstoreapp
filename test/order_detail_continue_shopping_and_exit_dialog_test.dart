@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nvit_app/features/home/screens/main_shell.dart';
 import 'package:nvit_app/features/orders/screens/order_detail_screen.dart';
+import 'package:nvit_app/features/orders/screens/orders_screen.dart';
 import 'package:nvit_app/models/order.dart';
 import 'package:nvit_app/models/product.dart';
 
@@ -296,6 +297,50 @@ void main() {
       expect(popScope.canPop, isTrue);
       expect(find.text('Exit KK Nutrivet?'), findsNothing);
       expect(find.text('Home Content'), findsOneWidget);
+    });
+
+    testWidgets('OrdersScreen AppBar and PopScope back button navigates to /home when at root', (tester) async {
+      String? navigatedLocation;
+
+      final router = GoRouter(
+        initialLocation: '/orders',
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const Scaffold(body: Text('Home Page')),
+          ),
+          GoRoute(
+            path: '/orders',
+            builder: (_, state) => const OrdersScreen(),
+          ),
+        ],
+      );
+
+      router.routerDelegate.addListener(() {
+        navigatedLocation = router.routerDelegate.currentConfiguration.uri.toString();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ordersProvider.overrideWith((ref) async => <Order>[]),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('My Orders'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+
+      // Tap AppBar back button
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(navigatedLocation, '/home');
+      expect(find.text('Home Page'), findsOneWidget);
     });
   });
 }

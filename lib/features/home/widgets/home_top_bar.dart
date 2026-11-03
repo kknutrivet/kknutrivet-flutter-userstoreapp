@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/location/location_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
+import '../../../core/widgets/common.dart';
 import '../../../providers/app_providers.dart';
 
 // ── 1. Mobile brand bar (Navbar.tsx mobile-app-header, h-14) ──────────────
@@ -19,6 +21,10 @@ class HomeBrandBar extends ConsumerWidget {
       floating: false,
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
+      // Elevation shadow is drawn by the pinned search header directly below,
+      // so the brand bar + search read as a single elevated app bar.
+      elevation: 0,
+      scrolledUnderElevation: 0,
       toolbarHeight: 56,
       titleSpacing: 16,
       title: Image.asset(
@@ -121,6 +127,7 @@ class HomeTopBarCard extends ConsumerWidget {
   void _showPincodeModalSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -140,19 +147,8 @@ class HomeTopBarCard extends ConsumerWidget {
         info?.serviceable ?? (pincode != null && pincode.length == 6);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       child: Column(
         children: [
           Material(
@@ -273,77 +269,145 @@ class HomeTopBarCard extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          Material(
-            color: const Color(0xFFF4F7F5),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 2b. Pinned search bar — stays visible under the app bar while scrolling ──
+class HomePinnedSearchBar extends StatelessWidget {
+  const HomePinnedSearchBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPersistentHeader(
+      pinned: true,
+      delegate: _PinnedSearchDelegate(),
+    );
+  }
+}
+
+class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
+  static const double _height = 62;
+
+  @override
+  double get minExtent => _height;
+
+  @override
+  double get maxExtent => _height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    // Elevate once content scrolls underneath the pinned header.
+    final elevated = overlapsContent || shrinkOffset > 0;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      height: _height,
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            const BorderRadius.vertical(bottom: Radius.circular(18)),
+        border: elevated
+            ? null
+            : const Border(bottom: BorderSide(color: AppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: elevated
+                ? const Color(0x1F0B3D2C)
+                : const Color(0x0A000000),
+            blurRadius: elevated ? 14 : 16,
+            offset: Offset(0, elevated ? 5 : 4),
+          ),
+        ],
+      ),
+      child: const HomeSearchField(),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedSearchDelegate oldDelegate) => false;
+}
+
+/// Tappable search pill that opens the full search screen.
+class HomeSearchField extends StatelessWidget {
+  const HomeSearchField({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF4F7F5),
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          Haptics.tap();
+          context.push('/search');
+        },
+        child: Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE2EBE6)),
             borderRadius: BorderRadius.circular(24),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(24),
-              onTap: () {
-                Haptics.tap();
-                context.push('/search');
-              },
-              child: Container(
-                height: 46,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE2EBE6)),
-                  borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryWash,
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryWash,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.search_rounded,
-                        size: 15,
-                        color: AppColors.primaryDeep,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'Search medicines, supplements, feed...',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryDeep,
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x2407583F),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
-                        color: Colors.white,
-                      ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  size: 15,
+                  color: AppColors.primaryDeep,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Search medicines, supplements, feed...',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryDeep,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x2407583F),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 15,
+                  color: Colors.white,
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -361,6 +425,7 @@ class HomePincodeBottomSheet extends ConsumerStatefulWidget {
 class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet> {
   late final TextEditingController _controller;
   bool _checking = false;
+  bool _detectingLocation = false;
   String? _error;
 
   @override
@@ -374,6 +439,37 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _detectCurrentLocation() async {
+    if (_detectingLocation || _checking) return;
+    AppHaptics.selection();
+    setState(() {
+      _detectingLocation = true;
+      _error = null;
+    });
+
+    try {
+      final location = await LocationService.instance.getCurrentLocation();
+      if (!mounted) return;
+
+      final zip = location.zipCode?.trim();
+      if (zip != null && RegExp(r'^\d{6}$').hasMatch(zip)) {
+        _controller.text = zip;
+        showToast('Detected location: $zip');
+        await _submitPincode();
+      } else {
+        setState(() => _error = 'Could not find 6-digit pincode for GPS location');
+        showToast('Could not find 6-digit pincode for current GPS location', isError: true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      setState(() => _error = msg);
+      showToast(msg, isError: true);
+    } finally {
+      if (mounted) setState(() => _detectingLocation = false);
+    }
   }
 
   Future<void> _submitPincode() async {
@@ -498,6 +594,27 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
                         size: 18,
                         color: AppColors.primaryDeep,
                       ),
+                      suffixIcon: _detectingLocation
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                            )
+                          : IconButton(
+                              tooltip: 'Use current location',
+                              icon: const Icon(
+                                Icons.my_location_rounded,
+                                size: 19,
+                                color: AppColors.primaryDeep,
+                              ),
+                              onPressed: _detectCurrentLocation,
+                            ),
                       filled: true,
                       fillColor: AppColors.surfaceAlt,
                       contentPadding: const EdgeInsets.symmetric(

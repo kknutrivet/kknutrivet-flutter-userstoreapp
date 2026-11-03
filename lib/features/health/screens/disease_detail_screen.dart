@@ -88,6 +88,7 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
   void _showSortSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -364,7 +365,7 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
               ),
             ),
             Positioned(
-              left: 16,
+              right: 16,
               bottom: cartCount > 0 ? 84 : 20,
               child: IgnorePointer(
                 ignoring: !_showBackToTop,

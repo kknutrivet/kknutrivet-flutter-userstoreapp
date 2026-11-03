@@ -338,7 +338,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   ),
                 ),
                 Positioned(
-                  left: 16,
+                  right: 16,
                   bottom: cartCount > 0 ? 84 : 20,
                   child: IgnorePointer(
                     ignoring: !_showBackToTop,

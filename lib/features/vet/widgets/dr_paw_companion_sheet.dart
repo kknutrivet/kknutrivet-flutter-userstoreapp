@@ -18,6 +18,7 @@ Future<void> showDrPawCompanionSheet(
 }) {
   return showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,

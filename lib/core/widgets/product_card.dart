@@ -72,51 +72,80 @@ class _ProductCardState extends ConsumerState<ProductCard> {
         Haptics.tap();
         widget.onTap();
       },
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: Ink(
-          decoration: BoxDecoration(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1407271F),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Material(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.cardShadow,
-                blurRadius: 16,
-                offset: Offset(0, 4),
+            child: Ink(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image plate
-              Stack(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: 128,
-                    width: double.infinity,
-                    child: widget.heroTag != null
-                        ? Hero(
-                            tag: widget.heroTag!,
-                            child: ProductImageCover(
-                              imageUrl: product.image,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12),
+                  // Image plate
+                  Stack(
+                    children: [
+                      SizedBox(
+                        height: 128,
+                        width: double.infinity,
+                        child: widget.heroTag != null
+                            ? Hero(
+                                tag: widget.heroTag!,
+                                child: ProductImageCover(
+                                  imageUrl: product.image,
+                                  enableBackdrop: false,
+                                  fit: BoxFit.cover,
+                                  innerPadding: EdgeInsets.zero,
+                                  backgroundColor: const Color(0xFFFAFAFA),
+                                  border: const Border(
+                                    bottom: BorderSide(
+                                      color: Color(0xFFF1F5F9),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(15),
+                                  ),
+                                  showPlaceholderOnLoading: false,
+                                ),
+                              )
+                            : ProductImageCover(
+                                imageUrl: product.image,
+                                enableBackdrop: false,
+                                fit: BoxFit.cover,
+                                innerPadding: EdgeInsets.zero,
+                                backgroundColor: const Color(0xFFFAFAFA),
+                                border: const Border(
+                                  bottom: BorderSide(
+                                    color: Color(0xFFF1F5F9),
+                                    width: 1,
+                                  ),
+                                ),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(15),
+                                ),
+                                showPlaceholderOnLoading: false,
                               ),
-                              showPlaceholderOnLoading: false,
-                            ),
-                          )
-                        : ProductImageCover(
-                            imageUrl: product.image,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                            showPlaceholderOnLoading: false,
-                          ),
-                  ),
+                      ),
                   if (hasDiscount)
                     Positioned(
                       left: 8,
@@ -377,7 +406,9 @@ class _ProductCardState extends ConsumerState<ProductCard> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
