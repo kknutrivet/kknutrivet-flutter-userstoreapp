@@ -46,12 +46,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Brand Identity & Header
-      expect(find.text('KK NUTRIVET'), findsOneWidget);
-      expect(find.text('Skip to Store'), findsOneWidget);
+      expect(find.text('KK Nutrivet'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
 
       // Slide 1 Content
       expect(find.text('Authentic Veterinary Care'), findsOneWidget);
-      expect(find.text('CERTIFIED MEDICINES & CLINICAL DIETS'), findsOneWidget);
+      expect(find.text('EXPLORE · 1 OF 4'), findsOneWidget);
       expect(find.text('Step 1 of 4'), findsOneWidget);
       expect(find.text('Continue'), findsOneWidget);
 
@@ -100,7 +100,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Consult Certified Vets'), findsOneWidget);
       expect(find.text('Step 2 of 4'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
 
       // Advance real wall-clock past AppButton 500ms debounce
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 550)));
@@ -170,7 +170,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Skip to Store'));
+      await tester.tap(find.text('Skip'));
       await tester.pumpAndSettle();
 
       expect(mockNotifier.completed, isTrue);

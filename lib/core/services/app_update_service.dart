@@ -50,17 +50,20 @@ final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
 final appUpdateCheckProvider = FutureProvider<AppUpdateCheckResult>((ref) async {
   final settings = ref.watch(storeSettingsProvider).valueOrNull ??
       await ref.watch(storeSettingsProvider.future).catchError((_) => StoreSettings.defaults());
+  // Maintenance applies to every version and must not wait on platform metadata.
+  if (settings.appUpdate.maintenanceMode) {
+    return AppUpdateCheckResult(
+      status: AppUpdateStatus.maintenance,
+      config: settings.appUpdate,
+      currentVersion: '',
+      currentBuildNumber: 0,
+    );
+  }
   PackageInfo packageInfo;
   try {
-    packageInfo = ref.watch(packageInfoProvider).valueOrNull ??
-        PackageInfo(
-          appName: 'KK Nutrivet',
-          packageName: 'com.kknutrivet.shop',
-          version: '1.0.0',
-          buildNumber: '1',
-          buildSignature: '',
-          installerStore: null,
-        );
+    // A loading package lookup is not an installed version. Wait before
+    // publishing a result that can redirect an already-current installation.
+    packageInfo = await ref.watch(packageInfoProvider.future);
   } catch (_) {
     packageInfo = PackageInfo(
       appName: 'KK Nutrivet',

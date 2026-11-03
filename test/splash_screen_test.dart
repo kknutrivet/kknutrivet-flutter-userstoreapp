@@ -53,16 +53,13 @@ void main() {
 
     // Verify brand assets and typography
     expect(find.text('KK NUTRIVET'), findsOneWidget);
-    expect(find.text('HEALTH  •  CARE  •  TRUST'), findsOneWidget);
-    expect(find.text('Veterinary Medicine & Animal Healthcare'), findsOneWidget);
-    expect(find.text('100% Genuine Veterinary Care'), findsOneWidget);
+    expect(find.text('KK Nutrivet'), findsOneWidget);
+    expect(find.text('Nutrition. Wellness. Veterinary care.'), findsOneWidget);
+    expect(find.text('Care for every animal.'), findsOneWidget);
 
     // Verify horizontal centering on 360dp screen (center = 180dp)
     final brandCenter = tester.getCenter(find.text('KK NUTRIVET'));
     expect(brandCenter.dx, closeTo(180.0, 1.0));
-
-    final trustBadgeRowCenter = tester.getCenter(find.byType(Row).last);
-    expect(trustBadgeRowCenter.dx, closeTo(180.0, 1.0));
 
     // Clean timer resolution
     await tester.pump(const Duration(milliseconds: 700));

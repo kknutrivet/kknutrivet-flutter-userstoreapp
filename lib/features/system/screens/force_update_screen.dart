@@ -4,11 +4,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/app_update_service.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/welcome_art.dart';
-import '../../help/screens/help_screen.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/mascot_world_scene.dart';
 import '../../../providers/app_providers.dart';
+import '../../help/screens/help_screen.dart';
 
 class ForceUpdateScreen extends ConsumerStatefulWidget {
   const ForceUpdateScreen({super.key});
@@ -32,7 +32,11 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
       if (!result.isBlocked) {
         showToast('App is up to date!');
       } else {
-        showToast(result.isMaintenance ? 'Maintenance is still in progress.' : 'Update still required');
+        showToast(
+          result.isMaintenance
+              ? 'Maintenance is still in progress.'
+              : 'Update still required',
+        );
       }
     } catch (_) {
       if (mounted) showToast('Could not reach servers. Check internet.');
@@ -56,256 +60,261 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: AppColors.homeCanvas,
-        body: SafeArea(
-          child: updateAsync.when(
-            data: (result) {
-              final isMaintenance = result.isMaintenance;
-              final config = result.config;
+        body: updateAsync.when(
+          data: (result) {
+            final isMaintenance = result.isMaintenance;
+            final config = result.config;
 
-              return Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 28,
-                  ),
-                  child: AppFadeSlide(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        WelcomeArt(icon: isMaintenance ? Icons.handyman_outlined : Icons.system_update_rounded, label: isMaintenance ? 'SERVICE UPDATE' : 'A FRESH START'),
-                        const SizedBox(height: 32),
-
-                        // Title
-                        Text(
-                          isMaintenance
-                              ? 'Scheduled Maintenance'
-                              : config.forceUpdateTitle,
-                          textAlign: TextAlign.center,
-                          style: AppTheme.serif(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Description Message
-                        Text(
-                          isMaintenance
-                              ? config.maintenanceMessage
-                              : config.forceUpdateMessage,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            height: 1.6,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Version Info Card (only for update, not maintenance)
-                        if (!isMaintenance) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryWashFaint,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.borderWarm),
-                            ),
-                            child: Column(
-                              children: [
-                                _VersionRow(
-                                  label: 'Installed Version',
-                                  value:
-                                      'v${result.currentVersion} (Build ${result.currentBuildNumber})',
-                                  isHighlight: false,
-                                ),
-                                const Divider(
-                                  height: 18,
-                                  color: AppColors.borderWarm,
-                                ),
-                                _VersionRow(
-                                  label: 'Minimum Required',
-                                  value:
-                                      'v${config.minAppVersion} (Build ${config.minBuildNumber})',
-                                  isHighlight: true,
-                                ),
-                                if (config.latestVersion !=
-                                    config.minAppVersion) ...[
-                                  const Divider(
-                                    height: 18,
-                                    color: AppColors.borderWarm,
-                                  ),
-                                  _VersionRow(
-                                    label: 'Latest Available',
-                                    value: 'v${config.latestVersion}',
-                                    isHighlight: false,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                        ],
-
-                        // Primary Action Button
-                        if (!isMaintenance)
-                          AppBounce(
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  AppHaptics.selection();
-                                  launchPlayStore(
-                                    overrideUrl: config.playStoreUrl,
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.shop_two_rounded,
-                                  size: 20,
-                                ),
-                                label: const Text(
-                                  'Update from Google Play',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryDeep,
-                                  foregroundColor: Colors.white,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          AppBounce(
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: _checking ? null : _refreshStatus,
-                                icon: _checking
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Icon(Icons.refresh_rounded),
-                                label: Text(
-                                  _checking ? 'Checking…' : 'Retry Connection',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryDeep,
-                                  foregroundColor: Colors.white,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 12),
-
-                        // Secondary Action
-                        if (!isMaintenance)
-                          TextButton.icon(
-                            onPressed: _checking ? null : _refreshStatus,
-                            icon: _checking
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.refresh_rounded, size: 16),
-                            label: Text(
-                              _checking ? 'Checking…' : 'Already updated? Check again',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primaryDeep,
-                              ),
-                            ),
-                          ),
-
-                        const SizedBox(height: 8),
-
-                        // Support Link
-                        TextButton.icon(
-                          onPressed: _openWhatsApp,
-                          icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-                          label: const Text(
-                            'Need help? Chat with Support',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+            return MascotWorldScene(
+              mascotHeight: 220,
+              topBadge: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.28),
                   ),
                 ),
-              );
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryDeep),
-            ),
-            error: (err, _) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.cloud_off_rounded,
-                      size: 48,
-                      color: AppColors.textSecondary,
+                    Icon(
+                      isMaintenance
+                          ? Icons.healing_rounded
+                          : Icons.system_update_rounded,
+                      size: 14,
+                      color: isMaintenance
+                          ? const Color(0xFFFDE047)
+                          : const Color(0xFF86EFAC),
                     ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Connection Issue',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                    const SizedBox(width: 7),
                     Text(
-                      err.toString(),
-                      textAlign: TextAlign.center,
+                      isMaintenance
+                          ? 'SERVICE UPGRADE IN PROGRESS'
+                          : 'NEW VERSION AVAILABLE',
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _checking ? null : _refreshStatus,
-                      child: const Text('Try Again'),
                     ),
                   ],
                 ),
+              ),
+              bottomContent: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
+                      isMaintenance
+                          ? 'Scheduled Maintenance'
+                          : config.forceUpdateTitle,
+                      textAlign: TextAlign.center,
+                      style: AppTheme.serif(
+                        fontSize: 25,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Description Message
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 340),
+                      child: Text(
+                        isMaintenance
+                            ? config.maintenanceMessage
+                            : config.forceUpdateMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          height: 1.5,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Version Info Card (only for update)
+                    if (!isMaintenance) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            _VersionRow(
+                              label: 'Installed Version',
+                              value:
+                                  'v${result.currentVersion} (Build ${result.currentBuildNumber})',
+                              isHighlight: false,
+                            ),
+                            const Divider(
+                              height: 14,
+                              color: Colors.white24,
+                            ),
+                            _VersionRow(
+                              label: 'Minimum Required',
+                              value:
+                                  'v${config.minAppVersion} (Build ${config.minBuildNumber})',
+                              isHighlight: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+
+                    // Action Buttons (High Contrast White Pill Buttons)
+                    if (!isMaintenance)
+                      AppBounce(
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              AppHaptics.selection();
+                              launchPlayStore(
+                                overrideUrl: config.playStoreUrl,
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.shop_two_rounded,
+                              size: 19,
+                              color: Color(0xFF075B43),
+                            ),
+                            label: const Text(
+                              'Update from Google Play',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF075B43),
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      AppBounce(
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _checking ? null : _refreshStatus,
+                            icon: _checking
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF075B43),
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.refresh_rounded,
+                                    color: Color(0xFF075B43),
+                                  ),
+                            label: Text(
+                              _checking ? 'Checking…' : 'Retry Connection',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF075B43),
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+
+                    // WhatsApp Support Action
+                    TextButton.icon(
+                      onPressed: _openWhatsApp,
+                      icon: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 15,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        'Need urgent care? Chat on WhatsApp',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.95),
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryDeep),
+          ),
+          error: (err, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_rounded,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Connection Issue',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    err.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _checking ? null : _refreshStatus,
+                    child: const Text('Try Again'),
+                  ),
+                ],
               ),
             ),
           ),
@@ -334,23 +343,23 @@ class _VersionRow extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12.5,
-            color: isHighlight
-                ? AppColors.primaryDeep
-                : AppColors.textSecondary,
+            fontSize: 12,
+            color: Colors.white.withValues(alpha: 0.8),
             fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
-        Flexible(child: Text(
-          value,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: isHighlight
-                ? AppColors.primaryDeep
-                : AppColors.textPrimary,
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: isHighlight
+                  ? const Color(0xFF86EFAC)
+                  : Colors.white,
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
