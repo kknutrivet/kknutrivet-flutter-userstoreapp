@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/in_app_announcement_dialog.dart';
 import '../../../providers/app_providers.dart';
-import '../widgets/dr_paw_floating_button.dart';
 import '../widgets/home_animal_selector.dart';
 import '../widgets/home_combos_and_rx.dart';
 import '../widgets/home_community_and_footer.dart';
@@ -45,8 +43,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _isFabVisible = true;
-
   @override
   void initState() {
     super.initState();
@@ -58,20 +54,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         currentRoute: '/home',
       );
     });
-  }
-
-  bool _onScrollNotification(UserScrollNotification notification) {
-    if (notification.direction == ScrollDirection.reverse) {
-      if (_isFabVisible) {
-        setState(() => _isFabVisible = false);
-      }
-    } else if (notification.direction == ScrollDirection.forward ||
-        notification.direction == ScrollDirection.idle) {
-      if (!_isFabVisible) {
-        setState(() => _isFabVisible = true);
-      }
-    }
-    return false;
   }
 
   Future<void> _onRefresh() async {
@@ -107,14 +89,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.homeBackground,
-      floatingActionButton: DrPawFloatingButton(visible: _isFabVisible),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: NotificationListener<UserScrollNotification>(
-        onNotification: _onScrollNotification,
-        child: RefreshIndicator(
-          color: AppColors.primaryDeep,
-          onRefresh: _onRefresh,
-          child: CustomScrollView(
+      body: RefreshIndicator(
+        color: AppColors.primaryDeep,
+        onRefresh: _onRefresh,
+        child: CustomScrollView(
             slivers: [
               const HomeBrandBar(),
               const SliverToBoxAdapter(child: HomeTopBarCard()),
@@ -169,7 +147,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

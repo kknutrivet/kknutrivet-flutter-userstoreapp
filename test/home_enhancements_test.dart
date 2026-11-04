@@ -176,5 +176,35 @@ void main() {
 
       expect(find.text('Buy Again · Quick Reorder'), findsNothing);
     });
+
+    testWidgets('HomeBrandBar renders Dr. Paw AI avatar and Cart action buttons', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            cartCountProvider.overrideWith((ref) => 3),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  HomeBrandBar(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Dr. Paw AI Button with "AI" badge
+      expect(find.text('AI'), findsOneWidget);
+
+      // Shopping Cart Button with count badge "3"
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byIcon(Icons.shopping_cart_outlined), findsOneWidget);
+    });
   });
 }

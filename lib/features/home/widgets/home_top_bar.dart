@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
@@ -43,20 +44,117 @@ class HomeBrandBar extends ConsumerWidget {
         ),
       ),
       actions: [
-        // Cart Action with Badge (40×40 circular button matching Navbar.tsx)
+        // Dr. Paw AI Companion Action with Avatar & "AI" badge
+        Semantics(
+          button: true,
+          label: 'Ask Dr. Paw AI veterinary assistant',
+          child: Container(
+            width: 42,
+            height: 42,
+            margin: const EdgeInsets.only(right: 10),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7E8),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFF2B457),
+                      width: 1.5,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1407261C),
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () {
+                          Haptics.tap();
+                          AnalyticsService.instance.logDrPawChatStarted();
+                          context.push('/vet');
+                        },
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Image.asset(
+                              'assets/images/dr-paw-genz-avatar.webp',
+                              width: 34,
+                              height: 34,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.pets_rounded,
+                                size: 20,
+                                color: Color(0xFF087E58),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFC9FF67),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: const Color(0xFF17322B),
+                        width: 1,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1F000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      'AI',
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.2,
+                        color: Color(0xFF17322B),
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Cart Action with Badge (circular button matching Navbar.tsx)
         Semantics(
           button: true,
           label: 'Shopping Cart${cartCount > 0 ? " ($cartCount items)" : ""}',
           child: Container(
-            width: 48,
-            height: 48,
+            width: 42,
+            height: 42,
             margin: const EdgeInsets.only(right: 16),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -64,8 +162,8 @@ class HomeBrandBar extends ConsumerWidget {
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x0C173C32),
-                        blurRadius: 12,
-                        offset: Offset(0, 3),
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -93,12 +191,14 @@ class HomeBrandBar extends ConsumerWidget {
                     top: -2,
                     child: IgnorePointer(
                       child: Container(
-                        width: 16,
-                        height: 16,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        constraints:
+                            const BoxConstraints(minWidth: 16, minHeight: 16),
                         alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF087E58),
-                          shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF087E58),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '$cartCount',
@@ -106,6 +206,7 @@ class HomeBrandBar extends ConsumerWidget {
                             color: Colors.white,
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
+                            height: 1.1,
                           ),
                         ),
                       ),
