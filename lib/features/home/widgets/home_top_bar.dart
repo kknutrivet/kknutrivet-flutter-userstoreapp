@@ -140,6 +140,10 @@ class HomeTopBarCard extends ConsumerWidget {
     final pincode = ref.watch(deliveryPincodeProvider).value;
     final etaAsync = ref.watch(deliveryEtaProvider);
     final info = etaAsync.value;
+    final settings = ref.watch(storeSettingsProvider).valueOrNull;
+    final freeThreshold = (settings != null && pincode != null)
+        ? settings.effectiveFreeDeliveryThreshold(pincode: pincode)
+        : (settings?.freeDeliveryThreshold ?? 500.0);
     final cityLabel = (info?.city != null && info!.city!.trim().isNotEmpty)
         ? '${info.city} ($pincode)'
         : (pincode == null || pincode.isEmpty ? null : 'Pincode $pincode');
@@ -159,7 +163,7 @@ class HomeTopBarCard extends ConsumerWidget {
                 _showPincodeModalSheet(context);
               },
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
+                constraints: const BoxConstraints(minHeight: 44),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 4,
@@ -234,6 +238,74 @@ class HomeTopBarCard extends ConsumerWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+          // Delivery Speed & Promise Pill
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 2, 4, 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (info != null && !info.serviceable)
+                        ? const Color(0xFFFFF1F0)
+                        : const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: (info != null && !info.serviceable)
+                          ? const Color(0xFFFFA39E)
+                          : const Color(0xFFBBF7D0),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        (info != null && !info.serviceable)
+                            ? Icons.warning_amber_rounded
+                            : Icons.bolt_rounded,
+                        size: 13,
+                        color: (info != null && !info.serviceable)
+                            ? const Color(0xFFCF1322)
+                            : const Color(0xFF15803D),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        (info != null && !info.serviceable)
+                            ? 'Unserviceable Pincode'
+                            : (info != null && info.etaLabel.isNotEmpty)
+                                ? '${info.etaLabel} Delivery'
+                                : 'Fast All-India Delivery',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: (info != null && !info.serviceable)
+                              ? const Color(0xFFCF1322)
+                              : const Color(0xFF15803D),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    (info != null && !info.serviceable)
+                        ? 'Try entering another delivery pincode'
+                        : freeThreshold > 0
+                            ? 'Free delivery on orders over ₹${freeThreshold.toInt()}'
+                            : 'Genuine veterinary products guaranteed',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

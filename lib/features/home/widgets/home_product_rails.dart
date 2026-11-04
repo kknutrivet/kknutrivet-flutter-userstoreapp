@@ -68,6 +68,35 @@ class HomeFeaturedProductsRail extends ConsumerWidget {
   }
 }
 
+// ── 6b. HomeReorderRail (Buy Again in 1-Click for Returning Shoppers) ─────
+class HomeReorderRail extends ConsumerWidget {
+  const HomeReorderRail({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reorderAsync = ref.watch(recentReorderProductsProvider);
+    final products = reorderAsync.valueOrNull ?? const <Product>[];
+
+    if (products.isEmpty) return const SizedBox.shrink();
+
+    return HomeScrollProductSection(
+      title: 'Buy Again · Quick Reorder',
+      description: 'Frequently ordered supplies for your pets & livestock',
+      route: '/orders',
+      products: products,
+      surface: const HomeRailSurface(
+        Color(0xFFFBF8F2),
+        Color(0xFFEFE6D8),
+        Color(0xFF5A3C13),
+        Color(0xFF8A6536),
+        Color(0xFFB45309),
+      ),
+      tone: const Color(0xFFEFE6D8),
+      fallbackIcon: Icons.repeat_rounded,
+    );
+  }
+}
+
 /// Kept as an alias so any legacy references compile cleanly.
 class HomeBestSellersRail extends HomeFeaturedProductsRail {
   const HomeBestSellersRail({super.key, super.selectedAnimal});

@@ -38,6 +38,30 @@ final homePetsProvider = FutureProvider.autoDispose<List<PetProfile>>((
   return ref.read(petServiceProvider).fetchPets();
 });
 
+final recentReorderProductsProvider = FutureProvider.autoDispose<List<Product>>((
+  ref,
+) async {
+  final user = ref.watch(authProvider).value;
+  if (user == null) return const [];
+  try {
+    final orders = await ref.read(orderServiceProvider).fetchOrders();
+    final seen = <String>{};
+    final products = <Product>[];
+    for (final order in orders) {
+      for (final item in order.items) {
+        final p = item.product;
+        if (p != null && !seen.contains(p.id)) {
+          seen.add(p.id);
+          products.add(p);
+        }
+      }
+    }
+    return products.take(8).toList();
+  } catch (_) {
+    return const [];
+  }
+});
+
 /// Kept for product_list_screen.dart which reuses the trending rail source.
 final trendingProductsProvider = FutureProvider.autoDispose<List<Product>>((
   ref,

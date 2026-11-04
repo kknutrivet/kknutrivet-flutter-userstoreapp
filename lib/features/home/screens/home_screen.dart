@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/in_app_announcement_dialog.dart';
 import '../../../providers/app_providers.dart';
+import '../widgets/dr_paw_floating_button.dart';
 import '../widgets/home_animal_selector.dart';
 import '../widgets/home_combos_and_rx.dart';
 import '../widgets/home_community_and_footer.dart';
@@ -12,7 +13,6 @@ import '../widgets/home_models_and_data.dart';
 import '../widgets/home_product_rails.dart';
 import '../widgets/home_story_and_trust.dart';
 import '../widgets/home_top_bar.dart';
-import '../widgets/dr_paw_floating_button.dart';
 
 export '../../../providers/app_providers.dart'
     show
@@ -30,22 +30,13 @@ export '../widgets/home_models_and_data.dart'
         homeConcernsProvider,
         homePetsProvider,
         homeShotsProvider,
+        recentReorderProductsProvider,
         spotlightProductsProvider,
         trendingProductsProvider;
 
-/// Exact replica of the website's mobile homepage
-/// (`src/components/MobileHomeExperience.tsx` in kknutrivet-webapp).
-///
-/// Section order mirrors the web 1:1 —
-/// brand bar → top bar (with native M3 pincode sheet) → animal selector →
-/// category selector (4×2 grid) → hero carousel (3 slides) →
-/// featured products rail → product video shots rail → dog/cat rails →
-/// prescription concierge ("Your care slip. Your shopping, simplified.") →
-/// home care rail → cattle/goat rails → care bundles (combos) →
-/// care by concern → poultry rail → 2×2 trust panel → exotic rail →
-/// care reach story → Google reviews band → monsoon care banner →
-/// pet care knowledge → care space card → member benefits → brands →
-/// WhatsApp help → footer.
+/// Replica of the website's mobile homepage
+/// (`src/components/MobileHomeExperience.tsx` in kknutrivet-webapp)
+/// enhanced with dynamic delivery promise, quick pet switcher, and reorder rail.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -90,6 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.invalidate(homeBlogPostsProvider);
     ref.invalidate(homeConcernsProvider);
     ref.invalidate(homePetsProvider);
+    ref.invalidate(recentReorderProductsProvider);
     ref.invalidate(homeCombosProvider);
     ref.invalidate(homepageSectionsProvider);
     ref.invalidate(bestSellersProductsProvider);
@@ -127,10 +119,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const HomeBrandBar(),
               const SliverToBoxAdapter(child: HomeTopBarCard()),
               const HomePinnedSearchBar(),
+              const SliverToBoxAdapter(child: HomeMyPetsBar()),
               const SliverToBoxAdapter(child: HomeAnimalSelector()),
               SliverToBoxAdapter(
                 child: HomeCategorySelector(selectedAnimal: selectedAnimal),
               ),
+              const SliverToBoxAdapter(child: HomeReorderRail()),
               const SliverToBoxAdapter(child: HomeConcernsRail()),
               SliverToBoxAdapter(
                 child: HomeFeaturedProductsRail(selectedAnimal: selectedAnimal),
