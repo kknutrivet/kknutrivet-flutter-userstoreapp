@@ -44,7 +44,7 @@ class HomeBrandBar extends ConsumerWidget {
         ),
       ),
       actions: [
-        // Dr. Paw AI Companion Action with Avatar & "AI" badge
+        // Dr. Paw AI Companion Action with Paw Icon & "AI" badge
         Semantics(
           button: true,
           label: 'Ask Dr. Paw AI veterinary assistant',
@@ -59,45 +59,31 @@ class HomeBrandBar extends ConsumerWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7E8),
+                    color: Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFF2B457),
-                      width: 1.5,
-                    ),
+                    border: Border.all(color: const Color(0xFFE8ECE9)),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x1407261C),
+                        color: Color(0x0C173C32),
                         blurRadius: 10,
                         offset: Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () {
-                          Haptics.tap();
-                          AnalyticsService.instance.logDrPawChatStarted();
-                          context.push('/vet');
-                        },
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(2.0),
-                            child: Image.asset(
-                              'assets/images/dr-paw-genz-avatar.webp',
-                              width: 34,
-                              height: 34,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(
-                                Icons.pets_rounded,
-                                size: 20,
-                                color: Color(0xFF087E58),
-                              ),
-                            ),
-                          ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () {
+                        Haptics.tap();
+                        AnalyticsService.instance.logDrPawChatStarted();
+                        context.push('/vet');
+                      },
+                      child: const Center(
+                        child: Icon(
+                          Icons.pets_rounded,
+                          size: 20,
+                          color: AppColors.primaryDeep,
                         ),
                       ),
                     ),

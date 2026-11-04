@@ -199,7 +199,8 @@ void main() {
       );
       await tester.pump();
 
-      // Dr. Paw AI Button with "AI" badge
+      // Dr. Paw AI Button with "AI" badge & paw icon
+      expect(find.byIcon(Icons.pets_rounded), findsOneWidget);
       expect(find.text('AI'), findsOneWidget);
 
       // Shopping Cart Button with count badge "3"
