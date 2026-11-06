@@ -140,10 +140,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               if (audience != 'livestock')
                 const SliverToBoxAdapter(child: HomeCareSpaceCard()),
-              const SliverToBoxAdapter(child: HomeMemberBenefits()),
               const SliverToBoxAdapter(child: HomeBrandsRail()),
               const SliverToBoxAdapter(child: HomeHelpRail()),
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
             ],
           ),
         ),

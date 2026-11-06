@@ -25,14 +25,13 @@ class AppTheme {
     Color color = AppColors.textPrimary,
     double? height,
     double? letterSpacing,
-  }) =>
-      AppTypography.serif(
-        fontSize: fontSize,
-        fontWeight: fontWeight,
-        color: color,
-        height: height,
-        letterSpacing: letterSpacing,
-      );
+  }) => AppTypography.serif(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
 
   /// Native body typography for copy, titles, and UI.
   static TextStyle body({
@@ -41,14 +40,13 @@ class AppTheme {
     Color color = AppColors.textPrimary,
     double? height,
     double? letterSpacing,
-  }) =>
-      AppTypography.sans(
-        fontSize: fontSize,
-        fontWeight: fontWeight,
-        color: color,
-        height: height,
-        letterSpacing: letterSpacing,
-      );
+  }) => AppTypography.sans(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
 
   /// Alias for sans-serif typography.
   static TextStyle sans({
@@ -57,14 +55,13 @@ class AppTheme {
     Color color = AppColors.textPrimary,
     double? height,
     double? letterSpacing,
-  }) =>
-      body(
-        fontSize: fontSize,
-        fontWeight: fontWeight,
-        color: color,
-        height: height,
-        letterSpacing: letterSpacing,
-      );
+  }) => body(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
 
   static ThemeData get light {
     return ThemeData(
@@ -108,7 +105,9 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.modal)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.modal),
+          ),
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -142,9 +141,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
       ),
-      primaryIconTheme: const IconThemeData(
-        color: Colors.white,
-      ),
+      primaryIconTheme: const IconThemeData(color: Colors.white),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryDeep,
@@ -209,7 +206,10 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5),
+          borderSide: const BorderSide(
+            color: AppColors.brandPrimary,
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -219,7 +219,15 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.background,
         selectedColor: AppColors.primaryWash,
-        labelStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 12.5),
+        // Chips resolve their label from this style instead of the app
+        // textTheme, so the font must be repeated here or Android falls back
+        // to Roboto (and widget tests fall back to the Ahem box font).
+        labelStyle: const TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontFamilyFallback: ['Roboto', 'sans-serif'],
+          color: AppColors.textPrimary,
+          fontSize: 12.5,
+        ),
         shape: const StadiumBorder(side: BorderSide(color: AppColors.border)),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -233,7 +241,9 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.border,

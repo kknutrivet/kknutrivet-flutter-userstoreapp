@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/product_card.dart' show formatInr;
+import '../../../models/cart_item.dart';
 import '../../../providers/app_providers.dart';
+import '../../prescriptions/widgets/rx_checkout_gate.dart';
 
 /// Free delivery progress bar in the cart screen.
 class CartFreeDeliveryBar extends StatelessWidget {
@@ -22,8 +24,9 @@ class CartFreeDeliveryBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final remaining = threshold - subtotal;
-    final progress =
-        threshold > 0 ? (subtotal / threshold).clamp(0.0, 1.0) : 1.0;
+    final progress = threshold > 0
+        ? (subtotal / threshold).clamp(0.0, 1.0)
+        : 1.0;
     final qualifies = remaining <= 0;
 
     return Container(
@@ -116,12 +119,17 @@ class CartSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final earnedCoins = (subtotal * 0.05).round();
     final qualifiesForFreeDelivery = deliveryFee <= 0;
-    final merchandiseAfterDiscount =
-        (subtotal - couponDiscount - points).clamp(0.0, double.infinity);
+    final merchandiseAfterDiscount = (subtotal - couponDiscount - points).clamp(
+      0.0,
+      double.infinity,
+    );
     final neededForFreeDelivery =
-        (freeDeliveryThreshold - merchandiseAfterDiscount)
-            .clamp(0.0, double.infinity);
-    final totalSavings = couponDiscount +
+        (freeDeliveryThreshold - merchandiseAfterDiscount).clamp(
+          0.0,
+          double.infinity,
+        );
+    final totalSavings =
+        couponDiscount +
         points +
         (qualifiesForFreeDelivery && baseDeliveryCharge > 0
             ? baseDeliveryCharge
@@ -181,9 +189,7 @@ class CartSummaryCard extends StatelessWidget {
             const CartDeliveryCheckerCard(),
           ],
           const SizedBox(height: 8),
-          _feeJokeRow('Platform fees', "We're not those guys"),
           const SizedBox(height: 4),
-          _feeJokeRow('Packaging fees', 'Seriously? Nope'),
           const Divider(height: 20),
           Row(
             children: [
@@ -231,61 +237,9 @@ class CartSummaryCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xB3FDF2F8),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFCE7F3)),
-            ),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'NO CONFUSING FEES · NO HIDDEN CHARGES',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                          color: Color(0xFFE11D48),
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Somewhere, an app just invented a new fee. Not us.',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0xFFFBCFE8)),
-                  ),
-                  child: const Text(
-                    '🛡️ NO NONSENSE',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFE11D48),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const Text(
+            'All taxes included. No additional platform or packaging fees.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           if (earnedCoins > 0) ...[
             const SizedBox(height: 10),
@@ -355,32 +309,6 @@ class CartSummaryCard extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-      ],
-    );
-  }
-
-  Widget _feeJokeRow(String label, String value) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
-              decoration: TextDecoration.lineThrough,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF047857),
-          ),
-        ),
       ],
     );
   }
@@ -571,8 +499,10 @@ class _CartDeliveryCheckerCardState
                     ),
                     child: const Text(
                       'Check',
-                      style:
-                          TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
@@ -618,7 +548,9 @@ class _CartDeliveryCheckerCardState
                 child: Text(
                   'Checking pincode serviceability…',
                   style: TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary),
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
               orElse: () => const SizedBox.shrink(),
@@ -631,18 +563,30 @@ class _CartDeliveryCheckerCardState
 }
 
 /// Sticky checkout bottom bar in the cart screen.
-class CartStickyCheckoutBar extends StatelessWidget {
+class CartStickyCheckoutBar extends ConsumerWidget {
   const CartStickyCheckoutBar({
     super.key,
     required this.total,
     required this.blocked,
+    required this.items,
   });
 
   final double total;
   final bool blocked;
+  final List<CartItem> items;
+
+  Future<void> _handleCheckout(BuildContext context, WidgetRef ref) async {
+    final allowed = await ensurePrescriptionForCheckout(
+      context,
+      ref,
+      items: items,
+    );
+    if (!allowed || !context.mounted) return;
+    context.push('/checkout');
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -678,7 +622,9 @@ class CartStickyCheckoutBar extends StatelessWidget {
               SizedBox(
                 width: 180,
                 child: ElevatedButton(
-                  onPressed: blocked ? null : () => context.push('/checkout'),
+                  onPressed: blocked
+                      ? null
+                      : () => _handleCheckout(context, ref),
                   child: const Text('Checkout'),
                 ),
               ),
@@ -703,182 +649,210 @@ class EmptyCartView extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE8ECE9)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 16,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F8F5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFDCEEE3)),
-                  ),
-                  child: const Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 28,
-                    color: AppColors.primaryDeep,
-                  ),
-                ),
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF59E0B),
-                      shape: BoxShape.circle,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE8ECE9)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0A000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
                     ),
-                    child: const Icon(
-                      Icons.star_rounded,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'SHOP, SAVE & EARN',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                color: AppColors.primaryDeep,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Your cart is empty',
-              style: AppTheme.serif(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Add the care essentials you need, then combine eligible offers and KK Coins at checkout.',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.45,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () {
-                  AppHaptics.light();
-                  context.go('/products');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryDeep,
-                  foregroundColor: Colors.white,
-                  iconColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Start shopping',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF2F8F5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFDCEEE3)),
+                          ),
+                          child: const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 28,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ),
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF59E0B),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.star_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+                    const SizedBox(height: 18),
+                    Text(
+                      'SHOP, SAVE & EARN',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Your cart is empty',
+                      style: AppTheme.serif(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Add the care essentials you need, then combine eligible offers and KK Coins at checkout.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          AppHaptics.light();
+                          context.go('/products');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryDeep,
+                          foregroundColor: Colors.white,
+                          iconColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Start shopping',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          AppHaptics.light();
+                          context.go('/referral');
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: Color(0xFFDDE3E0)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'View referral rewards',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.only(top: 14),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFEEF2F0)),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.check,
+                            size: 14,
+                            color: AppColors.primaryDeep,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Genuine products',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              '│',
+                              style: TextStyle(color: Color(0xFFDDE3E0)),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.check,
+                            size: 14,
+                            color: AppColors.primaryDeep,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Secure checkout',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: () {
-                  AppHaptics.light();
-                  context.go('/referral');
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: const BorderSide(color: Color(0xFFDDE3E0)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  'View referral rewards',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.only(top: 14),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFEEF2F0))),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check, size: 14, color: AppColors.primaryDeep),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Genuine products',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text('│', style: TextStyle(color: Color(0xFFDDE3E0))),
-                  ),
-                  const Icon(Icons.check, size: 14, color: AppColors.primaryDeep),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Secure checkout',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

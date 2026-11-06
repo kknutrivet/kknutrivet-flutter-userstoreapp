@@ -279,7 +279,7 @@ class HomeAnimalSelector extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Expanded(
                   child: Text(
@@ -304,7 +304,10 @@ class HomeAnimalSelector extends ConsumerWidget {
                     },
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(minHeight: 48),
-                      child: const Padding(
+                      child: const Align(
+                        widthFactor: 1,
+                        alignment: Alignment.center,
+                        child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                         child: Text(
                           'All animals',
@@ -315,6 +318,7 @@ class HomeAnimalSelector extends ConsumerWidget {
                             decoration: TextDecoration.underline,
                           ),
                         ),
+                      ),
                       ),
                     ),
                   ),
@@ -477,21 +481,21 @@ class HomeCategorySelector extends ConsumerWidget {
     if (visible.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Expanded(
-                child: Text(
-                  'Shop by category',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Shop by category', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    SizedBox(height: 4),
+                    Text('Everyday essentials, all in one place.', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
+                  ],
                 ),
               ),
               Material(
@@ -504,8 +508,11 @@ class HomeCategorySelector extends ConsumerWidget {
                   },
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(minHeight: 48),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: const Align(
+                      widthFactor: 1,
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Text(
                         'View all',
                         style: TextStyle(
@@ -516,17 +523,11 @@ class HomeCategorySelector extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    ),
                   ),
                 ),
               ),
             ],
-          ),
-          const Text(
-            'Everyday essentials, all in one place.',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
-            ),
           ),
           const SizedBox(height: 8),
           GridView.builder(

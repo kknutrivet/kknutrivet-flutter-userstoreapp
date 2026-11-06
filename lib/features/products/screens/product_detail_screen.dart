@@ -1274,14 +1274,9 @@ class _DetailsCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1.5,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 if (product.size?.isNotEmpty == true &&
                     product.variants.isEmpty)
@@ -1618,54 +1613,55 @@ class _DetailsCard extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.homePeach,
-              border: Border.all(color: AppColors.borderWarm),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rx',
-                  style: AppTheme.serif(
-                    fontSize: 24,
-                    color: AppColors.accentCoral,
+          if (product.requiresPrescription)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryWashFaint,
+                border: Border.all(color: AppColors.borderWarm),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Rx',
+                    style: AppTheme.serif(
+                      fontSize: 24,
+                      color: AppColors.accentCoral,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.requiresPrescription
-                            ? 'Prescription required'
-                            : 'No prescription required',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.requiresPrescription
+                              ? 'Prescription required'
+                              : 'No prescription required',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        product.requiresPrescription
-                            ? 'Upload a valid prescription before ordering.'
-                            : 'This product does not require a prescription.',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          height: 1.4,
-                          color: AppColors.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          product.requiresPrescription
+                              ? 'Upload a valid prescription before ordering.'
+                              : 'This product does not require a prescription.',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            height: 1.4,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -1733,7 +1729,8 @@ class _DetailsCard extends ConsumerWidget {
       child: GestureDetector(
         onTap: enabled ? onTap : null,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          constraints: const BoxConstraints(minWidth: 140, maxWidth: 260),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: selected ? AppColors.successBg : Colors.white,
             border: Border.all(
@@ -1747,8 +1744,6 @@ class _DetailsCard extends ConsumerWidget {
             children: [
               Text(
                 name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
@@ -2240,7 +2235,9 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
     });
     try {
       final info = await ref.read(deliveryServiceProvider).checkPincode(code);
-      if (!mounted || request != _request || _controller.text.trim() != code) return;
+      if (!mounted || request != _request || _controller.text.trim() != code) {
+        return;
+      }
       ref.read(deliveryPincodeProvider.notifier).setPincode(code);
       if (mounted && request == _request) setState(() => _info = info);
     } catch (e) {
@@ -2271,7 +2268,14 @@ class _PincodeCheckState extends ConsumerState<_PincodeCheck> {
               Expanded(
                 child: TextField(
                   controller: _controller,
-                  onChanged: (_) { setState(() { ++_request; _info = null; _error = null; _checking = false; }); },
+                  onChanged: (_) {
+                    setState(() {
+                      ++_request;
+                      _info = null;
+                      _error = null;
+                      _checking = false;
+                    });
+                  },
                   keyboardType: TextInputType.number,
                   maxLength: 6,
                   decoration: const InputDecoration(

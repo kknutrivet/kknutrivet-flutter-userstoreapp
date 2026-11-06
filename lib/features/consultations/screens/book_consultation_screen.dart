@@ -15,13 +15,13 @@ final myPetsProvider = FutureProvider.autoDispose<List<PetProfile>>((ref) {
   return ref.read(petServiceProvider).fetchPets();
 });
 
-final slotsProvider =
-    FutureProvider.autoDispose.family<List<VetSlot>, String>((
+final slotsProvider = FutureProvider.autoDispose.family<List<VetSlot>, String>((
   ref,
   date,
 ) async {
-  final data =
-      await ref.read(consultationServiceProvider).fetchSlots(date: date);
+  final data = await ref
+      .read(consultationServiceProvider)
+      .fetchSlots(date: date);
   return _parseSlots(data);
 });
 
@@ -132,12 +132,16 @@ class _BookConsultationScreenState
                 color: AppColors.successBg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.3)),
+                  color: AppColors.success.withValues(alpha: 0.3),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.check_circle_rounded,
-                      color: AppColors.success, size: 20),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    size: 20,
+                  ),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -172,8 +176,9 @@ class _BookConsultationScreenState
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 child: Row(
                                   children: [
                                     Container(
@@ -198,9 +203,11 @@ class _BookConsultationScreenState
                                         color: AppColors.primaryWash,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.pets,
-                                          color: AppColors.primaryDeep,
-                                          size: 18),
+                                      child: const Icon(
+                                        Icons.pets,
+                                        color: AppColors.primaryDeep,
+                                        size: 18,
+                                      ),
                                     ),
                                     Expanded(
                                       child: Column(
@@ -262,41 +269,38 @@ class _BookConsultationScreenState
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: [
-                      'Dog',
-                      'Cat',
-                      'Cattle',
-                      'Poultry',
-                      'Goat/Sheep'
-                    ].map((a) {
-                      final selected = _manualAnimalType == a;
-                      return ChoiceChip(
-                        label: Text(a),
-                        selected: selected,
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight:
-                              selected ? FontWeight.w700 : FontWeight.w500,
-                          color: selected
-                              ? AppColors.primaryDeep
-                              : AppColors.textPrimary,
-                        ),
-                        backgroundColor: AppColors.primaryWashFaint,
-                        selectedColor: AppColors.primaryWash,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color: selected
-                                ? AppColors.primary
-                                : AppColors.borderWarm,
-                          ),
-                        ),
-                        onSelected: (_) {
-                          AppHaptics.selection();
-                          setState(() => _manualAnimalType = a);
-                        },
-                      );
-                    }).toList(),
+                    children: ['Dog', 'Cat', 'Cattle', 'Poultry', 'Goat/Sheep']
+                        .map((a) {
+                          final selected = _manualAnimalType == a;
+                          return ChoiceChip(
+                            label: Text(a),
+                            selected: selected,
+                            labelStyle: TextStyle(
+                              fontSize: 12,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: selected
+                                  ? AppColors.primaryDeep
+                                  : AppColors.textPrimary,
+                            ),
+                            backgroundColor: AppColors.primaryWashFaint,
+                            selectedColor: AppColors.primaryWash,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.borderWarm,
+                              ),
+                            ),
+                            onSelected: (_) {
+                              AppHaptics.selection();
+                              setState(() => _manualAnimalType = a);
+                            },
+                          );
+                        })
+                        .toList(),
                   ),
                 ],
               ],
@@ -326,8 +330,9 @@ class _BookConsultationScreenState
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color:
-                          selected ? AppColors.primary : AppColors.borderWarm,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.borderWarm,
                     ),
                   ),
                   onSelected: (_) {
@@ -356,7 +361,9 @@ class _BookConsultationScreenState
                     foregroundColor: AppColors.primaryDeep,
                     side: const BorderSide(color: AppColors.borderWarm),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 11),
+                      horizontal: 14,
+                      vertical: 11,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -397,10 +404,10 @@ class _BookConsultationScreenState
                               spacing: 8,
                               runSpacing: 8,
                               children: e.value.map((slot) {
-                                final selected =
-                                    _selectedSlot?.id == slot.id;
-                                final isPast = slot.startAt
-                                    .isBefore(DateTime.now());
+                                final selected = _selectedSlot?.id == slot.id;
+                                final isPast = slot.startAt.isBefore(
+                                  DateTime.now(),
+                                );
                                 return ChoiceChip(
                                   label: Text(formatTime(slot.startAt)),
                                   selected: selected,
@@ -412,8 +419,8 @@ class _BookConsultationScreenState
                                     color: selected
                                         ? AppColors.primaryDeep
                                         : (isPast
-                                            ? AppColors.textTertiary
-                                            : AppColors.textPrimary),
+                                              ? AppColors.textTertiary
+                                              : AppColors.textPrimary),
                                   ),
                                   backgroundColor: Colors.white,
                                   selectedColor: AppColors.primaryWash,
@@ -429,21 +436,21 @@ class _BookConsultationScreenState
                                       ? null
                                       : (_) {
                                           AppHaptics.selection();
-                                          setState(() =>
-                                              _selectedSlot = slot);
+                                          setState(() => _selectedSlot = slot);
                                         },
                                   avatar: isPast
                                       ? null
                                       : (selected
-                                          ? const Icon(
-                                              Icons.check_circle_rounded,
-                                              size: 15,
-                                              color: AppColors.primaryDeep)
-                                          : const Icon(
-                                              Icons.access_time_rounded,
-                                              size: 14,
-                                              color:
-                                                  AppColors.textSecondary)),
+                                            ? const Icon(
+                                                Icons.check_circle_rounded,
+                                                size: 15,
+                                                color: AppColors.primaryDeep,
+                                              )
+                                            : const Icon(
+                                                Icons.access_time_rounded,
+                                                size: 14,
+                                                color: AppColors.textSecondary,
+                                              )),
                                 );
                               }).toList(),
                             ),
@@ -517,8 +524,8 @@ class _BookConsultationScreenState
               child: ElevatedButton(
                 onPressed:
                     (animalType == null || _selectedSlot == null || _booking)
-                        ? null
-                        : _confirm,
+                    ? null
+                    : _confirm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryDeep,
                   foregroundColor: Colors.white,
@@ -527,6 +534,8 @@ class _BookConsultationScreenState
                     borderRadius: BorderRadius.circular(14),
                   ),
                   textStyle: const TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontFamilyFallback: ['Roboto', 'sans-serif'],
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -559,15 +568,17 @@ class _BookConsultationScreenState
       lastDate: today.add(const Duration(days: 14)),
     );
     if (picked == null) return;
-    final isToday = picked.year == today.year &&
+    final isToday =
+        picked.year == today.year &&
         picked.month == today.month &&
         picked.day == today.day;
     setState(() {
       _date = isToday
           ? 'today'
           : '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      _dateLabel =
-          isToday ? 'Today, ${formatDate(picked)}' : formatDate(picked);
+      _dateLabel = isToday
+          ? 'Today, ${formatDate(picked)}'
+          : formatDate(picked);
       _selectedSlot = null;
     });
     ref.invalidate(slotsProvider(_date));
@@ -578,7 +589,9 @@ class _BookConsultationScreenState
     final animalType = _pet?.animalType ?? _manualAnimalType!;
     setState(() => _booking = true);
     try {
-      final booking = await ref.read(consultationServiceProvider).holdSlot(
+      final booking = await ref
+          .read(consultationServiceProvider)
+          .holdSlot(
             slotId: _selectedSlot!.id,
             petProfileId: _pet?.id ?? widget.initialPetProfileId,
             animalType: animalType,
@@ -630,17 +643,26 @@ class _BookConsultationScreenState
             const SizedBox(height: 4),
             Text(
               'Time: ${_selectedSlot != null ? formatDateTime(_selectedSlot!.startAt) : ''}',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Language: $_language',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Animal: ${booking.animalType}',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 10),
             Container(
@@ -660,8 +682,8 @@ class _BookConsultationScreenState
                     booking.isFreeFollowUp
                         ? '₹0 (Free Follow-up)'
                         : (booking.amount != null
-                            ? formatPrice(booking.amount!)
-                            : 'Standard Fee'),
+                              ? formatPrice(booking.amount!)
+                              : 'Standard Fee'),
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -301,7 +302,9 @@ class _ShotsScreenState extends ConsumerState<ShotsScreen>
                   crossAxisSpacing: 8,
                   childAspectRatio: 2.5,
                   children: [
-                    for (final item in _animalFilters.where((a) => a.id != 'all'))
+                    for (final item in _animalFilters.where(
+                      (a) => a.id != 'all',
+                    ))
                       _buildAnimalOptionTile(
                         ctx,
                         item: item,
@@ -421,11 +424,9 @@ class _ShotsScreenState extends ConsumerState<ShotsScreen>
         brand: shot.brand,
         animalTypes: shot.animalTypes,
       );
-      await ref.read(cartProvider.notifier).addItem(
-            productId: productId,
-            quantity: 1,
-            product: product,
-          );
+      await ref
+          .read(cartProvider.notifier)
+          .addItem(productId: productId, quantity: 1, product: product);
       AppHaptics.cart();
       if (mounted) {
         setState(() => _addedIds.add(shot.id));
@@ -462,7 +463,8 @@ class _ShotsScreenState extends ConsumerState<ShotsScreen>
     final isTabActive = shellIndex == null || shellIndex == 3;
     final isTickerEnabled = TickerMode.valuesOf(context).enabled;
     final isRouteCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    final isScreenActive = _isAppResumed &&
+    final isScreenActive =
+        _isAppResumed &&
         _isShotsRouteActive &&
         isTabActive &&
         isTickerEnabled &&
@@ -473,299 +475,306 @@ class _ShotsScreenState extends ConsumerState<ShotsScreen>
       orElse: () => _animalFilters.first,
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF070A0E),
-      body: shotsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF34D399)),
-        ),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.movie_creation_outlined,
-                color: Colors.white54,
-                size: 42,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Could not load Product Shots',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => ref.invalidate(homeShotsProvider),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF087E58),
-                ),
-                child: const Text('Retry'),
-              ),
-            ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070A0E),
+        body: shotsAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: Color(0xFF34D399)),
           ),
-        ),
-        data: (rawShots) {
-          final shots = _filterAndOrder(rawShots);
-
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              if (shots.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          currentAnimalObj.icon,
-                          style: const TextStyle(fontSize: 38),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'No ${_selectedAnimal == 'all' ? 'Product' : _selectedAnimal} Videos Yet',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'We are curating video demonstrations for $_selectedAnimal. Tap below to browse all pet shots.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.white60,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () => setState(() {
-                            _selectedAnimal = 'all';
-                            _activeIndex = 0;
-                          }),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF059669),
-                          ),
-                          child: const Text('View All Videos'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  onPageChanged: (idx) {
-                    AppHaptics.selection();
-                    setState(() => _activeIndex = idx);
-                  },
-                  itemCount: shots.length,
-                  itemBuilder: (context, index) {
-                    final shot = shots[index];
-                    final isActive = isScreenActive && (index == _activeIndex);
-                    return _ShotVideoSlide(
-                      key: ValueKey('shot-slide-${shot.id}'),
-                      shot: shot,
-                      imageUrl: _resolveMediaUrl(shot.image),
-                      videoUrl: _resolveMediaUrl(shot.videoUrl),
-                      isActive: isActive,
-                      muted: _muted,
-                      isLiked: _likedIds.contains(shot.id),
-                      likeCount:
-                          shot.videoLikes + (_likedIds.contains(shot.id) ? 1 : 0),
-                      formattedViews: _formatViews(shot.videoViews),
-                      isAdding: _addingId == shot.id,
-                      isAdded: _addedIds.contains(shot.id),
-                      onToggleLike: () {
-                        AppHaptics.tap();
-                        setState(() {
-                          if (_likedIds.contains(shot.id)) {
-                            _likedIds.remove(shot.id);
-                          } else {
-                            _likedIds.add(shot.id);
-                          }
-                        });
-                      },
-                      onDoubleTapLike: () {
-                        AppHaptics.tap();
-                        if (!_likedIds.contains(shot.id)) {
-                          setState(() => _likedIds.add(shot.id));
-                        }
-                      },
-                      onAskWhatsApp: () => _handleAskWhatsApp(shot),
-                      onShare: () {
-                        AppHaptics.tap();
-                        AppShare.shareText(
-                          context,
-                          text:
-                              'Watch video for "${shot.name}" on KK Nutrivet: https://kknutrivet.in/shots?${shot.isMarketing ? "shot" : "product"}=${Uri.encodeComponent(shot.slug ?? shot.id)}',
-                        );
-                      },
-                      onAddToCart: () => _handleAddToCart(shot),
-                    );
-                  },
+          error: (err, _) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.movie_creation_outlined,
+                  color: Colors.white54,
+                  size: 42,
                 ),
-
-              // Top Floating Overlay Bar (matches ShotsClient.tsx lines 790-840)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xD9000000),
-                        Color(0x66000000),
-                        Colors.transparent,
-                      ],
-                    ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Could not load Product Shots',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Left: Back Navigation to Store
-                          _topCircleButton(
-                            icon: Icons.arrow_back_rounded,
-                            tooltip: 'Back to store',
-                            onTap: () {
-                              AppHaptics.tap();
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go('/products');
-                              }
-                            },
-                          ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => ref.invalidate(homeShotsProvider),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF087E58),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+          data: (rawShots) {
+            final shots = _filterAndOrder(rawShots);
 
-                          // Center: Animal Type Filter Dialog Trigger
-                          Material(
-                            color: _selectedAnimal != 'all'
-                                ? const Color(0xE610B981)
-                                : Colors.black.withValues(alpha: 0.50),
-                            borderRadius: BorderRadius.circular(999),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(999),
-                              onTap: _showAnimalFilterDialog,
-                              child: Container(
-                                height: 36,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: _selectedAnimal != 'all'
-                                        ? const Color(0x666EE7B7)
-                                        : Colors.white24,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      currentAnimalObj.icon,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      currentAnimalObj.label,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      size: 16,
-                                      color: Colors.white70,
-                                    ),
-                                  ],
-                                ),
-                              ),
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                if (shots.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            currentAnimalObj.icon,
+                            style: const TextStyle(fontSize: 38),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'No ${_selectedAnimal == 'all' ? 'Product' : _selectedAnimal} Videos Yet',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
                             ),
                           ),
-
-                          // Right: Sound & Cart Controls
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _topCircleButton(
-                                icon: _muted
-                                    ? Icons.volume_off_rounded
-                                    : Icons.volume_up_rounded,
-                                iconColor: _muted
-                                    ? Colors.white
-                                    : const Color(0xFF34D399),
-                                tooltip: _muted ? 'Unmute audio' : 'Mute audio',
-                                onTap: () {
-                                  AppHaptics.tap();
-                                  setState(() => _muted = !_muted);
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  _topCircleButton(
-                                    icon: Icons.shopping_bag_outlined,
-                                    tooltip: 'View shopping cart',
-                                    onTap: () {
-                                      AppHaptics.tap();
-                                      context.push('/cart');
-                                    },
-                                  ),
-                                  if (cartCount > 0)
-                                    Positioned(
-                                      top: -3,
-                                      right: -3,
-                                      child: IgnorePointer(
-                                        child: Container(
-                                          width: 16,
-                                          height: 16,
-                                          alignment: Alignment.center,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF10B981),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Text(
-                                            '$cartCount',
-                                            style: const TextStyle(
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w900,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 6),
+                          Text(
+                            'We are curating video demonstrations for $_selectedAnimal. Tap below to browse all pet shots.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white60,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            onPressed: () => setState(() {
+                              _selectedAnimal = 'all';
+                              _activeIndex = 0;
+                            }),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF059669),
+                            ),
+                            child: const Text('View All Videos'),
                           ),
                         ],
                       ),
                     ),
+                  )
+                else
+                  PageView.builder(
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    onPageChanged: (idx) {
+                      AppHaptics.selection();
+                      setState(() => _activeIndex = idx);
+                    },
+                    itemCount: shots.length,
+                    itemBuilder: (context, index) {
+                      final shot = shots[index];
+                      final isActive =
+                          isScreenActive && (index == _activeIndex);
+                      return _ShotVideoSlide(
+                        key: ValueKey('shot-slide-${shot.id}'),
+                        shot: shot,
+                        imageUrl: _resolveMediaUrl(shot.image),
+                        videoUrl: _resolveMediaUrl(shot.videoUrl),
+                        isActive: isActive,
+                        muted: _muted,
+                        isLiked: _likedIds.contains(shot.id),
+                        likeCount:
+                            shot.videoLikes +
+                            (_likedIds.contains(shot.id) ? 1 : 0),
+                        formattedViews: _formatViews(shot.videoViews),
+                        isAdding: _addingId == shot.id,
+                        isAdded: _addedIds.contains(shot.id),
+                        onToggleLike: () {
+                          AppHaptics.tap();
+                          setState(() {
+                            if (_likedIds.contains(shot.id)) {
+                              _likedIds.remove(shot.id);
+                            } else {
+                              _likedIds.add(shot.id);
+                            }
+                          });
+                        },
+                        onDoubleTapLike: () {
+                          AppHaptics.tap();
+                          if (!_likedIds.contains(shot.id)) {
+                            setState(() => _likedIds.add(shot.id));
+                          }
+                        },
+                        onAskWhatsApp: () => _handleAskWhatsApp(shot),
+                        onShare: () {
+                          AppHaptics.tap();
+                          AppShare.shareText(
+                            context,
+                            text:
+                                'Watch video for "${shot.name}" on KK Nutrivet: https://kknutrivet.in/shots?${shot.isMarketing ? "shot" : "product"}=${Uri.encodeComponent(shot.slug ?? shot.id)}',
+                          );
+                        },
+                        onAddToCart: () => _handleAddToCart(shot),
+                      );
+                    },
+                  ),
+
+                // Top Floating Overlay Bar (matches ShotsClient.tsx lines 790-840)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xD9000000),
+                          Color(0x66000000),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Left: Back Navigation to Store
+                            _topCircleButton(
+                              icon: Icons.arrow_back_rounded,
+                              tooltip: 'Back to store',
+                              onTap: () {
+                                AppHaptics.tap();
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.go('/products');
+                                }
+                              },
+                            ),
+
+                            // Center: Animal Type Filter Dialog Trigger
+                            Material(
+                              color: _selectedAnimal != 'all'
+                                  ? const Color(0xE610B981)
+                                  : Colors.black.withValues(alpha: 0.50),
+                              borderRadius: BorderRadius.circular(999),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(999),
+                                onTap: _showAnimalFilterDialog,
+                                child: Container(
+                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: _selectedAnimal != 'all'
+                                          ? const Color(0x666EE7B7)
+                                          : Colors.white24,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        currentAnimalObj.icon,
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        currentAnimalObj.label,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 16,
+                                        color: Colors.white70,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Right: Sound & Cart Controls
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _topCircleButton(
+                                  icon: _muted
+                                      ? Icons.volume_off_rounded
+                                      : Icons.volume_up_rounded,
+                                  iconColor: _muted
+                                      ? Colors.white
+                                      : const Color(0xFF34D399),
+                                  tooltip: _muted
+                                      ? 'Unmute audio'
+                                      : 'Mute audio',
+                                  onTap: () {
+                                    AppHaptics.tap();
+                                    setState(() => _muted = !_muted);
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    _topCircleButton(
+                                      icon: Icons.shopping_bag_outlined,
+                                      tooltip: 'View shopping cart',
+                                      onTap: () {
+                                        AppHaptics.tap();
+                                        context.push('/cart');
+                                      },
+                                    ),
+                                    if (cartCount > 0)
+                                      Positioned(
+                                        top: -3,
+                                        right: -3,
+                                        child: IgnorePointer(
+                                          child: Container(
+                                            width: 16,
+                                            height: 16,
+                                            alignment: Alignment.center,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF10B981),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Text(
+                                              '$cartCount',
+                                              style: const TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w900,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -843,6 +852,7 @@ class _ShotVideoSlide extends StatefulWidget {
 class _ShotVideoSlideState extends State<_ShotVideoSlide> {
   VideoPlayerController? _controller;
   bool _initialized = false;
+  bool _showFullFrame = false;
   bool _hasError = false;
   bool _userPaused = false;
   bool _showHeartBurst = false;
@@ -923,7 +933,9 @@ class _ShotVideoSlideState extends State<_ShotVideoSlide> {
     if (resetPosition) {
       c.seekTo(Duration.zero);
     }
-    if (!_userPaused && !MediaQuery.disableAnimationsOf(context) && !MediaQuery.accessibleNavigationOf(context)) {
+    if (!_userPaused &&
+        !MediaQuery.disableAnimationsOf(context) &&
+        !MediaQuery.accessibleNavigationOf(context)) {
       c.play();
     }
   }
@@ -1032,10 +1044,16 @@ class _ShotVideoSlideState extends State<_ShotVideoSlide> {
               controller != null &&
               controller.value.size.width > 0 &&
               controller.value.size.height > 0)
-            Center(
-              child: AspectRatio(
-                aspectRatio: controller.value.aspectRatio,
-                child: VideoPlayer(controller),
+            ClipRect(
+              child: SizedBox.expand(
+                child: FittedBox(
+                  fit: _showFullFrame ? BoxFit.contain : BoxFit.cover,
+                  child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
+                ),
               ),
             )
           else if (widget.imageUrl.isNotEmpty)
@@ -1045,6 +1063,16 @@ class _ShotVideoSlideState extends State<_ShotVideoSlide> {
               errorWidget: (_, _, _) =>
                   const ColoredBox(color: Color(0xFF162721)),
             ),
+
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 72,
+            left: 16,
+            child: IconButton.filledTonal(
+              tooltip: _showFullFrame ? 'Fill screen' : 'Show full video',
+              onPressed: () => setState(() => _showFullFrame = !_showFullFrame),
+              icon: Icon(_showFullFrame ? Icons.crop_free : Icons.fit_screen),
+            ),
+          ),
 
           // Subtle vignette for legibility
           const IgnorePointer(

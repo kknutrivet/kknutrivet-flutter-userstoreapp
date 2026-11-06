@@ -152,26 +152,13 @@ class CartScreen extends ConsumerWidget {
               ),
               const CheckoutBreadcrumb(currentStep: 0),
               const SizedBox(height: 10),
-              CartRxBanner(items: items),
               CartFreeDeliveryBar(
                 subtotal: merchandiseAfterDiscount,
                 threshold: freeDeliveryThreshold,
               ),
               Container(
                 margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.primaryWashDeep),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0F052E20),
-                      blurRadius: 16,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -179,6 +166,7 @@ class CartScreen extends ConsumerWidget {
                       entryCount: cartEntries.length,
                       earnedCoins: earnedCoins,
                     ),
+                    CartRxBanner(items: items),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(10, 10, 10, 2),
                       child: Column(children: cartEntries),
@@ -284,6 +272,7 @@ class CartScreen extends ConsumerWidget {
           return CartStickyCheckoutBar(
             total: total.toDouble(),
             blocked: blocked,
+            items: items,
           );
         },
         orElse: () => null,

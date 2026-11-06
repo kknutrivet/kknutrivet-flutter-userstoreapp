@@ -15,11 +15,15 @@ import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
 import '../../prescriptions/screens/prescriptions_screen.dart'
     show prescriptionsProvider;
+import '../../prescriptions/widgets/rx_checkout_gate.dart';
+import '../../prescriptions/widgets/rx_upload_sheet.dart'
+    show showRxUploadSheet;
 import '../../referral/screens/referral_screen.dart'
     show referralSummaryProvider;
 
-final publicCouponsProvider =
-    FutureProvider.autoDispose<List<CouponOffer>>((ref) {
+final publicCouponsProvider = FutureProvider.autoDispose<List<CouponOffer>>((
+  ref,
+) {
   return ref.read(orderServiceProvider).fetchPublicCoupons();
 });
 
@@ -46,7 +50,9 @@ class _CrossSellCombosRailState extends ConsumerState<CrossSellCombosRail> {
     if (_busyComboId != null) return;
     setState(() => _busyComboId = combo.id);
     try {
-      await ref.read(cartProvider.notifier).addCombo(
+      await ref
+          .read(cartProvider.notifier)
+          .addCombo(
             combo.id,
             comboName: combo.name,
             comboPrice: combo.comboPrice,
@@ -62,10 +68,13 @@ class _CrossSellCombosRailState extends ConsumerState<CrossSellCombosRail> {
 
   @override
   Widget build(BuildContext context) {
-    final inCartIds =
-        widget.cartItems.map((e) => e.comboId).whereType<String>().toSet();
-    final available =
-        widget.combos.where((c) => !inCartIds.contains(c.id)).toList();
+    final inCartIds = widget.cartItems
+        .map((e) => e.comboId)
+        .whereType<String>()
+        .toSet();
+    final available = widget.combos
+        .where((c) => !inCartIds.contains(c.id))
+        .toList();
     final displayList = available.isNotEmpty ? available : widget.combos;
     if (displayList.isEmpty) return const SizedBox.shrink();
 
@@ -130,7 +139,8 @@ class _CrossSellCombosRailState extends ConsumerState<CrossSellCombosRail> {
                               child: SizedBox(
                                 width: 42,
                                 height: 42,
-                                child: combo.image != null &&
+                                child:
+                                    combo.image != null &&
                                         combo.image!.isNotEmpty
                                     ? CachedNetworkImage(
                                         imageUrl: combo.image!,
@@ -211,8 +221,9 @@ class _CrossSellCombosRailState extends ConsumerState<CrossSellCombosRail> {
                                   showComboDetailsSheet(context, combo),
                               style: TextButton.styleFrom(
                                 minimumSize: const Size(44, 30),
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
                                 visualDensity: VisualDensity.compact,
                               ),
                               child: const Text(
@@ -232,8 +243,9 @@ class _CrossSellCombosRailState extends ConsumerState<CrossSellCombosRail> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primaryDeep,
                                 minimumSize: const Size(58, 30),
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
                                 visualDensity: VisualDensity.compact,
                               ),
                               child: _busyComboId == combo.id
@@ -312,8 +324,10 @@ class PrescriptionAssistanceBanner extends StatelessWidget {
   }
 }
 
-/// Rx review banner: approved / pending / none (upload), mirroring the
-/// website's cart Rx states (`VetRxReviewSheet` + `cart-rx`).
+/// Cart Rx status banner — mirrors the website's cart `effectiveRxStatus`
+/// banner: required / pending verification / verified. Any uploaded
+/// prescription (pending review or approved) counts as attached, so the
+/// banner stops re-prompting once the customer has uploaded.
 class CartRxBanner extends ConsumerWidget {
   const CartRxBanner({super.key, required this.items});
   final List<CartItem> items;
@@ -325,75 +339,231 @@ class CartRxBanner extends ConsumerWidget {
 
     final rxAsync = ref.watch(prescriptionsProvider);
     return rxAsync.maybeWhen(
-      data: (list) => _banner(context, _latestStatus(list)),
-      loading: () => _banner(context, null),
-      orElse: () => _banner(context, null),
+      data: (list) =>
+          _banner(context, ref, cartRxStatus(list), attachedPrescription(list)),
+      // Avoid flashing a misleading state while the list is still loading.
+      loading: () => const SizedBox.shrink(),
+      orElse: () => _banner(context, ref, CartRxStatus.none, null),
     );
   }
 
-  String? _latestStatus(List<Prescription> list) {
-    if (list.isEmpty) return null;
-    return list.first.status.toUpperCase();
-  }
+  Widget _banner(
+    BuildContext context,
+    WidgetRef ref,
+    CartRxStatus status,
+    Prescription? rx,
+  ) {
+    final (bg, border, chipBg, message) = switch (status) {
+      CartRxStatus.approved => (
+        AppColors.primaryWash,
+        AppColors.primaryWashDeep,
+        AppColors.primaryDeep,
+        'Prescription verified',
+      ),
+      CartRxStatus.pending => (
+        const Color(0xFFFEF9E6),
+        const Color(0xFFF1D18A),
+        const Color(0xFF8C6D23),
+        'Prescription uploaded — pending verification',
+      ),
+      CartRxStatus.none => (
+        const Color(0xFFF0F7F4),
+        const Color(0xFFC8E2D5),
+        AppColors.primaryDeep,
+        'Prescription required — attach now or check consultation',
+      ),
+    };
 
-  Widget _banner(BuildContext context, String? status) {
-    final approved = status == 'APPROVED';
-    final pending = status == 'PENDING';
-    final bg = approved
-        ? AppColors.successBg
-        : pending
-            ? AppColors.orderPendingBg
-            : AppColors.orderPendingBg;
-    final fg = approved ? AppColors.success : AppColors.orderPending;
-    final title = approved
-        ? 'Prescription approved ✓'
-        : pending
-            ? 'Prescription under review'
-            : 'Some items need a valid prescription';
+    Future<void> openUploadSheet() async {
+      await showRxUploadSheet(
+        context,
+        ref,
+        onUploaded: () => ref.invalidate(prescriptionsProvider),
+      );
+    }
+
+    final chipLabel = switch (status) {
+      CartRxStatus.approved => 'PRESCRIPTION APPROVED',
+      CartRxStatus.pending => 'VERIFICATION PENDING',
+      CartRxStatus.none => 'PRESCRIPTION REQUIRED',
+    };
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bg,
-        border: Border.all(
-          color: approved
-              ? AppColors.success.withValues(alpha: 0.3)
-              : AppColors.warningBorder,
-        ),
+        border: Border.all(color: border),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            approved
-                ? Icons.check_circle_rounded
-                : Icons.medical_information_outlined,
-            color: fg,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: fg,
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: status == CartRxStatus.pending
+                      ? const Color(0xFFC4933C)
+                      : const Color(0xFF16845F),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  status == CartRxStatus.approved
+                      ? Icons.check_rounded
+                      : Icons.medical_services_outlined,
+                  color: Colors.white,
+                  size: 14,
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                    color: status == CartRxStatus.pending
+                        ? const Color(0xFF7A5A14)
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          if (!approved)
-            TextButton(
-              onPressed: () => context.push('/prescriptions'),
-              style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: chipBg,
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                pending ? 'View' : 'Upload',
-                style: const TextStyle(fontSize: 12.5),
+                chipLabel,
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                  color: Colors.white,
+                ),
               ),
             ),
+          ),
+          if (status != CartRxStatus.approved) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (status == CartRxStatus.none) ...[
+                  TextButton(
+                    onPressed: () => context.push('/consultations'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text(
+                      'Consult Doctor',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: openUploadSheet,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(48, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      backgroundColor: AppColors.primaryDeep,
+                      textStyle: const TextStyle(fontSize: 11.5),
+                    ),
+                    child: const Text('Attach Rx'),
+                  ),
+                ] else ...[
+                  if (rx != null &&
+                      (rx.imageUrls.isNotEmpty || rx.imageUrl != null))
+                    OutlinedButton(
+                      onPressed: () => _viewPrescription(context, rx),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(48, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        textStyle: const TextStyle(fontSize: 11.5),
+                      ),
+                      child: const Text('View'),
+                    ),
+                  FilledButton(
+                    onPressed: openUploadSheet,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(48, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      backgroundColor: AppColors.primaryDeep,
+                      textStyle: const TextStyle(fontSize: 11.5),
+                    ),
+                    child: const Text('Replace'),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  void _viewPrescription(BuildContext context, Prescription rx) {
+    final images = rx.imageUrls.isNotEmpty
+        ? rx.imageUrls
+        : rx.imageUrl != null
+        ? [rx.imageUrl!]
+        : const <String>[];
+    if (images.isEmpty) return;
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            PageView.builder(
+              itemCount: images.length,
+              itemBuilder: (_, i) => InteractiveViewer(
+                child: Center(
+                  child: CachedNetworkImage(
+                    imageUrl: images[i],
+                    fit: BoxFit.contain,
+                    placeholder: (_, _) => const Center(
+                      child: CircularProgressIndicator(color: Colors.white54),
+                    ),
+                    errorWidget: (_, _, _) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white54,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(backgroundColor: Colors.white24),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -465,11 +635,9 @@ class CartCouponRow extends ConsumerWidget {
                     minHeight: 48,
                   ),
                   onPressed: () =>
-                      ref.read(checkoutDraftProvider.notifier).state =
-                          ref.read(checkoutDraftProvider).copyWith(
-                                clearCoupon: true,
-                                couponDiscount: 0,
-                              ),
+                      ref.read(checkoutDraftProvider.notifier).state = ref
+                          .read(checkoutDraftProvider)
+                          .copyWith(clearCoupon: true, couponDiscount: 0),
                   icon: const Icon(
                     Icons.close_rounded,
                     size: 18,
@@ -557,11 +725,9 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
           ? coupon['code']?.toString() ?? trimmed
           : trimmed;
       if (!mounted) return;
-      ref.read(checkoutDraftProvider.notifier).state =
-          ref.read(checkoutDraftProvider).copyWith(
-                couponCode: appliedCode,
-                couponDiscount: discount,
-              );
+      ref.read(checkoutDraftProvider.notifier).state = ref
+          .read(checkoutDraftProvider)
+          .copyWith(couponCode: appliedCode, couponDiscount: discount);
       Navigator.pop(context);
       showToast('Coupon applied — you save ₹${formatInr(discount)}');
     } catch (e) {
@@ -612,7 +778,11 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
                 tooltip: 'Refresh offers',
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.refresh_rounded, size: 20, color: AppColors.textSecondary),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
                 onPressed: () => ref.invalidate(publicCouponsProvider),
               ),
             ],
@@ -625,7 +795,9 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
                   controller: _codeController,
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_\-]')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'[a-zA-Z0-9_\-]'),
+                    ),
                     UpperCaseTextFormatter(),
                   ],
                   decoration: const InputDecoration(
@@ -858,8 +1030,15 @@ class _OfferTile extends StatelessWidget {
 /// Always visible on the Cart screen for signed-in users (with or without
 /// coins) as well as guests (with a Sign in CTA to unlock coin redemption).
 class CartPointsRow extends ConsumerWidget {
-  const CartPointsRow({super.key, required this.subtotal});
+  const CartPointsRow({
+    super.key,
+    required this.subtotal,
+    this.loginRedirect = '/cart',
+  });
   final double subtotal;
+
+  /// Where a guest is sent back to after signing in to redeem coins.
+  final String loginRedirect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -867,8 +1046,9 @@ class CartPointsRow extends ConsumerWidget {
     final isSignedIn = user != null && !user.isAnonymous;
     final summaryAsync = ref.watch(referralSummaryProvider);
     final summaryBalance = summaryAsync.valueOrNull?.rewardsPoints ?? 0;
-    final balance =
-        summaryBalance > 0 ? summaryBalance : (user?.loyaltyPoints ?? 0);
+    final balance = summaryBalance > 0
+        ? summaryBalance
+        : (user?.loyaltyPoints ?? 0);
     final earnedCoins = (subtotal * 0.05).round();
     final maxCapForOrder = (subtotal * 0.30).floor();
 
@@ -928,7 +1108,7 @@ class CartPointsRow extends ConsumerWidget {
               child: FilledButton(
                 onPressed: () {
                   ref.read(pendingAuthRedirectProvider.notifier).state =
-                      '/cart';
+                      loginRedirect;
                   context.push('/login');
                 },
                 style: FilledButton.styleFrom(
@@ -941,10 +1121,7 @@ class CartPointsRow extends ConsumerWidget {
                 ),
                 child: const Text(
                   'Sign in',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
@@ -1012,10 +1189,7 @@ class CartPointsRow extends ConsumerWidget {
               ),
               child: const Text(
                 'Earn ›',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -1100,8 +1274,8 @@ class CartPointsRow extends ConsumerWidget {
                       currentPoints > 0
                           ? '${balance - currentPoints} coins remaining · 1 KK Coin = ₹1'
                           : maxRedeemable > 0
-                              ? 'Use up to $maxRedeemable coins · 1 KK Coin = ₹1'
-                              : 'Coins unlock on a higher order value · 1 KK Coin = ₹1',
+                          ? 'Use up to $maxRedeemable coins · 1 KK Coin = ₹1'
+                          : 'Coins unlock on a higher order value · 1 KK Coin = ₹1',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -1113,18 +1287,15 @@ class CartPointsRow extends ConsumerWidget {
               if (currentPoints > 0)
                 TextButton(
                   onPressed: () =>
-                      ref.read(checkoutDraftProvider.notifier).state =
-                          draft.copyWith(pointsToRedeem: 0),
+                      ref.read(checkoutDraftProvider.notifier).state = draft
+                          .copyWith(pointsToRedeem: 0),
                   style: TextButton.styleFrom(
                     minimumSize: const Size(48, 40),
                     foregroundColor: AppColors.error,
                   ),
                   child: const Text(
                     'Remove',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                 ),
               if (maxRedeemable > 0 && currentPoints == 0)
@@ -1132,8 +1303,8 @@ class CartPointsRow extends ConsumerWidget {
                   height: 34,
                   child: FilledButton(
                     onPressed: () =>
-                        ref.read(checkoutDraftProvider.notifier).state =
-                            draft.copyWith(pointsToRedeem: maxRedeemable),
+                        ref.read(checkoutDraftProvider.notifier).state = draft
+                            .copyWith(pointsToRedeem: maxRedeemable),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primaryDeep,
                       foregroundColor: Colors.white,
@@ -1154,18 +1325,15 @@ class CartPointsRow extends ConsumerWidget {
               else if (maxRedeemable > 0 && currentPoints < maxRedeemable)
                 TextButton(
                   onPressed: () =>
-                      ref.read(checkoutDraftProvider.notifier).state =
-                          draft.copyWith(pointsToRedeem: maxRedeemable),
+                      ref.read(checkoutDraftProvider.notifier).state = draft
+                          .copyWith(pointsToRedeem: maxRedeemable),
                   style: TextButton.styleFrom(
                     minimumSize: const Size(48, 40),
                     foregroundColor: AppColors.primaryDeep,
                   ),
                   child: const Text(
                     'Use max',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                   ),
                 ),
             ],
@@ -1178,8 +1346,9 @@ class CartPointsRow extends ConsumerWidget {
               divisions: maxRedeemable > 0 ? maxRedeemable : 1,
               label: '$currentPoints coins (−₹$currentPoints)',
               onChanged: (val) {
-                ref.read(checkoutDraftProvider.notifier).state =
-                    draft.copyWith(pointsToRedeem: val.round());
+                ref.read(checkoutDraftProvider.notifier).state = draft.copyWith(
+                  pointsToRedeem: val.round(),
+                );
               },
             ),
             Row(

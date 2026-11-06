@@ -20,31 +20,43 @@ class FakeApiClient implements ApiClient {
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) async => [];
 
   @override
-  Future<dynamic> post(String path, {dynamic data, Map<String, dynamic>? query}) async => {};
+  Future<dynamic> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? query,
+  }) async => {};
 
   @override
-  Future<dynamic> put(String path, {dynamic data, Map<String, dynamic>? query}) async => {};
+  Future<dynamic> put(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? query,
+  }) async => {};
 
   @override
-  Future<dynamic> patch(String path, {dynamic data, Map<String, dynamic>? query}) async => {};
+  Future<dynamic> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? query,
+  }) async => {};
 
   @override
-  Future<dynamic> delete(String path, {Map<String, dynamic>? query}) async => {};
-
-  @override
-  Future<dynamic> upload(String path, String filePath,
-      {String fileField = 'file', Map<String, dynamic>? fields}) async =>
+  Future<dynamic> delete(String path, {Map<String, dynamic>? query}) async =>
       {};
+
+  @override
+  Future<dynamic> upload(
+    String path,
+    String filePath, {
+    String fileField = 'file',
+    Map<String, dynamic>? fields,
+  }) async => {};
 }
 
 Widget buildTestScreen(Widget screen) {
   return ProviderScope(
-    overrides: [
-      apiClientProvider.overrideWithValue(FakeApiClient()),
-    ],
-    child: MaterialApp(
-      home: Scaffold(body: screen),
-    ),
+    overrides: [apiClientProvider.overrideWithValue(FakeApiClient())],
+    child: MaterialApp(home: Scaffold(body: screen)),
   );
 }
 
@@ -59,7 +71,7 @@ void main() {
       expect(AppColors.textPrimary, const Color(0xFF17322B));
       expect(AppColors.textSecondary, const Color(0xFF5A615F));
       expect(AppColors.background, const Color(0xFFF3F6F5));
-      expect(AppColors.homeCanvas, const Color(0xFFFFFCF8));
+      expect(AppColors.homeCanvas, const Color(0xFFF6F8F7));
       expect(AppColors.accentCoral, const Color(0xFFB9412E));
     });
 
@@ -98,13 +110,17 @@ void main() {
       expect(find.byType(CartScreen), findsOneWidget);
     });
 
-    testWidgets('PrescriptionsScreen instantiates without error', (tester) async {
+    testWidgets('PrescriptionsScreen instantiates without error', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestScreen(const PrescriptionsScreen()));
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byType(PrescriptionsScreen), findsOneWidget);
     });
 
-    testWidgets('ConsultationsHomeScreen instantiates without error', (tester) async {
+    testWidgets('ConsultationsHomeScreen instantiates without error', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestScreen(const ConsultationsHomeScreen()));
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byType(ConsultationsHomeScreen), findsOneWidget);

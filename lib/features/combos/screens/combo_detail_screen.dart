@@ -195,7 +195,9 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     setState(() => _addingToCart = true);
     try {
       Haptics.tap();
-      await ref.read(cartProvider.notifier).addCombo(
+      await ref
+          .read(cartProvider.notifier)
+          .addCombo(
             combo.id,
             comboName: combo.name,
             comboPrice: combo.comboPrice,
@@ -222,7 +224,10 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => context.pop(),
         ),
         title: comboAsync.maybeWhen(
@@ -244,11 +249,13 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
           comboAsync.maybeWhen(
             data: (combo) => combo != null
                 ? IconButton(
-                    icon: const Icon(Icons.share_outlined,
-                        size: 20, color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.share_outlined,
+                      size: 20,
+                      color: AppColors.textPrimary,
+                    ),
                     onPressed: () {
-                      final url =
-                          '${AppConfig.apiBaseUrl}/combos/${combo.id}';
+                      final url = '${AppConfig.apiBaseUrl}/combos/${combo.id}';
                       AppShare.shareText(
                         context,
                         text: 'Check out ${combo.name} on KK Nutrivet:\n$url',
@@ -264,8 +271,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
             clipBehavior: Clip.none,
             children: [
               IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined,
-                    size: 21, color: AppColors.textPrimary),
+                icon: const Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 21,
+                  color: AppColors.textPrimary,
+                ),
                 onPressed: () => context.push('/cart'),
               ),
               if (cartCount > 0)
@@ -273,8 +283,10 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                   right: 6,
                   top: 6,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(10),
@@ -301,14 +313,20 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.inventory_2_outlined,
-                      size: 48, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.inventory_2_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 12),
-                  const Text('Combo bundle not found',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary)),
+                  const Text(
+                    'Combo bundle not found',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.pop(),
@@ -366,31 +384,45 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
             children: [
               GestureDetector(
                 onTap: () => context.go('/home'),
-                child: const Text('Home',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500)),
+                child: const Text(
+                  'Home',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text('›',
-                    style:
-                        TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                child: Text(
+                  '›',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
               GestureDetector(
                 onTap: () => context.push('/products?category=Combos'),
-                child: const Text('Combos',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500)),
+                child: const Text(
+                  'Combos',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text('›',
-                    style:
-                        TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                child: Text(
+                  '›',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
               Expanded(
                 child: Text(
@@ -416,7 +448,10 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryDeep,
                   borderRadius: BorderRadius.circular(16),
@@ -441,8 +476,10 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
               if (combo.savingPercent > 0) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFE1CB),
                     borderRadius: BorderRadius.circular(16),
@@ -739,8 +776,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     final items = combo.items.take(4).toList();
     if (items.isEmpty) {
       return const Center(
-        child: Icon(Icons.inventory_2_outlined,
-            size: 48, color: AppColors.primaryDeep),
+        child: Icon(
+          Icons.inventory_2_outlined,
+          size: 48,
+          color: AppColors.primaryDeep,
+        ),
       );
     }
 
@@ -789,8 +829,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     )
                   else
                     const Center(
-                      child: Icon(Icons.medication_outlined,
-                          size: 24, color: AppColors.primaryDeep),
+                      child: Icon(
+                        Icons.medication_outlined,
+                        size: 24,
+                        color: AppColors.primaryDeep,
+                      ),
                     ),
                   if (item.quantity > 1)
                     Positioned(
@@ -798,7 +841,9 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                       right: 4,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 1),
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryDeep,
                           borderRadius: BorderRadius.circular(8),
@@ -835,8 +880,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.inventory_2_outlined,
-                  size: 18, color: AppColors.primaryDeep),
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 18,
+                color: AppColors.primaryDeep,
+              ),
               SizedBox(width: 8),
               Text(
                 'What\'s in this combo',
@@ -875,8 +923,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     return InkWell(
       onTap: () {
         if (product != null) {
-          final slugOrId =
-              product.slug.isNotEmpty ? product.slug : product.id;
+          final slugOrId = product.slug.isNotEmpty ? product.slug : product.id;
           context.push('/products/$slugOrId');
         }
       },
@@ -904,8 +951,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                         color: AppColors.primaryDeep,
                       ),
                     )
-                  : const Icon(Icons.medication_outlined,
-                      size: 20, color: AppColors.primaryDeep),
+                  : const Icon(
+                      Icons.medication_outlined,
+                      size: 20,
+                      color: AppColors.primaryDeep,
+                    ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1211,17 +1261,22 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: const BorderSide(
-                            color: Color(0xFF0B714F), width: 0.8),
+                          color: Color(0xFF0B714F),
+                          width: 0.8,
+                        ),
                       ),
                       textStyle: const TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontFamilyFallback: ['Roboto', 'sans-serif'],
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   )
                 : ElevatedButton.icon(
-                    onPressed:
-                        _addingToCart ? null : () => _handleAddCombo(combo),
+                    onPressed: _addingToCart
+                        ? null
+                        : () => _handleAddCombo(combo),
                     icon: _addingToCart
                         ? const SizedBox(
                             width: 16,
@@ -1231,8 +1286,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.shopping_bag_outlined,
-                            size: 18, color: Colors.white),
+                        : const Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                     label: Text(_addingToCart ? 'Adding...' : 'Add to Cart'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -1244,6 +1302,8 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       textStyle: const TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontFamilyFallback: ['Roboto', 'sans-serif'],
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                       ),

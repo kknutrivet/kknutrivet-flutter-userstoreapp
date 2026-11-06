@@ -4,7 +4,13 @@ import '../theme/app_theme.dart';
 /// Mirrors nvit-frontend's STATUS_STYLES/STATUS_ICONS/STATUS_DETAILS maps
 /// so order status badges/colors/copy match the website exactly.
 class OrderStatusInfo {
-  const OrderStatusInfo(this.emoji, this.label, this.description, this.color, this.bgColor);
+  const OrderStatusInfo(
+    this.emoji,
+    this.label,
+    this.description,
+    this.color,
+    this.bgColor,
+  );
   final String emoji;
   final String label;
   final String description;
@@ -92,3 +98,21 @@ const orderTrackerSteps = [
   ('OUT_FOR_DELIVERY', 'Out for delivery', 'Out for delivery'),
   ('DELIVERED', 'Delivered', 'Delivered'),
 ];
+
+String courierStatusLabel(String raw) {
+  final key = raw.trim().toLowerCase().replaceAll(RegExp(r'[ _-]+'), '_');
+  const labels = {
+    'bag_received_at_via': 'Arrived at transit facility',
+    'bag_received': 'Received at sorting facility',
+    'bag_in_transit': 'In transit',
+    'item_added_to_bag': 'Prepared for onward transport',
+    'received_at_forward_dc': 'Arrived at delivery facility',
+    'out_for_delivery': 'Out for delivery',
+  };
+  return labels[key] ??
+      key
+          .split('_')
+          .where((word) => word.isNotEmpty)
+          .map((word) => word[0].toUpperCase() + word.substring(1))
+          .join(' ');
+}

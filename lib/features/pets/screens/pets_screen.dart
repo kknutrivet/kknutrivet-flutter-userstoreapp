@@ -33,20 +33,6 @@ class PetsScreen extends ConsumerWidget {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryDeep,
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          AppHaptics.light();
-          await context.push('/pets/new');
-          ref.invalidate(petsListProvider);
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add Pet',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-        ),
-      ),
       body: SafeArea(
         top: false,
         child: petsAsync.when(
@@ -151,7 +137,7 @@ class PetsScreen extends ConsumerWidget {
               child: AppEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load pet profiles',
-                description: customerError(e),
+                description: customerError(e, action: 'load your pets'),
                 actionLabel: 'Try Again',
                 onAction: () => ref.invalidate(petsListProvider),
               ),

@@ -562,9 +562,9 @@ class HomeSectionTitle extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: AppTheme.serif(
+            style: AppTheme.sans(
               fontSize: 17,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
@@ -580,7 +580,7 @@ class HomeSectionTitle extends StatelessWidget {
                 context.push(route!);
               },
               child: Container(
-                height: 32,
+                constraints: const BoxConstraints(minHeight: 44),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 alignment: Alignment.center,
                 child: const Row(
@@ -589,14 +589,14 @@ class HomeSectionTitle extends StatelessWidget {
                     Text(
                       'View all',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primaryDeep,
                       ),
                     ),
                     Icon(
                       Icons.chevron_right_rounded,
-                      size: 12,
+                      size: 16,
                       color: AppColors.primaryDeep,
                     ),
                   ],

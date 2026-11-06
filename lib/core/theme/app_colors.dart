@@ -11,13 +11,19 @@ class AppColors {
   static const brandPrimary = Color(0xFF126B50); // --brand-primary
   static const primary = Color(0xFF16845F); // --color-green-600
   static const primaryDark = Color(0xFF126B50); // --color-green-700
-  static const primaryDeep = Color(0xFF07583F); // --color-primary-deep (Website CTA & Consult)
-  static const primaryDeepest = Color(0xFF17322B); // --color-green-900 / --color-text
+  static const primaryDeep = Color(
+    0xFF07583F,
+  ); // --color-primary-deep (Website CTA & Consult)
+  static const primaryDeepest = Color(
+    0xFF17322B,
+  ); // --color-green-900 / --color-text
 
   // Background & Surfaces
   static const background = Color(0xFFF3F6F5); // --color-bg
-  static const homeCanvas = Color(0xFFFFFCF8); // --color-home-canvas (Mobile Homepage)
-  static const homeBackground = Color(0xFFFFFCF8);
+  static const homeCanvas = Color(
+    0xFFF6F8F7,
+  ); // --color-home-canvas (Mobile Homepage)
+  static const homeBackground = Color(0xFFF6F8F7);
   static const homeHero = Color(0xFFFFF9F5); // --color-home-hero
   static const warmCream = Color(0xFFFFF9F1); // --color-cream
   static const creamDeep = Color(0xFFEEE7DC); // --color-cream-deep
@@ -43,16 +49,22 @@ class AppColors {
 
   // Wash Tones (subtle tints for cards, chips, and backgrounds)
   static const primaryWash = Color(0xFFE6F1EA); // --color-primary-wash
-  static const primaryWashFaint = Color(0xFFF2F7F4); // --color-primary-wash-faint
+  static const primaryWashFaint = Color(
+    0xFFF2F7F4,
+  ); // --color-primary-wash-faint
   static const primaryWashDeep = Color(0xFFC7E7D8); // --color-primary-wash-deep
 
   // Accent Colors
   static const accentAmber = Color(0xFFC4933C); // --color-accent-amber
-  static const accentCoral = Color(0xFFB9412E); // --color-accent-coral (Hero CTA & Discount)
+  static const accentCoral = Color(
+    0xFFB9412E,
+  ); // --color-accent-coral (Hero CTA & Discount)
   static const accentCoralDeep = Color(0xFFC1462E); // --color-accent-coral-deep
   static const accentTeal = Color(0xFF237E73); // --color-accent-teal
   static const accentTealSoft = Color(0xFFDEEEEC); // --color-accent-teal-soft
-  static const accentViolet = Color(0xFF6954A2); // --color-accent-violet (Dr. Paw AI surfaces)
+  static const accentViolet = Color(
+    0xFF6954A2,
+  ); // --color-accent-violet (Dr. Paw AI surfaces)
   static const accent = Color(0xFFB9412E);
   static const accentGradientEnd = Color(0xFFFF9A40);
 

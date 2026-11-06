@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +10,7 @@ import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
 import '../../../models/prescription.dart';
 import '../../../providers/app_providers.dart';
+import '../widgets/rx_upload_sheet.dart';
 
 final prescriptionsProvider = FutureProvider.autoDispose<List<Prescription>>((
   ref,
@@ -83,30 +82,12 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
                 child: LinearProgressIndicator(
                   minHeight: 3.0,
                   backgroundColor: Colors.transparent,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(AppColors.primaryDeep),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primaryDeep,
+                  ),
                 ),
               )
             : null,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryDeep,
-        foregroundColor: Colors.white,
-        onPressed: _uploading ? null : _openUploadSheet,
-        icon: _uploading
-            ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(Icons.upload_file_rounded),
-        label: Text(
-          _uploading ? 'Uploading...' : 'Upload Rx',
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-        ),
       ),
       body: SafeArea(
         top: false,
@@ -208,7 +189,7 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => _PrescriptionUploadSheet(
+      builder: (ctx) => RxUploadSheet(
         onSubmit: (files, petType, petName, notes) async {
           Navigator.of(ctx).pop();
           await _processUpload(files, petType, petName, notes);
@@ -486,7 +467,7 @@ class _InlinePrescriptionUploadCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   const Text(
-                    'Drop prescription photos here, or browse',
+                    'Choose prescription photos',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -679,21 +660,12 @@ class _PrescriptionCard extends StatelessWidget {
                       border: Border.all(color: AppColors.borderWarm),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: CachedNetworkImage(
+                    child: AppNetworkImage(
                       imageUrl: images[i],
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
-                      errorWidget: (_, _, _) => Container(
-                        width: 80,
-                        height: 80,
-                        color: AppColors.primaryWash,
-                        child: const Icon(
-                          Icons.broken_image,
-                          size: 20,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
+                      fallbackIcon: Icons.description_outlined,
                     ),
                   ),
                 ),
@@ -701,309 +673,6 @@ class _PrescriptionCard extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _PrescriptionUploadSheet extends StatefulWidget {
-  const _PrescriptionUploadSheet({required this.onSubmit});
-  final void Function(
-    List<XFile> files,
-    String petType,
-    String petName,
-    String notes,
-  )
-  onSubmit;
-
-  @override
-  State<_PrescriptionUploadSheet> createState() =>
-      _PrescriptionUploadSheetState();
-}
-
-class _PrescriptionUploadSheetState extends State<_PrescriptionUploadSheet> {
-  final List<XFile> _selectedFiles = [];
-  String _selectedAnimal = 'Dog';
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-
-  final List<String> _animalOptions = [
-    'Dog',
-    'Cat',
-    'Cattle',
-    'Goat',
-    'Poultry',
-    'Other',
-  ];
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickImages(ImageSource source) async {
-    AppHaptics.light();
-    final picker = ImagePicker();
-    if (source == ImageSource.camera) {
-      final shot = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85,
-        maxWidth: 1600,
-      );
-      if (shot != null) {
-        setState(() => _selectedFiles.add(shot));
-      }
-    } else {
-      final images = await picker.pickMultiImage(
-        imageQuality: 85,
-        maxWidth: 1600,
-      );
-      if (images.isNotEmpty) {
-        setState(() {
-          for (final img in images) {
-            if (_selectedFiles.length < 5) _selectedFiles.add(img);
-          }
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset =
-        MediaQuery.viewInsetsOf(context).bottom +
-        MediaQuery.paddingOf(context).bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderWarmSoft,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Text(
-                  'Upload Prescription',
-                  style: AppTheme.serif(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryDeep,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const Text(
-              'Add clear photos of the paper prescription (up to 5 photos).',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 14),
-
-            // Pickers row
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickImages(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                    label: const Text('Take Photo'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryDeep,
-                      side: const BorderSide(color: AppColors.primaryDeep),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _pickImages(ImageSource.gallery),
-                    icon: const Icon(
-                      Icons.photo_library_outlined,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    label: const Text('From Gallery'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryDeep,
-                      foregroundColor: Colors.white,
-                      iconColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Thumbnails preview
-            if (_selectedFiles.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 74,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _selectedFiles.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) {
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.file(
-                            File(_selectedFiles[i].path),
-                            width: 74,
-                            height: 74,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => _selectedFiles.removeAt(i));
-                            },
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(3),
-                              child: const Icon(
-                                Icons.close_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-            const Text(
-              'Animal Type',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _animalOptions.map((a) {
-                  final sel = _selectedAnimal == a;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ChoiceChip(
-                      selected: sel,
-                      label: Text(a),
-                      labelStyle: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                        color: sel
-                            ? AppColors.primaryDeep
-                            : AppColors.textSecondary,
-                      ),
-                      backgroundColor: Colors.white,
-                      selectedColor: AppColors.primaryWash,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: sel ? AppColors.primary : AppColors.borderWarm,
-                        ),
-                      ),
-                      onSelected: (_) {
-                        setState(() => _selectedAnimal = a);
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Pet Name / Identifier (optional)',
-                labelStyle: const TextStyle(fontSize: 12.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _notesController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Specific medicine or notes (optional)',
-                labelStyle: const TextStyle(fontSize: 12.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-            AppButton(
-              label: 'Submit Prescription',
-              icon: const Icon(Icons.send_rounded, size: 16),
-              variant: AppButtonVariant.primary,
-              size: AppButtonSize.md,
-              fullWidth: true,
-              onPressed: _selectedFiles.isEmpty
-                  ? null
-                  : () {
-                      widget.onSubmit(
-                        _selectedFiles,
-                        _selectedAnimal,
-                        _nameController.text.trim(),
-                        _notesController.text.trim(),
-                      );
-                    },
-            ),
-          ],
-        ),
       ),
     );
   }

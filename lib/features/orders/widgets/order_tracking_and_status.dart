@@ -690,7 +690,9 @@ class OrderTrackingSection extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              '${tracking['trackingStatus']}',
+                              courierStatusLabel(
+                                '${tracking['trackingStatus']}',
+                              ),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
@@ -703,79 +705,83 @@ class OrderTrackingSection extends ConsumerWidget {
                 ),
                 if (events.isNotEmpty) ...[
                   const Divider(height: 24),
-                  ...events.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final e = entry.value;
-                    final status = e is Map
-                        ? (e['status'] ?? e['description'] ?? 'Update')
-                              .toString()
-                        : '$e';
-                    final location = e is Map
-                        ? (e['location'] ?? '').toString()
-                        : '';
-                    final time = e is Map
-                        ? (e['timestamp'] ?? e['updatedAt'] ?? '').toString()
-                        : '';
-                    final isLast = i == events.length - 1;
-                    return IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                margin: const EdgeInsets.only(top: 3),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: i == 0
-                                      ? AppColors.primary
-                                      : AppColors.border,
-                                ),
-                              ),
-                              if (!isLast)
-                                Expanded(
-                                  child: Container(
-                                    width: 1.5,
-                                    color: AppColors.border,
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('Tracking updates'),
+                    subtitle: Text('${events.length} updates'),
+                    children: events.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final e = entry.value;
+                      final status = e is Map
+                          ? (e['status'] ?? e['description'] ?? 'Update')
+                                .toString()
+                          : '$e';
+                      final location = e is Map
+                          ? (e['location'] ?? '').toString()
+                          : '';
+                      final time = e is Map
+                          ? (e['timestamp'] ?? e['updatedAt'] ?? '').toString()
+                          : '';
+                      final isLast = i == events.length - 1;
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  margin: const EdgeInsets.only(top: 3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: i == 0
+                                        ? AppColors.primary
+                                        : AppColors.border,
                                   ),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    status,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
+                                if (!isLast)
+                                  Expanded(
+                                    child: Container(
+                                      width: 1.5,
+                                      color: AppColors.border,
                                     ),
                                   ),
-                                  if (location.isNotEmpty || time.isNotEmpty)
+                              ],
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      [
-                                        location,
-                                        time,
-                                      ].where((s) => s.isNotEmpty).join(' · '),
+                                      courierStatusLabel(status),
                                       style: const TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
-                                ],
+                                    if (location.isNotEmpty || time.isNotEmpty)
+                                      Text(
+                                        [location, time]
+                                            .where((s) => s.isNotEmpty)
+                                            .join(' · '),
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ],
             ),

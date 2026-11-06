@@ -113,8 +113,10 @@ void main() {
       expect(find.text('Shots'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
 
-      // Verify Consult icon exists
-      expect(find.byIcon(Icons.medical_services_rounded), findsOneWidget);
+      // The Care tab uses the outlined (idle) icon while Home is selected;
+      // the filled variant appears only when Care is the active tab.
+      expect(find.byIcon(Icons.medical_services_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.medical_services_rounded), findsNothing);
 
       // Verify tap on Consult triggers index 2
       await tester.tap(find.text('Care'));

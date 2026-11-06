@@ -418,8 +418,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       TextFormField(
                         controller: _buildingNumber,
                         decoration: const InputDecoration(
-                          labelText:
-                              'House / Flat / Building / Apartment No. *',
+                          labelText: 'Building / Flat *',
                           hintText:
                               'e.g. Flat 302, Sai Residency / House No. 12',
                           prefixIcon: Icon(Icons.apartment_rounded, size: 20),
@@ -448,7 +447,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                             child: TextFormField(
                               controller: _city,
                               decoration: const InputDecoration(
-                                labelText: 'City / Town *',
+                                labelText: 'City *',
                                 prefixIcon: Icon(
                                   Icons.location_city_rounded,
                                   size: 20,

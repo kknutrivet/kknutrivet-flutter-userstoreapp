@@ -8,6 +8,7 @@ import '../animations/app_animations.dart';
 import '../crashlytics/crashlytics_service.dart';
 import '../services/app_update_service.dart';
 import '../../features/system/screens/force_update_screen.dart';
+import '../../features/system/screens/not_found_screen.dart';
 
 import '../../features/addresses/screens/address_form_screen.dart';
 import '../../features/addresses/screens/addresses_screen.dart';
@@ -84,6 +85,7 @@ const _publicPaths = {
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/splash',
+    errorBuilder: (context, state) => const NotFoundScreen(),
     observers: [
       if (AnalyticsService.instance.observer != null)
         AnalyticsService.instance.observer!,
@@ -134,14 +136,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.toString();
         return '/login';
       }
-      // Logged-in on /login: redirect away to destination or /home.
-      if (isLoggedIn && loggingIn) {
-        final pending = ref.read(pendingAuthRedirectProvider);
-        ref.read(pendingAuthRedirectProvider.notifier).state = null;
-        final target =
-            (pending == null || pending == '/login') ? '/home' : pending;
-        return target;
-      }
+      // Logged-in on /login: LoginScreen owns dismissal so it can restore
+      // the intercepted destination exactly once. Handling it here too
+      // races with the screen listener and drops users on /home.
+      if (isLoggedIn && loggingIn) return null;
       return null;
     },
     routes: [

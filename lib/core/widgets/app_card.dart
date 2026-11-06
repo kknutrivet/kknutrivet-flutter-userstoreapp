@@ -4,12 +4,7 @@ import '../theme/app_theme.dart';
 import '../utils/haptics.dart';
 
 /// Style variants for [AppCard].
-enum AppCardVariant {
-  flat,
-  outlined,
-  elevated,
-  tinted,
-}
+enum AppCardVariant { flat, outlined, elevated, tinted }
 
 /// Standardized card component providing unified border, padding, radius,
 /// soft ambient shadows, and tactile press response.
@@ -46,7 +41,8 @@ class _AppCardState extends State<AppCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.backgroundColor ??
+    final bg =
+        widget.backgroundColor ??
         switch (widget.variant) {
           AppCardVariant.flat => Colors.white,
           AppCardVariant.outlined => Colors.white,
@@ -56,17 +52,20 @@ class _AppCardState extends State<AppCard> {
 
     final border = switch (widget.variant) {
       AppCardVariant.flat => null,
-      AppCardVariant.outlined =>
-        Border.all(color: widget.borderColor ?? AppColors.border),
-      AppCardVariant.elevated =>
-        Border.all(color: widget.borderColor ?? AppColors.borderSubtle),
-      AppCardVariant.tinted =>
-        Border.all(color: widget.borderColor ?? AppColors.borderWarmSoft),
+      AppCardVariant.outlined => Border.all(
+        color: widget.borderColor ?? AppColors.border,
+      ),
+      AppCardVariant.elevated => Border.all(
+        color: widget.borderColor ?? AppColors.borderSubtle,
+      ),
+      AppCardVariant.tinted => Border.all(
+        color: widget.borderColor ?? AppColors.borderWarmSoft,
+      ),
     };
 
     final shadow = widget.variant == AppCardVariant.elevated
-        ? AppShadows.lifted
-        : (widget.variant == AppCardVariant.outlined ? AppShadows.card : null);
+        ? AppShadows.card
+        : null;
 
     Widget cardContent = Container(
       padding: widget.padding,
@@ -74,18 +73,26 @@ class _AppCardState extends State<AppCard> {
     );
 
     if (widget.onTap != null) {
-      cardContent = Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            AppHaptics.selection();
-            widget.onTap!();
-          },
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          child: cardContent,
-        ),
+      cardContent = InkWell(
+        onTap: () {
+          AppHaptics.selection();
+          widget.onTap!();
+        },
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        child: cardContent,
       );
     }
+
+    // Always provide a transparent Material between the card's decorated
+    // background and its child. Widgets such as ExpansionTile/ListTile assert
+    // when their ink surface is separated from the nearest Material by a
+    // colored DecoratedBox; this keeps splashes visible and assertions quiet.
+    cardContent = Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(widget.borderRadius),
+      clipBehavior: Clip.none,
+      child: cardContent,
+    );
 
     final card = Container(
       margin: widget.margin,
@@ -119,16 +126,7 @@ class _AppCardState extends State<AppCard> {
 }
 
 /// Tone variations for [AppBadge].
-enum AppBadgeTone {
-  emerald,
-  mint,
-  amber,
-  peach,
-  violet,
-  coral,
-  neutral,
-  blue,
-}
+enum AppBadgeTone { emerald, mint, amber, peach, violet, coral, neutral, blue }
 
 /// Reusable status pill / badge used across cards, lists, and headers.
 class AppBadge extends StatelessWidget {
@@ -155,8 +153,10 @@ class AppBadge extends StatelessWidget {
       AppBadgeTone.amber => (AppColors.coinsBg, AppColors.warning),
       AppBadgeTone.peach => (AppColors.homePeach, AppColors.homePeachInk),
       AppBadgeTone.violet => (AppColors.homeLavender, AppColors.accentViolet),
-      AppBadgeTone.coral =>
-        (AppColors.error.withValues(alpha: 0.1), AppColors.error),
+      AppBadgeTone.coral => (
+        AppColors.error.withValues(alpha: 0.1),
+        AppColors.error,
+      ),
       AppBadgeTone.neutral => (AppColors.surfaceAlt, AppColors.textSecondary),
       AppBadgeTone.blue => (AppColors.rxBg, AppColors.rxText),
     };
@@ -170,10 +170,7 @@ class AppBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            icon!,
-            const SizedBox(width: 4),
-          ],
+          if (icon != null) ...[icon!, const SizedBox(width: 4)],
           Text(
             label,
             style: TextStyle(
@@ -231,8 +228,10 @@ class AppTile extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 52),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     if (icon != null) ...[
@@ -344,8 +343,10 @@ class AppBanner extends StatelessWidget {
       AppBadgeTone.amber => (AppColors.coinsBg, AppColors.warning),
       AppBadgeTone.peach => (AppColors.homePeach, AppColors.homePeachInk),
       AppBadgeTone.violet => (AppColors.homeLavender, AppColors.accentViolet),
-      AppBadgeTone.coral =>
-        (AppColors.error.withValues(alpha: 0.1), AppColors.error),
+      AppBadgeTone.coral => (
+        AppColors.error.withValues(alpha: 0.1),
+        AppColors.error,
+      ),
       AppBadgeTone.neutral => (AppColors.surfaceAlt, AppColors.textSecondary),
       AppBadgeTone.blue => (AppColors.rxBg, AppColors.rxText),
     };
@@ -402,7 +403,10 @@ class AppBanner extends StatelessWidget {
               ),
               child: Text(
                 actionLabel!,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],

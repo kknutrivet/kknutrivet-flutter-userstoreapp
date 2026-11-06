@@ -11,7 +11,6 @@ import '../../../core/widgets/combo_details_sheet.dart';
 import '../../../core/widgets/product_card.dart' show formatInr;
 import '../../../models/address.dart';
 import '../../../models/cart_item.dart';
-import '../../../models/coupon.dart';
 import '../../../models/delivery.dart';
 import '../../../models/order.dart';
 import '../../../models/product.dart';
@@ -21,8 +20,10 @@ import '../../cart/widgets/cart_coupons_and_coins.dart'
     show UpperCaseTextFormatter, showCouponOffersSheet;
 import '../../prescriptions/screens/prescriptions_screen.dart'
     show prescriptionsProvider;
-import '../../referral/screens/referral_screen.dart'
-    show referralSummaryProvider;
+import '../../prescriptions/widgets/rx_upload_sheet.dart'
+    show showRxUploadSheet;
+import '../../prescriptions/widgets/rx_checkout_gate.dart'
+    show prescriptionReadyForCheckout;
 
 class PaymentAvailabilityStatus {
   const PaymentAvailabilityStatus({
@@ -410,7 +411,7 @@ class CheckoutOrderReviewSection extends StatelessWidget {
   }
 }
 
-/// Rx hold card: blocks checkout until an approved prescription exists.
+/// Rx hold card: prompts for an upload only while no prescription exists.
 class CheckoutRxHoldCard extends ConsumerWidget {
   const CheckoutRxHoldCard({super.key, required this.items});
   final List<CartItem> items;
@@ -422,9 +423,8 @@ class CheckoutRxHoldCard extends ConsumerWidget {
     final rxAsync = ref.watch(prescriptionsProvider);
     return rxAsync.maybeWhen(
       data: (list) {
-        final approved = list.any((p) => p.isApproved);
-        if (approved) return const SizedBox.shrink();
-        final pending = list.any((p) => p.status.toUpperCase() == 'PENDING');
+        final provided = list.any(prescriptionReadyForCheckout);
+        if (provided) return const SizedBox.shrink();
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(12),
@@ -446,8 +446,12 @@ class CheckoutRxHoldCard extends ConsumerWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => context.push('/prescriptions'),
-                child: Text(pending ? 'View' : 'Upload'),
+                onPressed: () => showRxUploadSheet(
+                  context,
+                  ref,
+                  onUploaded: () => ref.invalidate(prescriptionsProvider),
+                ),
+                child: const Text('Upload'),
               ),
             ],
           ),
@@ -608,120 +612,6 @@ class CheckoutCouponSection extends ConsumerWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-/// KK Coins redeem editor (balance + 30% cap + stepper).
-class CheckoutPointsEditor extends ConsumerWidget {
-  const CheckoutPointsEditor({super.key, required this.subtotal});
-  final double subtotal;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync = ref.watch(referralSummaryProvider);
-    return summaryAsync.maybeWhen(
-      data: (summary) {
-        final balance = summary.rewardsPoints;
-        if (balance <= 0) return const SizedBox.shrink();
-        final draft = ref.watch(checkoutDraftProvider);
-        final max = maxRedeemablePoints(balance, subtotal);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'KK Coins',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.coinsBg,
-                border: Border.all(color: AppColors.coinsBorder),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$balance coins available',
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          max > 0
-                              ? 'Use up to $max coins · ₹1 each'
-                              : 'Coins unlock on a higher order value',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: AppColors.border),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 14),
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          onPressed: draft.pointsToRedeem <= 0
-                              ? null
-                              : () =>
-                                    ref
-                                        .read(checkoutDraftProvider.notifier)
-                                        .state = draft.copyWith(
-                                      pointsToRedeem: draft.pointsToRedeem - 1,
-                                    ),
-                        ),
-                        Text(
-                          '${draft.pointsToRedeem}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 14),
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          onPressed: draft.pointsToRedeem >= max
-                              ? null
-                              : () =>
-                                    ref
-                                        .read(checkoutDraftProvider.notifier)
-                                        .state = draft.copyWith(
-                                      pointsToRedeem: draft.pointsToRedeem + 1,
-                                    ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
     );
   }
 }
@@ -1237,96 +1127,16 @@ class CheckoutSummaryCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 6),
-          _feeJokeRow('Platform fees', "We're not those guys"),
           const SizedBox(height: 4),
-          _feeJokeRow('Packaging fees', 'Seriously? Nope'),
           const Divider(height: 20),
           _row('Order total', '₹${formatInr(total)}', null, bold: true),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xB3FDF2F8),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFCE7F3)),
-            ),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'NO CONFUSING FEES · NO HIDDEN CHARGES',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                          color: Color(0xFFE11D48),
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Somewhere, an app just invented a new fee. Not us.',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0xFFFBCFE8)),
-                  ),
-                  child: const Text(
-                    '🛡️ NO NONSENSE',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFE11D48),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const Text(
+            'All taxes included. No additional platform or packaging fees.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _feeJokeRow(String label, String value) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
-              decoration: TextDecoration.lineThrough,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF047857),
-          ),
-        ),
-      ],
     );
   }
 

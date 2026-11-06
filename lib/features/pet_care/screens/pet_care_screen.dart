@@ -8,8 +8,9 @@ import '../../../core/widgets/product_card.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
 
-final petCareProductsProvider =
-    FutureProvider.autoDispose<List<Product>>((ref) {
+final petCareProductsProvider = FutureProvider.autoDispose<List<Product>>((
+  ref,
+) {
   return ref
       .read(catalogServiceProvider)
       .fetchProducts(sort: 'newest', limit: 4);
@@ -43,55 +44,64 @@ class PetCareScreen extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
-            _heroCard(context),
-            const SizedBox(height: 16),
-            _benefitsSection(),
-            const SizedBox(height: 16),
-            _quickSetupCard(),
-            const SizedBox(height: 16),
-            _careSpaceBanner(context),
-            const SizedBox(height: 24),
-            Text(
-              'Daily Care Essentials',
-              style: AppTheme.serif(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+              _careSpaceBanner(context),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/vet'),
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text('Ask Dr. Paw'),
               ),
-            ),
-            const SizedBox(height: 8),
-            productsAsync.when(
-              data: (products) => GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  mainAxisExtent: productCardExtent(context),
+              const SizedBox(height: 16),
+              ExpansionTile(
+                title: const Text('About pet care and reminders'),
+                children: [
+                  _heroCard(context),
+                  _benefitsSection(),
+                  _quickSetupCard(),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Daily Care Essentials',
+                style: AppTheme.serif(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
-                itemCount: products.length,
-                itemBuilder: (context, i) {
-                  final p = products[i];
-                  return CompactProductCard(
-                    product: p,
-                    variant: CompactCardVariant.catalogue,
-                  );
-                },
               ),
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 30),
-                child: LoadingView(),
+              const SizedBox(height: 8),
+              productsAsync.when(
+                data: (products) => GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    mainAxisExtent: productCardExtent(context),
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, i) {
+                    final p = products[i];
+                    return CompactProductCard(
+                      product: p,
+                      variant: CompactCardVariant.catalogue,
+                    );
+                  },
+                ),
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 30),
+                  child: LoadingView(),
+                ),
+                error: (_, _) => const SizedBox.shrink(),
               ),
-              error: (_, _) => const SizedBox.shrink(),
-            ),
-            const SizedBox(height: 36),
-          ],
+              const SizedBox(height: 36),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _heroCard(BuildContext context) {
@@ -203,10 +213,7 @@ class PetCareScreen extends ConsumerWidget {
                 const SizedBox(height: 10),
                 const Text(
                   'Name and animal type are enough to add a pet.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                  ),
+                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -219,7 +226,8 @@ class PetCareScreen extends ConsumerWidget {
                 child: Image.asset(
                   'assets/images/pet-profile-care-v1.webp',
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(color: AppColors.primaryWash),
+                  errorBuilder: (_, _, _) =>
+                      Container(color: AppColors.primaryWash),
                 ),
               ),
               Positioned.fill(
@@ -467,10 +475,7 @@ class PetCareScreen extends ConsumerWidget {
           const SizedBox(height: 3),
           const Text(
             'Photo, breed, age and the rest can wait.',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 14),
           Row(

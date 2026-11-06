@@ -12,12 +12,19 @@ import 'package:nvit_app/models/product.dart';
 import 'package:nvit_app/models/store_settings.dart';
 import 'package:nvit_app/providers/app_providers.dart';
 
+class _MockPincodeNotifier extends DeliveryPincodeNotifier {
+  _MockPincodeNotifier(this._pin);
+  final String? _pin;
+
+  @override
+  Future<String?> build() async => _pin;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  final samplePet = PetProfile(
-    id: 'pet_1',
+  final samplePet = PetProfile(    id: 'pet_1',
     name: 'Bruno',
     animalType: 'Dog',
     breed: 'Golden Retriever',
@@ -45,15 +52,24 @@ void main() {
   );
 
   group('Home Enhancements Widget Tests', () {
-    testWidgets('HomeTopBarCard renders delivery promise & speed badge', (tester) async {
+    testWidgets('HomeTopBarCard renders delivery promise & speed badge', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            storeSettingsProvider.overrideWith((ref) => Future.value(StoreSettings.defaults())),
-            deliveryEtaProvider.overrideWith((ref) => Future.value(sampleDelivery)),
+            storeSettingsProvider.overrideWith(
+              (ref) => Future.value(StoreSettings.defaults()),
+            ),
+            deliveryPincodeProvider.overrideWith(
+              () => _MockPincodeNotifier('760001'),
+            ),
+            deliveryEtaProvider.overrideWith(
+              (ref) => Future.value(sampleDelivery),
+            ),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -64,10 +80,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Delivering to Berhampur (null)'), findsOneWidget);
-      expect(find.text('2-3 days Delivery'), findsOneWidget);
-      expect(find.byIcon(Icons.bolt_rounded), findsOneWidget);
-      expect(find.textContaining('Free delivery on orders over'), findsOneWidget);
+      expect(find.text('Berhampur · 760001'), findsOneWidget);
+      expect(find.text('· 2-3 days'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.text('Free delivery ₹500+'), findsOneWidget);
     });
 
     testWidgets('HomeMyPetsBar renders pets and toggles species selection', (tester) async {
@@ -199,8 +215,16 @@ void main() {
       );
       await tester.pump();
 
-      // Dr. Paw AI Button with "AI" badge & paw icon
-      expect(find.byIcon(Icons.pets_rounded), findsOneWidget);
+      // Dr. Paw AI Button with avatar image & "AI" badge
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Image &&
+              w.image is AssetImage &&
+              (w.image as AssetImage).assetName.contains('dr-paw-genz-avatar'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('AI'), findsOneWidget);
 
       // Shopping Cart Button with count badge "3"

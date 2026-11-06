@@ -42,7 +42,9 @@ class CareChatWorkspaceAppBar extends StatelessWidget
             ),
           ),
           const Text(
-            'Certified veterinarians · Digital prescriptions',
+            'Certified vets · Digital prescriptions',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
@@ -61,14 +63,13 @@ class CareChatWorkspaceAppBar extends StatelessWidget
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primaryDeep,
               backgroundColor: AppColors.primaryWash,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
               textStyle: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontFamilyFallback: ['Roboto', 'sans-serif'],
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
               ),
@@ -125,7 +126,7 @@ class CareChatWorkspaceModeToggle extends StatelessWidget {
             child: _ToggleSegment(
               selected: !showPast,
               icon: Icons.chat_bubble_outline_rounded,
-              label: 'New / Current Care Chat',
+              label: 'Current Care Chat',
               onTap: onSelectCurrent,
             ),
           ),
@@ -329,10 +330,7 @@ class CareChatSummaryStepChip extends StatelessWidget {
 }
 
 class CareChatIntakeCardHeader extends StatelessWidget {
-  const CareChatIntakeCardHeader({
-    super.key,
-    required this.step,
-  });
+  const CareChatIntakeCardHeader({super.key, required this.step});
 
   final int step;
 
@@ -344,10 +342,7 @@ class CareChatIntakeCardHeader extends StatelessWidget {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 9,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primaryWash,
                 borderRadius: BorderRadius.circular(20),

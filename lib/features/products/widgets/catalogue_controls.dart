@@ -100,8 +100,9 @@ class ProductFilter {
       brand: clearBrand ? null : (brand ?? this.brand),
       priceRange: clearPriceRange ? null : (priceRange ?? this.priceRange),
       inStockOnly: inStockOnly ?? this.inStockOnly,
-      prescription:
-          clearPrescription ? null : (prescription ?? this.prescription),
+      prescription: clearPrescription
+          ? null
+          : (prescription ?? this.prescription),
     );
   }
 }
@@ -129,7 +130,9 @@ final productFilterProvider = StateProvider<ProductFilter>(
 
 final productsListProvider = FutureProvider.autoDispose<List<Product>>((ref) {
   final filter = ref.watch(productFilterProvider);
-  return ref.read(catalogServiceProvider).fetchProducts(
+  return ref
+      .read(catalogServiceProvider)
+      .fetchProducts(
         animalType: filter.animalType,
         category: filter.category,
         subCategory: filter.subCategory,
@@ -141,7 +144,9 @@ final productsListProvider = FutureProvider.autoDispose<List<Product>>((ref) {
 
 final productFacetsProvider = FutureProvider.autoDispose<ProductFacets>((ref) {
   final filter = ref.watch(productFilterProvider);
-  return ref.read(catalogServiceProvider).fetchFacets(
+  return ref
+      .read(catalogServiceProvider)
+      .fetchFacets(
         category: filter.category,
         animalType: filter.animalType,
         search: filter.search,
@@ -192,7 +197,12 @@ class CatalogueAnimalRail extends ConsumerWidget {
   static const _animals = [
     ('Dog', 'Dogs', 'assets/images/animal-categories/dog.webp', AppColors.dogTone),
     ('Cat', 'Cats', 'assets/images/animal-categories/cat.webp', AppColors.catTone),
-    ('Cattle', 'Cattle', 'assets/images/animal-categories/cattle.webp', AppColors.cattleTone),
+    (
+      'Cattle',
+      'Cattle',
+      'assets/images/animal-categories/cattle.webp',
+      AppColors.cattleTone,
+    ),
     (
       'Goat/Sheep',
       'Goats & Sheep',
@@ -250,9 +260,7 @@ class CatalogueAnimalRail extends ConsumerWidget {
                 margin: const EdgeInsets.fromLTRB(4, 0, 4, 2),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.primaryWash
-                      : Colors.transparent,
+                  color: selected ? AppColors.primaryWash : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -301,8 +309,9 @@ class CatalogueAnimalRail extends ConsumerWidget {
               selected: filter.animalType == null,
               onTap: () {
                 final f = ref.read(productFilterProvider);
-                ref.read(productFilterProvider.notifier).state =
-                    f.copyWith(clearAnimalType: true);
+                ref.read(productFilterProvider.notifier).state = f.copyWith(
+                  clearAnimalType: true,
+                );
               },
               portrait: Container(
                 width: 40,
@@ -334,8 +343,9 @@ class CatalogueAnimalRail extends ConsumerWidget {
                 selected: filter.animalType == a.$1,
                 onTap: () {
                   final f = ref.read(productFilterProvider);
-                  ref.read(productFilterProvider.notifier).state =
-                      filter.animalType == a.$1
+                  ref
+                      .read(productFilterProvider.notifier)
+                      .state = filter.animalType == a.$1
                       ? f.copyWith(clearAnimalType: true)
                       : f.copyWith(animalType: a.$1);
                 },
@@ -372,38 +382,87 @@ class CatalogueAnimalRail extends ConsumerWidget {
   }
 }
 
-/// Horizontal scrollable animal selector matching `MobileAnimalSelector.tsx`.
-class CatalogueHorizontalAnimalRail extends ConsumerWidget {
-  const CatalogueHorizontalAnimalRail({super.key});
+/// One option rendered by [AnimalSelectorRail].
+class AnimalSelectorEntry {
+  const AnimalSelectorEntry({
+    required this.value,
+    required this.label,
+    required this.asset,
+    required this.tone,
+  });
 
-  static const _animals = [
-    ('Dog', 'Dogs', 'assets/images/animal-categories/dog.webp', AppColors.dogTone),
-    ('Cat', 'Cats', 'assets/images/animal-categories/cat.webp', AppColors.catTone),
-    ('Cattle', 'Cattle', 'assets/images/animal-categories/cattle.webp', AppColors.cattleTone),
-    (
-      'Poultry',
-      'Poultry',
-      'assets/images/animal-categories/poultry.webp',
-      AppColors.poultryTone,
-    ),
-    (
-      'Goat/Sheep',
-      'Goats',
-      'assets/images/animal-categories/goat.webp',
-      AppColors.goatTone,
-    ),
-    (
-      'Exotic & Small Pets',
-      'Small pets',
-      'assets/images/animal-categories/exotic.webp',
-      AppColors.exoticTone,
-    ),
-  ];
+  final String value;
+  final String label;
+  final String asset;
+  final Color tone;
+}
+
+/// Animal options shared by the catalogue and the remedies list.
+const kCatalogueAnimalEntries = <AnimalSelectorEntry>[
+  AnimalSelectorEntry(
+    value: 'Dog',
+    label: 'Dogs',
+    asset: 'assets/images/animal-categories/dog.webp',
+    tone: AppColors.dogTone,
+  ),
+  AnimalSelectorEntry(
+    value: 'Cat',
+    label: 'Cats',
+    asset: 'assets/images/animal-categories/cat.webp',
+    tone: AppColors.catTone,
+  ),
+  AnimalSelectorEntry(
+    value: 'Cattle',
+    label: 'Cattle',
+    asset: 'assets/images/animal-categories/cattle.webp',
+    tone: AppColors.cattleTone,
+  ),
+  AnimalSelectorEntry(
+    value: 'Poultry',
+    label: 'Poultry',
+    asset: 'assets/images/animal-categories/poultry.webp',
+    tone: AppColors.poultryTone,
+  ),
+  AnimalSelectorEntry(
+    value: 'Goat/Sheep',
+    label: 'Goats',
+    asset: 'assets/images/animal-categories/goat.webp',
+    tone: AppColors.goatTone,
+  ),
+  AnimalSelectorEntry(
+    value: 'Exotic & Small Pets',
+    label: 'Small pets',
+    asset: 'assets/images/animal-categories/exotic.webp',
+    tone: AppColors.exoticTone,
+  ),
+];
+
+/// Horizontal scrollable image-circle animal selector matching
+/// `MobileAnimalSelector.tsx`. Reused by the product catalogue and the
+/// remedies list so both surfaces share the same selector style.
+class AnimalSelectorRail extends StatelessWidget {
+  const AnimalSelectorRail({
+    super.key,
+    required this.selectedAnimal,
+    required this.onSelected,
+    this.entries = kCatalogueAnimalEntries,
+    this.showAll = true,
+    this.backgroundColor = const Color(0xFFF8FAF9),
+    this.borderColor = const Color(0xFFE2ECE6),
+  });
+
+  /// `null` renders the “All” option as selected.
+  final String? selectedAnimal;
+
+  /// Emits the chosen animal, or `null` when “All” is chosen.
+  final ValueChanged<String?> onSelected;
+  final List<AnimalSelectorEntry> entries;
+  final bool showAll;
+  final Color backgroundColor;
+  final Color borderColor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final filter = ref.watch(productFilterProvider);
-
+  Widget build(BuildContext context) {
     Widget item({
       required bool selected,
       required VoidCallback onTap,
@@ -456,86 +515,81 @@ class CatalogueHorizontalAnimalRail extends ConsumerWidget {
 
     return Container(
       height: 72,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF8FAF9),
-        border: Border(bottom: BorderSide(color: Color(0xFFE2ECE6))),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border(bottom: BorderSide(color: borderColor)),
       ),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         children: [
-          item(
-            selected: filter.animalType == null,
-            onTap: () {
-              final f = ref.read(productFilterProvider);
-              ref.read(productFilterProvider.notifier).state =
-                  f.copyWith(clearAnimalType: true);
-            },
-            portrait: Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: filter.animalType == null
-                    ? AppColors.primaryDeep
-                    : Colors.white,
-                border: Border.all(
-                  color: filter.animalType == null
-                      ? AppColors.primaryDeep
-                      : const Color(0xFFD2E0D8),
-                  width: filter.animalType == null ? 1.8 : 1.2,
-                ),
-                boxShadow: filter.animalType == null
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primaryDeep.withValues(alpha: 0.18),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Text(
-                'ALL',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                  color: filter.animalType == null
-                      ? Colors.white
-                      : const Color(0xFF4B6358),
-                ),
-              ),
-            ),
-            label: 'All',
-          ),
-          for (final a in _animals)
+          if (showAll)
             item(
-              selected: filter.animalType == a.$1,
-              onTap: () {
-                final f = ref.read(productFilterProvider);
-                ref.read(productFilterProvider.notifier).state =
-                    filter.animalType == a.$1
-                        ? f.copyWith(clearAnimalType: true)
-                        : f.copyWith(animalType: a.$1);
-              },
+              selected: selectedAnimal == null,
+              onTap: () => onSelected(null),
+              portrait: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selectedAnimal == null
+                      ? AppColors.primaryDeep
+                      : Colors.white,
+                  border: Border.all(
+                    color: selectedAnimal == null
+                        ? AppColors.primaryDeep
+                        : const Color(0xFFD2E0D8),
+                    width: selectedAnimal == null ? 1.8 : 1.2,
+                  ),
+                  boxShadow: selectedAnimal == null
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primaryDeep.withValues(
+                              alpha: 0.18,
+                            ),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  'ALL',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    color: selectedAnimal == null
+                        ? Colors.white
+                        : const Color(0xFF4B6358),
+                  ),
+                ),
+              ),
+              label: 'All',
+            ),
+          for (final a in entries)
+            item(
+              selected: selectedAnimal == a.value,
+              onTap: () => onSelected(a.value),
               portrait: Container(
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: a.$4,
+                  color: a.tone,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: filter.animalType == a.$1
+                    color: selectedAnimal == a.value
                         ? AppColors.primaryDeep
                         : const Color(0xFFD2E0D8),
-                    width: filter.animalType == a.$1 ? 1.8 : 1.2,
+                    width: selectedAnimal == a.value ? 1.8 : 1.2,
                   ),
-                  boxShadow: filter.animalType == a.$1
+                  boxShadow: selectedAnimal == a.value
                       ? [
                           BoxShadow(
-                            color: AppColors.primaryDeep.withValues(alpha: 0.18),
+                            color: AppColors.primaryDeep.withValues(
+                              alpha: 0.18,
+                            ),
                             blurRadius: 4,
                             offset: const Offset(0, 1.5),
                           ),
@@ -546,7 +600,7 @@ class CatalogueHorizontalAnimalRail extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(2),
                   child: Image.asset(
-                    a.$3,
+                    a.asset,
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => const Icon(
                       Icons.pets,
@@ -556,10 +610,31 @@ class CatalogueHorizontalAnimalRail extends ConsumerWidget {
                   ),
                 ),
               ),
-              label: a.$2,
+              label: a.label,
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Catalogue animal selector wired to [productFilterProvider].
+class CatalogueHorizontalAnimalRail extends ConsumerWidget {
+  const CatalogueHorizontalAnimalRail({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(productFilterProvider);
+    return AnimalSelectorRail(
+      selectedAnimal: filter.animalType,
+      onSelected: (animal) {
+        final f = ref.read(productFilterProvider);
+        ref
+            .read(productFilterProvider.notifier)
+            .state = (animal == null || filter.animalType == animal)
+            ? f.copyWith(clearAnimalType: true)
+            : f.copyWith(animalType: animal);
+      },
     );
   }
 }
@@ -596,19 +671,17 @@ class CatalogueControlBar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               border: Border.all(
-                color: active
-                    ? AppColors.primaryDeep
-                    : AppColors.border,
+                color: active ? AppColors.primaryDeep : AppColors.border,
               ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: DefaultTextStyle(
               style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontFamilyFallback: const ['Roboto', 'sans-serif'],
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: active
-                    ? AppColors.primaryDeep
-                    : AppColors.textPrimary,
+                color: active ? AppColors.primaryDeep : AppColors.textPrimary,
               ),
               child: child,
             ),
@@ -637,9 +710,7 @@ class CatalogueControlBar extends ConsumerWidget {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: active
-                    ? AppColors.primaryDeep
-                    : AppColors.textSecondary,
+                color: active ? AppColors.primaryDeep : AppColors.textSecondary,
               ),
             ),
           ],
@@ -649,16 +720,18 @@ class CatalogueControlBar extends ConsumerWidget {
 
     void togglePrice() {
       final f = ref.read(productFilterProvider);
-      ref.read(productFilterProvider.notifier).state =
-          f.priceRange == 'under-500'
+      ref
+          .read(productFilterProvider.notifier)
+          .state = f.priceRange == 'under-500'
           ? f.copyWith(clearPriceRange: true)
           : f.copyWith(priceRange: 'under-500');
     }
 
     void toggleNoRx() {
       final f = ref.read(productFilterProvider);
-      ref.read(productFilterProvider.notifier).state =
-          f.prescription == 'not-required'
+      ref
+          .read(productFilterProvider.notifier)
+          .state = f.prescription == 'not-required'
           ? f.copyWith(clearPrescription: true)
           : f.copyWith(prescription: 'not-required');
     }
@@ -672,8 +745,9 @@ class CatalogueControlBar extends ConsumerWidget {
 
     void toggleStock() {
       final f = ref.read(productFilterProvider);
-      ref.read(productFilterProvider.notifier).state =
-          f.copyWith(inStockOnly: !f.inStockOnly);
+      ref.read(productFilterProvider.notifier).state = f.copyWith(
+        inStockOnly: !f.inStockOnly,
+      );
     }
 
     return Container(
@@ -776,22 +850,22 @@ class CatalogueActiveChips extends ConsumerWidget {
         (
           key: 'category',
           label: filter.category!,
-          clear: () => ref.read(productFilterProvider.notifier).state =
-              filter.copyWith(clearCategory: true),
+          clear: () => ref.read(productFilterProvider.notifier).state = filter
+              .copyWith(clearCategory: true),
         ),
       if (filter.disease != null)
         (
           key: 'disease',
           label: filter.disease!,
-          clear: () => ref.read(productFilterProvider.notifier).state =
-              filter.copyWith(clearDisease: true),
+          clear: () => ref.read(productFilterProvider.notifier).state = filter
+              .copyWith(clearDisease: true),
         ),
       if (filter.search != null)
         (
           key: 'search',
           label: '“${filter.search}”',
-          clear: () => ref.read(productFilterProvider.notifier).state =
-              filter.copyWith(clearSearch: true),
+          clear: () => ref.read(productFilterProvider.notifier).state = filter
+              .copyWith(clearSearch: true),
         ),
       if (filter.priceRange != null && filter.priceRange != 'under-500')
         (
@@ -799,18 +873,17 @@ class CatalogueActiveChips extends ConsumerWidget {
           label: filter.priceRange == '500-1000'
               ? '₹500–₹1,000'
               : filter.priceRange == 'over-1000'
-                  ? 'Above ₹1,000'
-                  : filter.priceRange!,
-          clear: () => ref.read(productFilterProvider.notifier).state =
-              filter.copyWith(clearPriceRange: true),
+              ? 'Above ₹1,000'
+              : filter.priceRange!,
+          clear: () => ref.read(productFilterProvider.notifier).state = filter
+              .copyWith(clearPriceRange: true),
         ),
-      if (filter.prescription != null &&
-          filter.prescription != 'not-required')
+      if (filter.prescription != null && filter.prescription != 'not-required')
         (
           key: 'rx',
           label: filter.prescription == 'required' ? 'Rx only' : 'Non-Rx',
-          clear: () => ref.read(productFilterProvider.notifier).state =
-              filter.copyWith(clearPrescription: true),
+          clear: () => ref.read(productFilterProvider.notifier).state = filter
+              .copyWith(clearPrescription: true),
         ),
     ];
     if (chips.isEmpty) return const SizedBox.shrink();

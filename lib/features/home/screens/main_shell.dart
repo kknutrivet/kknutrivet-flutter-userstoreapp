@@ -5,17 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
-import '../../../core/widgets/lottie_nav_icon.dart';
 import '../../../providers/app_providers.dart';
 
-/// Single Source of Truth: `src/components/MobileBottomNav.tsx`
-///
-/// Exact 5 primary navigation tabs:
-/// 1. Home (/home)
-/// 2. Shop (/products)
-/// 3. Consult (/consultations) — Raised 52×52dp circular emerald button
-/// 4. Health (/diseases)
-/// 5. Account (/profile)
+/// Persistent mobile navigation with a cart dock outside page content.
 class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
@@ -49,28 +41,15 @@ class MainShell extends ConsumerWidget {
       },
       child: Scaffold(
         body: Stack(
-          clipBehavior: Clip.none,
           children: [
-            navigationShell,
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 26,
-              child: IgnorePointer(
-                ignoring: !showFloatingCart,
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 260),
-                  curve: Curves.easeOutCubic,
-                  offset: showFloatingCart ? Offset.zero : const Offset(0, 1.4),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    opacity: showFloatingCart ? 1.0 : 0.0,
-                    child: CartFloatingBar(count: cartCount, total: cartTotal),
-                  ),
-                ),
+            Positioned.fill(child: navigationShell),
+            if (showFloatingCart)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 8,
+                child: CartFloatingBar(count: cartCount, total: cartTotal),
               ),
-            ),
           ],
         ),
         bottomNavigationBar: WebsiteBottomNav(
@@ -94,7 +73,7 @@ class MainShell extends ConsumerWidget {
   }
 }
 
-class WebsiteBottomNav extends StatefulWidget {
+class WebsiteBottomNav extends StatelessWidget {
   const WebsiteBottomNav({
     super.key,
     required this.currentIndex,
@@ -106,266 +85,43 @@ class WebsiteBottomNav extends StatefulWidget {
   final String? userFirstName;
 
   @override
-  State<WebsiteBottomNav> createState() => _WebsiteBottomNavState();
-}
-
-class _WebsiteBottomNavState extends State<WebsiteBottomNav> {
-  final List<int> _tapCounts = [0, 0, 0, 0, 0];
-
-  static const _labels = ['Home', 'Shop', 'Care', 'Shots', 'Account'];
-  static const _lottieIcons = [
-    NavLottieIcon.home,
-    NavLottieIcon.shop,
-    NavLottieIcon.consult,
-    NavLottieIcon.shots,
-    NavLottieIcon.account,
-  ];
-
-  void _handleTap(int index) {
-    setState(() {
-      _tapCounts[index]++;
-    });
-    widget.onTap(index);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isShots = widget.currentIndex == 3;
-    return Container(
+    final dark = currentIndex == 3;
+    final selectedColor = dark ? const Color(0xFF81D8B5) : AppColors.primaryDeep;
+    final idleColor = dark ? Colors.white60 : AppColors.textSecondary;
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: isShots ? const Color(0xD9000000) : AppColors.surface,
-        borderRadius: isShots
-            ? BorderRadius.zero
-            : const BorderRadius.vertical(top: Radius.circular(18)),
-        border: Border(
-          top: BorderSide(
-            color: isShots
-                ? Colors.white.withValues(alpha: 0.10)
-                : AppColors.textPrimary.withValues(alpha: 0.08),
-            width: 1,
-          ),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14173C32),
-            blurRadius: 16,
-            offset: Offset(0, -4),
-          ),
+        border: Border(top: BorderSide(color: dark ? Colors.white12 : AppColors.borderSubtle)),
+      ),
+      child: NavigationBar(
+        height: 68 + (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0, 24),
+        elevation: 0,
+        selectedIndex: currentIndex,
+        onDestinationSelected: onTap,
+        backgroundColor: dark ? const Color(0xFF101916) : Colors.white,
+        indicatorColor: dark ? const Color(0xFF275345) : AppColors.primaryWash,
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        surfaceTintColor: Colors.transparent,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? selectedColor : idleColor);
+        }),
+        destinations: [
+          for (final entry in const [
+            (Icons.home_outlined, Icons.home_rounded, 'Home'),
+            (Icons.storefront_outlined, Icons.storefront_rounded, 'Shop'),
+            (Icons.medical_services_outlined, Icons.medical_services_rounded, 'Care'),
+            (Icons.smart_display_outlined, Icons.smart_display_rounded, 'Shots'),
+            (Icons.person_outline_rounded, Icons.person_rounded, 'Account'),
+          ])
+            NavigationDestination(
+              icon: Icon(entry.$1, size: 23, color: idleColor),
+              selectedIcon: Icon(entry.$2, size: 23, color: selectedColor),
+              label: entry.$3,
+            ),
         ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height:
-              64 +
-              2 * (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0, 36),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: List.generate(5, (i) {
-                  if (i == 2) {
-                    return Expanded(child: _consultNavItem(context));
-                  }
-                  return Expanded(child: _standardNavItem(context, i));
-                }),
-              ),
-              Positioned(top: -18, child: _floatingConsultButton(context)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _standardNavItem(BuildContext context, int i) {
-    final selected = widget.currentIndex == i;
-    final isShots = widget.currentIndex == 3;
-    final isAccount = i == 4;
-    final hasRealAccount =
-        widget.userFirstName != null && widget.userFirstName!.isNotEmpty;
-    final displayLabel = _labels[i];
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: displayLabel,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _handleTap(i),
-          splashColor: AppColors.primaryWash,
-          highlightColor: AppColors.primaryWashFaint,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                width: selected ? 46 : 34,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? (isShots
-                            ? const Color(0x3310B981)
-                            : AppColors.primaryWash)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: [
-                      Opacity(
-                        opacity: (isAccount && hasRealAccount) ? 0.0 : 1.0,
-                        child: LottieNavIcon(
-                          icon: _lottieIcons[i],
-                          isSelected: selected,
-                          size: 22,
-                          color: selected
-                              ? (isShots
-                                    ? const Color(0xFF34D399)
-                                    : const Color(0xFF137656))
-                              : (isShots
-                                    ? Colors.white60
-                                    : AppColors.textSecondary),
-                          playOnTapTrigger: _tapCounts[i],
-                        ),
-                      ),
-                      if (isAccount && hasRealAccount)
-                        Container(
-                          width: 22,
-                          height: 22,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            color: AppColors.successBg,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            widget.userFirstName![0].toUpperCase(),
-                            style: AppTheme.sans(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.brandPrimary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                displayLabel,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTheme.sans(
-                  fontSize: 12,
-                  height: 1.1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: -0.2,
-                  color: selected
-                      ? (isShots
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFF137656))
-                      : (isShots ? Colors.white60 : AppColors.textSecondary),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _floatingConsultButton(BuildContext context) {
-    final selected = widget.currentIndex == 2;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: 'Care team chat',
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () => _handleTap(2),
-          splashColor: Colors.white24,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: selected
-                  ? const Color(0xFF064A37)
-                  : const Color(0xFF07583F),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2.5),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(
-                    0xFF07583F,
-                  ).withValues(alpha: selected ? 0.45 : 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Center(
-              child: LottieNavIcon(
-                icon: NavLottieIcon.consult,
-                isSelected: selected,
-                size: 25,
-                color: Colors.white,
-                playOnTapTrigger: _tapCounts[2],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _consultNavItem(BuildContext context) {
-    final selected = widget.currentIndex == 2;
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: 'Care team chat',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _handleTap(2),
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                'Care',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTheme.sans(
-                  fontSize: 12,
-                  height: 1.1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: -0.2,
-                  color: selected
-                      ? const Color(0xFF137656)
-                      : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
       ),
     );
   }

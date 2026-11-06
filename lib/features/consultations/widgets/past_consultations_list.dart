@@ -54,7 +54,7 @@ class PastConsultationsListView extends StatelessWidget {
                           color: AppColors.primaryDeep,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         'No previous chats',
                         style: AppTheme.serif(
@@ -83,7 +83,7 @@ class PastConsultationsListView extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             itemCount: bookings.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final booking = bookings[index];
               return PastConsultationCard(
@@ -94,10 +94,7 @@ class PastConsultationsListView extends StatelessWidget {
           );
         },
         loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(
-          message: e.toString(),
-          onRetry: onRetry,
-        ),
+        error: (e, _) => ErrorView(message: e.toString(), onRetry: onRetry),
       ),
     );
   }
@@ -115,7 +112,10 @@ class PastConsultationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final animalTitle = booking.petName != null && booking.petName!.isNotEmpty
+    final animalTitle =
+        booking.petName != null &&
+            booking.petName!.isNotEmpty &&
+            booking.petName!.toLowerCase() != booking.animalType.toLowerCase()
         ? '${booking.petName} · ${capitalize(booking.animalType)}'
         : capitalize(
             booking.animalType.isEmpty ? 'Animal' : booking.animalType,
@@ -123,14 +123,14 @@ class PastConsultationCard extends StatelessWidget {
 
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         onTap: onOpenChat,
         child: Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.borderWarm),
             boxShadow: const [
               BoxShadow(
@@ -201,7 +201,7 @@ class PastConsultationCard extends StatelessWidget {
                   height: 1.35,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   const Icon(
@@ -270,11 +270,8 @@ class CareStatusChip extends StatelessWidget {
         AppColors.primaryWashFaint,
         'Completed',
       ),
-      'IN_PROGRESS' || 'CONFIRMED' => (
-        AppColors.success,
-        AppColors.successBg,
-        'In progress',
-      ),
+      'IN_PROGRESS' ||
+      'CONFIRMED' => (AppColors.success, AppColors.successBg, 'In progress'),
       'WAITING_FOR_VET' || 'HOLD' || 'PENDING_PAYMENT' => (
         AppColors.warning,
         AppColors.warningBg,
@@ -322,8 +319,11 @@ class PastConsultationsStickyNewBar extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
           child: ElevatedButton.icon(
             onPressed: onStartNewChat,
-            icon: const Icon(Icons.add_circle_outline_rounded,
-                size: 18, color: Colors.white),
+            icon: const Icon(
+              Icons.add_circle_outline_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
             label: const Text('+ Start a new consultation'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryDeep,

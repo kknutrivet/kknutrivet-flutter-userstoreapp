@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/animations/app_animations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/app_network_image.dart';
@@ -17,149 +16,30 @@ class HomePrescriptionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(storeSettingsProvider).valueOrNull;
-    final discountPercent = settings?.prescriptionDiscountPercent ?? 5;
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF6F8F3),
-          border: Border.all(color: const Color(0xFFDCE7DF)),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 16,
-                        color: Color(0xFF426151),
-                      ),
-                      SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'CARE SLIP SUPPORT',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.4,
-                            color: Color(0xFF426151),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (discountPercent > 0) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFFBEB),
-                      border: Border.all(color: const Color(0xFFFCD34D)),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '🪙 +$discountPercent% KK Coins',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF78350F),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Your care slip.\nYour shopping, simplified.',
-              style: TextStyle(
-                fontSize: 23,
-                height: 1.22,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: Color(0xFF173D30),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Share a photo from your camera or gallery. Our team helps find the products you need.',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.5,
-                color: Color(0xFF52665A),
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Semantics(
+        button: true,
+        label: 'Upload care slip. Camera or gallery photo.',
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => context.push('/prescriptions'),
+            child: Image.asset(
+              'assets/marketing_image/upload-care-slip-banner.webp',
               width: double.infinity,
-              height: 48,
-              child: FilledButton(
-                onPressed: () {
-                  Haptics.tap();
-                  context.push('/prescriptions');
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF176448),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.upload_rounded, size: 17),
-                    SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Upload care slip',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, size: 16),
-                  ],
-                ),
-              ),
+              fit: BoxFit.fitWidth,
+              excludeFromSemantics: true,
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Free review · Camera or gallery photo',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF52665A),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── 7. CombosRail (matches src/components/home/CombosRail.tsx) ─────────────
 class HomeCombosRail extends ConsumerWidget {
   const HomeCombosRail({super.key, this.selectedAnimal});
   final String? selectedAnimal;
@@ -304,12 +184,14 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
       Haptics.tap();
       final currentQty = ref.read(comboCartQuantityProvider(widget.combo.id));
       if (currentQty == 0 && nextQty > 0) {
-        await ref.read(cartProvider.notifier).addCombo(
-          widget.combo.id,
-          comboName: widget.combo.name,
-          comboPrice: widget.combo.comboPrice,
-          comboImage: widget.combo.image,
-        );
+        await ref
+            .read(cartProvider.notifier)
+            .addCombo(
+              widget.combo.id,
+              comboName: widget.combo.name,
+              comboPrice: widget.combo.comboPrice,
+              comboImage: widget.combo.image,
+            );
         showToast('${widget.combo.name} bundle added to cart!');
       } else if (nextQty == 0) {
         await ref
@@ -534,8 +416,9 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                               height: 38,
                               width: 80,
                               child: FilledButton(
-                                onPressed:
-                                    _busy ? null : () => _changeQuantity(1),
+                                onPressed: _busy
+                                    ? null
+                                    : () => _changeQuantity(1),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: const Color(0xFF07583F),
                                   foregroundColor: Colors.white,

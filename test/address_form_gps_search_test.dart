@@ -20,8 +20,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('AddressFormScreen renders Quick GPS & Search Location controls',
-      (tester) async {
+  testWidgets('AddressFormScreen renders Quick GPS & Search Location controls', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -63,10 +64,7 @@ void main() {
 
     // Verify House / Flat / Building No field
     expect(
-      find.widgetWithText(
-        TextFormField,
-        'House / Flat / Building / Apartment No. *',
-      ),
+      find.widgetWithText(TextFormField, 'Building / Flat *'),
       findsOneWidget,
     );
 

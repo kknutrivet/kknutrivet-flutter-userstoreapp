@@ -24,7 +24,7 @@ void main() {
   });
 
   group('WebsiteBottomNav Tests', () {
-    testWidgets('renders 5 bottom navigation items including raised center Consult button without overflow', (tester) async {
+    testWidgets('renders 5 bottom navigation items with standard Care destination without overflow', (tester) async {
       int selectedTab = 0;
 
       await tester.pumpWidget(
@@ -49,7 +49,7 @@ void main() {
       expect(find.text('Account'), findsOneWidget);
 
       // Verify Consult icon exists
-      expect(find.byIcon(Icons.medical_services_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.medical_services_outlined), findsOneWidget);
 
       // Tap Consult tab
       await tester.tap(find.text('Care'));
@@ -112,7 +112,7 @@ void main() {
     });
 
     testWidgets(
-        'CartFloatingBar floats above raised Consult button without vertical overlap',
+        'CartFloatingBar floats above Care destination without vertical overlap',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -146,7 +146,7 @@ void main() {
       final cartBarBottom =
           tester.getBottomLeft(find.byType(CartFloatingBar)).dy;
       final consultIconTop = tester
-          .getTopLeft(find.byIcon(Icons.medical_services_rounded))
+          .getTopLeft(find.byIcon(Icons.medical_services_outlined))
           .dy;
 
       // The raised Consult circle extends ~13px above its inner icon; ensure CartFloatingBar bottom stays well above it.

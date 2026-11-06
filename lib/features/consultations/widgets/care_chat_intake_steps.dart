@@ -51,7 +51,7 @@ class CareChatStep1Language extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Choose your preferred language. We’ll remember it and share it with the care team.',
+          'Tap a language to continue. We’ll share your preference with the care team.',
           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
@@ -185,11 +185,7 @@ class CareChatStep2Contact extends StatelessWidget {
           ),
           child: const Row(
             children: [
-              Icon(
-                Icons.sms_outlined,
-                size: 17,
-                color: AppColors.primaryDeep,
-              ),
+              Icon(Icons.sms_outlined, size: 17, color: AppColors.primaryDeep),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -210,9 +206,7 @@ class CareChatStep2Contact extends StatelessWidget {
           children: [
             OutlinedButton(
               onPressed: onBack,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(88, 48),
-              ),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(88, 48)),
               child: const Text('Back'),
             ),
             const SizedBox(width: 10),
@@ -233,10 +227,7 @@ class CareChatStep2Contact extends StatelessWidget {
 }
 
 class CareChatSignInRequiredCard extends StatelessWidget {
-  const CareChatSignInRequiredCard({
-    super.key,
-    required this.onSignInTap,
-  });
+  const CareChatSignInRequiredCard({super.key, required this.onSignInTap});
 
   final VoidCallback onSignInTap;
 
@@ -292,7 +283,11 @@ class CareChatSignInRequiredCard extends StatelessWidget {
           const SizedBox(height: 14),
           ElevatedButton.icon(
             onPressed: onSignInTap,
-            icon: const Icon(Icons.login_rounded, size: 18, color: Colors.white),
+            icon: const Icon(
+              Icons.login_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
             label: const Text('Sign in to Continue'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryDeep,
@@ -446,9 +441,7 @@ class CareChatStep3Animal extends StatelessWidget {
           children: [
             OutlinedButton(
               onPressed: onBack,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(88, 48),
-              ),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(88, 48)),
               child: const Text('Back'),
             ),
             const SizedBox(width: 10),
@@ -709,46 +702,50 @@ class CareChatStickySubmitBar extends StatelessWidget {
             12 + MediaQuery.of(context).viewInsets.bottom,
           ),
           child: Row(
-          children: [
-            OutlinedButton(
-              onPressed: submitting ? null : onBack,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(88, 48),
+            children: [
+              OutlinedButton(
+                onPressed: submitting ? null : onBack,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(88, 48),
+                ),
+                child: const Text('Back'),
               ),
-              child: const Text('Back'),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: submitting || uploadingPhoto ? null : onSubmit,
-                icon: submitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: submitting || uploadingPhoto ? null : onSubmit,
+                  icon: submitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.check_rounded,
+                          size: 18,
                           color: Colors.white,
                         ),
-                      )
-                    : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                label: Text(submitting ? 'Starting…' : 'Start consultation'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryDeep,
-                  foregroundColor: Colors.white,
-                  iconColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                  label: Text(submitting ? 'Starting…' : 'Start consultation'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDeep,
+                    foregroundColor: Colors.white,
+                    iconColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class CareChatIntakeWorkspaceCard extends StatelessWidget {

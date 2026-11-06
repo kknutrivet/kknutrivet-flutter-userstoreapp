@@ -54,7 +54,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                if (kDebugMode)
+                if (kDebugMode &&
+                    const bool.fromEnvironment('SHOW_DEVELOPER_SETTINGS'))
                   TextButton.icon(
                     onPressed: _showEnvironmentDialog,
                     icon: Icon(
@@ -102,13 +103,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onEdit: () => _editProfile(user.name, user.phone, user.email),
             ),
             const SizedBox(height: 14),
-            _QuickActionRow(
-              onOrders: () => context.push('/orders'),
-              onPets: () => context.push('/pets'),
-              onAddresses: () => context.push('/addresses'),
-              onRewards: () => context.push('/referral'),
-            ),
-            const SizedBox(height: 20),
             _sectionLabel('SHOPPING & ORDERS'),
             AppCard(
               padding: EdgeInsets.zero,
@@ -250,7 +244,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  if (kDebugMode)
+                  if (kDebugMode &&
+                      const bool.fromEnvironment('SHOW_DEVELOPER_SETTINGS'))
                     AppTile(
                       icon: Icons.dns_outlined,
                       iconBg: AppConfig.isTest
@@ -628,103 +623,6 @@ class _UserHeaderCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickActionRow extends StatelessWidget {
-  const _QuickActionRow({
-    required this.onOrders,
-    required this.onPets,
-    required this.onAddresses,
-    required this.onRewards,
-  });
-
-  final VoidCallback onOrders;
-  final VoidCallback onPets;
-  final VoidCallback onAddresses;
-  final VoidCallback onRewards;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _QuickActionChip(
-          icon: Icons.local_shipping_outlined,
-          label: 'Orders',
-          onTap: onOrders,
-        ),
-        const SizedBox(width: 8),
-        _QuickActionChip(
-          icon: Icons.pets_outlined,
-          label: 'My Pets',
-          onTap: onPets,
-        ),
-        const SizedBox(width: 8),
-        _QuickActionChip(
-          icon: Icons.location_on_outlined,
-          label: 'Addresses',
-          onTap: onAddresses,
-        ),
-        const SizedBox(width: 8),
-        _QuickActionChip(
-          icon: Icons.card_giftcard_outlined,
-          label: 'Coins',
-          onTap: onRewards,
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickActionChip extends StatelessWidget {
-  const _QuickActionChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () {
-            AppHaptics.selection();
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.borderWarm),
-            ),
-            child: Column(
-              children: [
-                Icon(icon, size: 20, color: AppColors.primaryDeep),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -9,6 +9,11 @@ import '../../../core/widgets/product_image_cover.dart';
 import '../../../models/cart_item.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
+import '../../prescriptions/screens/prescriptions_screen.dart'
+    show prescriptionsProvider;
+import '../../prescriptions/widgets/rx_checkout_gate.dart';
+import '../../prescriptions/widgets/rx_upload_sheet.dart'
+    show showRxUploadSheet;
 
 ComboBundle resolveComboFromCart(
   String comboId,
@@ -16,13 +21,16 @@ ComboBundle resolveComboFromCart(
   List<ComboBundle> allCombos,
 ) {
   final cleanId = comboId.trim();
-  final matched = allCombos.where((c) => c.id.trim() == cleanId).firstOrNull ??
+  final matched =
+      allCombos.where((c) => c.id.trim() == cleanId).firstOrNull ??
       (bundleItems.isNotEmpty && bundleItems.first.comboName != null
           ? allCombos
-              .where((c) =>
-                  c.name.trim().toLowerCase() ==
-                  bundleItems.first.comboName!.trim().toLowerCase())
-              .firstOrNull
+                .where(
+                  (c) =>
+                      c.name.trim().toLowerCase() ==
+                      bundleItems.first.comboName!.trim().toLowerCase(),
+                )
+                .firstOrNull
           : null);
   if (matched != null) return matched;
   final first = bundleItems.first;
@@ -33,17 +41,15 @@ ComboBundle resolveComboFromCart(
   final totalLine = comboPriceRaw > 0
       ? comboPriceRaw * bundleQty
       : bundleItems.fold<double>(0, (s, i) => s + i.lineTotal);
-  final totalMrp = bundleItems.fold<double>(
-    0,
-    (s, i) {
-      final unitMrp = i.variant?.mrp ??
-          i.product?.mrp ??
-          i.variant?.price ??
-          i.product?.price ??
-          i.product?.effectivePrice;
-      return s + ((unitMrp ?? i.unitPrice) * i.quantity);
-    },
-  );
+  final totalMrp = bundleItems.fold<double>(0, (s, i) {
+    final unitMrp =
+        i.variant?.mrp ??
+        i.product?.mrp ??
+        i.variant?.price ??
+        i.product?.price ??
+        i.product?.effectivePrice;
+    return s + ((unitMrp ?? i.unitPrice) * i.quantity);
+  });
   return ComboBundle(
     id: comboId,
     name: first.comboName ?? 'Care Combo Bundle',
@@ -63,6 +69,82 @@ ComboBundle resolveComboFromCart(
         )
         .toList(),
   );
+}
+
+/// Per-line prescription indicator shown on cart tiles, mirroring the
+/// website's line pill: "Rx required" → "Rx attached" → "Rx verified",
+/// with an attach/replace shortcut until a prescription is approved.
+class _RxBadge extends ConsumerWidget {
+  const _RxBadge();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref
+        .watch(prescriptionsProvider)
+        .maybeWhen(data: cartRxStatus, orElse: () => CartRxStatus.none);
+
+    final (label, bg, border, textColor) = switch (status) {
+      CartRxStatus.approved => (
+        'Rx verified',
+        AppColors.primaryWash,
+        AppColors.primaryWashDeep,
+        AppColors.primaryDeep,
+      ),
+      CartRxStatus.pending => (
+        'Rx attached',
+        const Color(0xFFFEF9E6),
+        const Color(0xFFF1D18A),
+        const Color(0xFF7A5A14),
+      ),
+      CartRxStatus.none => (
+        'Rx required',
+        AppColors.rxBg,
+        AppColors.rxBorder,
+        AppColors.rxText,
+      ),
+    };
+
+    return Wrap(
+      spacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
+          ),
+        ),
+        if (status != CartRxStatus.approved)
+          GestureDetector(
+            onTap: () => showRxUploadSheet(
+              context,
+              ref,
+              onUploaded: () => ref.invalidate(prescriptionsProvider),
+            ),
+            child: Text(
+              status == CartRxStatus.pending ? 'Replace' : 'Attach',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.primary,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// Grouped Combo Bundle Cart Card (`item.comboId != null`).
@@ -109,9 +191,7 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await ref
-          .read(cartProvider.notifier)
-          .setComboQuantity(widget.comboId, 0);
+      await ref.read(cartProvider.notifier).setComboQuantity(widget.comboId, 0);
       showToast('$bundleName removed from cart');
     } catch (e) {
       showToast('Could not remove bundle: $e', isError: true);
@@ -123,15 +203,29 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
   @override
   Widget build(BuildContext context) {
     final first = widget.bundleItems.first;
-    final resolvedCombo =
-        resolveComboFromCart(widget.comboId, widget.bundleItems, widget.combos);
+    final resolvedCombo = resolveComboFromCart(
+      widget.comboId,
+      widget.bundleItems,
+      widget.combos,
+    );
+    final firstProductImage = first.product?.image;
     final coverImage =
-        first.comboImage ?? resolvedCombo.image ?? first.product?.image;
+        first.comboImage ??
+        resolvedCombo.image ??
+        ((firstProductImage != null && firstProductImage.trim().isNotEmpty)
+            ? firstProductImage
+            : (first.product?.images.isNotEmpty == true
+                  ? first.product!.images.first
+                  : null));
     final bundleName = first.comboName ?? resolvedCombo.name;
     final itemCount = resolvedCombo.items.isNotEmpty
         ? resolvedCombo.items.length
         : widget.bundleItems.length;
-    final int rawQty = first.comboQuantity ??
+    final comboRequiresRx = widget.bundleItems.any(
+      (i) => i.product?.requiresPrescription == true,
+    );
+    final int rawQty =
+        first.comboQuantity ??
         ref.watch(comboCartQuantityProvider(widget.comboId));
     final bundleQty = rawQty.clamp(1, 999);
 
@@ -141,35 +235,34 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
     final double unitBundlePrice = rawComboPrice > 0
         ? rawComboPrice
         : (resolvedCombo.comboPrice > 0
-            ? resolvedCombo.comboPrice
-            : widget.bundleItems.fold<double>(0, (sum, i) => sum + i.lineTotal));
+              ? resolvedCombo.comboPrice
+              : widget.bundleItems.fold<double>(
+                  0,
+                  (sum, i) => sum + i.lineTotal,
+                ));
     final double bundleTotal = unitBundlePrice * bundleQty;
 
-    final double rawMrpFromItems = widget.bundleItems.fold<double>(
-      0,
-      (sum, i) {
-        final unitMrp = i.variant?.mrp ??
-            i.product?.mrp ??
-            i.variant?.price ??
-            i.product?.price ??
-            i.product?.effectivePrice;
-        return sum + ((unitMrp ?? 0) * i.quantity);
-      },
-    );
+    final double rawMrpFromItems = widget.bundleItems.fold<double>(0, (sum, i) {
+      final unitMrp =
+          i.variant?.mrp ??
+          i.product?.mrp ??
+          i.variant?.price ??
+          i.product?.price ??
+          i.product?.effectivePrice;
+      return sum + ((unitMrp ?? 0) * i.quantity);
+    });
     final double catalogMrp = resolvedCombo.originalPrice > 0
         ? (resolvedCombo.originalPrice * bundleQty)
         : 0;
     final double resolvedComboItemsMrp = resolvedCombo.items.isNotEmpty
-        ? resolvedCombo.items.fold<double>(
-            0,
-            (sum, ci) {
-              final pMrp = ci.product?.mrp ??
-                  ci.product?.price ??
-                  ci.product?.effectivePrice ??
-                  0;
-              return sum + (pMrp * ci.quantity * bundleQty);
-            },
-          )
+        ? resolvedCombo.items.fold<double>(0, (sum, ci) {
+            final pMrp =
+                ci.product?.mrp ??
+                ci.product?.price ??
+                ci.product?.effectivePrice ??
+                0;
+            return sum + (pMrp * ci.quantity * bundleQty);
+          })
         : 0;
 
     final double mrpTotal = [
@@ -209,8 +302,8 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                 child: ProductImageCover(
                   imageUrl: coverImage,
                   borderRadius: BorderRadius.circular(12),
-                  innerPadding: const EdgeInsets.all(3),
-                  backdropOpacity: 0.85,
+                  innerPadding: EdgeInsets.zero,
+                  fit: BoxFit.cover,
                   showPlaceholderOnLoading: false,
                 ),
               ),
@@ -227,24 +320,32 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryWash,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                'COMBO BUNDLE · $itemCount items',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryDeep,
-                                  letterSpacing: 0.3,
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 3,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryWash,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    'COMBO BUNDLE · $itemCount items',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primaryDeep,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                if (comboRequiresRx) const _RxBadge(),
+                              ],
                             ),
                             const SizedBox(height: 4),
                             GestureDetector(
@@ -285,8 +386,9 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                       const SizedBox(width: 4),
                       IconButton(
                         tooltip: 'Remove bundle',
-                        onPressed:
-                            _busy ? null : () => _removeBundle(bundleName),
+                        onPressed: _busy
+                            ? null
+                            : () => _removeBundle(bundleName),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
                           minWidth: 32,
@@ -386,10 +488,8 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                                 ),
                                 onTap: _busy
                                     ? null
-                                    : () => _updateQty(
-                                          bundleName,
-                                          bundleQty - 1,
-                                        ),
+                                    : () =>
+                                          _updateQty(bundleName, bundleQty - 1),
                                 child: Icon(
                                   Icons.remove,
                                   size: 15,
@@ -438,10 +538,8 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                                 ),
                                 onTap: _busy
                                     ? null
-                                    : () => _updateQty(
-                                          bundleName,
-                                          bundleQty + 1,
-                                        ),
+                                    : () =>
+                                          _updateQty(bundleName, bundleQty + 1),
                                 child: Icon(
                                   Icons.add,
                                   size: 15,
@@ -490,11 +588,13 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
     if (widget.item.comboId != null) return null;
     for (final combo in widget.combos) {
       if (!combo.isActive) continue;
-      final alreadyInCart =
-          widget.allCartItems.any((ci) => ci.comboId == combo.id);
+      final alreadyInCart = widget.allCartItems.any(
+        (ci) => ci.comboId == combo.id,
+      );
       if (alreadyInCart) continue;
-      final containsProduct =
-          combo.items.any((ci) => ci.productId == widget.item.productId);
+      final containsProduct = combo.items.any(
+        (ci) => ci.productId == widget.item.productId,
+      );
       if (containsProduct) return combo;
     }
     return null;
@@ -520,13 +620,17 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
       return;
     }
     if (nextQty > widget.item.maxStock) {
-      showToast('Maximum available stock reached (${widget.item.maxStock})',
-          isError: true);
+      showToast(
+        'Maximum available stock reached (${widget.item.maxStock})',
+        isError: true,
+      );
       return;
     }
     setState(() => _busy = true);
     try {
-      await ref.read(cartProvider.notifier).setQuantity(
+      await ref
+          .read(cartProvider.notifier)
+          .setQuantity(
             productId: widget.item.productId,
             variantId: widget.item.variantId,
             quantity: nextQty,
@@ -584,7 +688,9 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
     setState(() => _busy = true);
     try {
       await ref.read(cartProvider.notifier).removeItem(widget.item.id);
-      await ref.read(cartProvider.notifier).addCombo(
+      await ref
+          .read(cartProvider.notifier)
+          .addCombo(
             combo.id,
             comboName: combo.name,
             comboPrice: combo.comboPrice,
@@ -602,14 +708,16 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final title = item.comboName ?? item.product?.name ?? 'Item';
-    final image = item.product?.image ??
-        (item.product?.images.isNotEmpty == true
-            ? item.product!.images.first
-            : null);
-    final outOfStock =
-        item.comboId == null && (item.product?.inStock == false);
+    final productImage = item.product?.image;
+    final image = (productImage != null && productImage.trim().isNotEmpty)
+        ? productImage
+        : (item.product?.images.isNotEmpty == true
+              ? item.product!.images.first
+              : null);
+    final outOfStock = item.comboId == null && (item.product?.inStock == false);
     final upgradeCombo = _findUpgradeCombo();
     final packLabel = item.variant?.name ?? item.product?.size;
+    final requiresRx = item.product?.requiresPrescription == true;
     final unitPrice = item.unitPrice;
     final unitMrp = item.variant?.mrp ?? item.product?.mrp;
     final lineTotal = item.lineTotal;
@@ -646,8 +754,8 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                   child: ProductImageCover(
                     imageUrl: image,
                     borderRadius: BorderRadius.circular(12),
-                    innerPadding: const EdgeInsets.all(3),
-                    backdropOpacity: 0.85,
+                    innerPadding: EdgeInsets.zero,
+                    fit: BoxFit.cover,
                     showPlaceholderOnLoading: false,
                   ),
                 ),
@@ -674,16 +782,28 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
-                                if (packLabel != null &&
-                                    packLabel.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Pack: $packLabel',
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                if (requiresRx ||
+                                    (packLabel != null &&
+                                        packLabel.trim().isNotEmpty)) ...[
+                                  const SizedBox(height: 3),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 3,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      if (requiresRx) const _RxBadge(),
+                                      if (packLabel != null &&
+                                          packLabel.trim().isNotEmpty)
+                                        Text(
+                                          'Pack: $packLabel',
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                                 if (item.minimumQuantity > 1) ...[
@@ -734,8 +854,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                           const SizedBox(width: 4),
                           IconButton(
                             tooltip: 'Remove item',
-                            onPressed:
-                                _busy ? null : () => _removeItem(title),
+                            onPressed: _busy ? null : () => _removeItem(title),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                               minWidth: 32,
@@ -822,8 +941,9 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                             width: 92,
                             decoration: BoxDecoration(
                               color: const Color(0xFFF2F8F5),
-                              border:
-                                  Border.all(color: const Color(0xFFBDD6C9)),
+                              border: Border.all(
+                                color: const Color(0xFFBDD6C9),
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -838,9 +958,9 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                                     onTap: _busy
                                         ? null
                                         : () => _updateQuantity(
-                                              title,
-                                              item.quantity - 1,
-                                            ),
+                                            title,
+                                            item.quantity - 1,
+                                          ),
                                     child: Icon(
                                       Icons.remove,
                                       size: 15,
@@ -890,17 +1010,17 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                                     onTap: _busy
                                         ? null
                                         : () => _updateQuantity(
-                                              title,
-                                              item.quantity + 1,
-                                            ),
+                                            title,
+                                            item.quantity + 1,
+                                          ),
                                     child: Icon(
                                       Icons.add,
                                       size: 15,
                                       color: _busy
                                           ? AppColors.textTertiary
                                           : (item.quantity >= item.maxStock
-                                              ? AppColors.textTertiary
-                                              : AppColors.brandPrimary),
+                                                ? AppColors.textTertiary
+                                                : AppColors.brandPrimary),
                                     ),
                                   ),
                                 ),
@@ -943,7 +1063,8 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                       child: ProductImageCover(
                         imageUrl: upgradeCombo.image,
                         borderRadius: BorderRadius.circular(8),
-                        innerPadding: const EdgeInsets.all(2),
+                        innerPadding: EdgeInsets.zero,
+                        fit: BoxFit.cover,
                         showPlaceholderOnLoading: false,
                       ),
                     ),
@@ -1026,7 +1147,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                       onPressed: _busy
                           ? null
                           : () =>
-                              _showUpgradeConfirmation(context, upgradeCombo),
+                                _showUpgradeConfirmation(context, upgradeCombo),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF047857),
                         padding: const EdgeInsets.symmetric(horizontal: 12),

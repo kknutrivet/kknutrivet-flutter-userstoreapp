@@ -16,8 +16,13 @@ import '../../../models/order.dart';
 import '../../../models/product.dart';
 import '../../../models/store_settings.dart';
 import '../../../providers/app_providers.dart';
+import '../../cart/widgets/cart_coupons_and_coins.dart' show CartPointsRow;
 import '../../prescriptions/screens/prescriptions_screen.dart'
     show prescriptionsProvider;
+import '../../prescriptions/widgets/rx_upload_sheet.dart'
+    show showRxUploadSheet;
+import '../../prescriptions/widgets/rx_checkout_gate.dart'
+    show prescriptionReadyForCheckout;
 import '../widgets/checkout_address_section.dart';
 import '../widgets/checkout_payment_and_review.dart';
 import 'cashfree_checkout_screen.dart';
@@ -145,8 +150,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   child: LinearProgressIndicator(
                     minHeight: 3.0,
                     backgroundColor: Colors.transparent,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.primaryDeep),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryDeep,
+                    ),
                   ),
                 )
               : null,
@@ -258,7 +264,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   onValidate: () => _validateCoupon(subtotal),
                 ),
                 const Divider(height: 32),
-                CheckoutPointsEditor(subtotal: subtotal),
+                const Text(
+                  'KK Coins',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                CartPointsRow(subtotal: subtotal, loginRedirect: '/checkout'),
                 const Divider(height: 32),
                 const Text(
                   'Payment method',
@@ -373,7 +384,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return 'Some quantities are unavailable. Review your cart.';
     }
     if (_rxBlocked) {
-      return 'An approved prescription is needed. Upload one or check its review status.';
+      return 'Upload a prescription for your Rx items to continue.';
     }
     if (!_canPlace()) {
       return 'This payment method is unavailable. Choose another method.';
@@ -393,7 +404,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     )) {
       return 'Review cart';
     }
-    if (_rxBlocked) return 'View prescription status';
+    if (_rxBlocked) return 'Upload prescription';
     return 'Choose payment method';
   }
 
@@ -412,7 +423,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     )) {
       context.push('/cart');
     } else if (_rxBlocked) {
-      context.push('/prescriptions');
+      unawaited(
+        showRxUploadSheet(
+          context,
+          ref,
+          onUploaded: () => ref.invalidate(prescriptionsProvider),
+        ),
+      );
     } else if (_paymentSectionKey.currentContext != null) {
       Scrollable.ensureVisible(
         _paymentSectionKey.currentContext!,
@@ -559,7 +576,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!hasRx) return false;
     final rx = ref.read(prescriptionsProvider).value;
     if (rx == null || rx.isEmpty) return true;
-    return !rx.any((p) => p.isApproved);
+    return !rx.any(prescriptionReadyForCheckout);
   }
 
   bool _canPlace() {
@@ -678,7 +695,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       String? prescriptionId;
       try {
         final rx = await ref.read(prescriptionsProvider.future);
-        prescriptionId = rx.where((p) => p.isApproved).firstOrNull?.id;
+        prescriptionId = rx.where(prescriptionReadyForCheckout).firstOrNull?.id;
       } catch (_) {}
       final itemsPayload = cartItems
           .map(

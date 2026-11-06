@@ -690,8 +690,8 @@ class HomeHelpRail extends StatelessWidget {
                   backgroundColor: AppColors.cartBarBadgeBg,
                   child: Icon(
                     Icons.chat_outlined,
-                    size: 19,
-                    color: AppColors.coralSoft,
+                    size: 20,
+                    color: Colors.white,
                   ),
                 ),
                 SizedBox(width: 12),
@@ -702,7 +702,7 @@ class HomeHelpRail extends StatelessWidget {
                       Text(
                         'Need help choosing?',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -711,7 +711,7 @@ class HomeHelpRail extends StatelessWidget {
                       Text(
                         'Get help finding the right food, medicine or supplement.',
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 12,
                           color: Colors.white70,
                         ),
                       ),
@@ -786,7 +786,7 @@ class _HomeMobileFooterState extends State<HomeMobileFooter> {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       decoration: const BoxDecoration(color: AppColors.footerBg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

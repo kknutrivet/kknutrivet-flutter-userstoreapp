@@ -22,7 +22,7 @@ class ProductImageCover extends StatelessWidget {
     this.backdropOpacity = 0.85,
     this.blurSigma = 12.0,
     this.showPlaceholderOnLoading = true,
-    this.enableBackdrop = true,
+    this.enableBackdrop = false,
     this.border,
     this.fit = BoxFit.contain,
   });
@@ -62,7 +62,10 @@ class ProductImageCover extends StatelessWidget {
               right: -12,
               bottom: -12,
               child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                imageFilter: ImageFilter.blur(
+                  sigmaX: blurSigma,
+                  sigmaY: blurSigma,
+                ),
                 child: Opacity(
                   opacity: backdropOpacity,
                   child: CachedNetworkImage(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/analytics/analytics_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/customer_error.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/markdown_view.dart';
 import '../../../models/product.dart';
@@ -33,7 +34,7 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
     'বাংলা',
     'తెలుగు',
     'தமிழ்',
-    'ଓଡ଼ିଆ'
+    'ଓଡ଼ିଆ',
   ];
 
   static const _starterPrompts = [
@@ -62,24 +63,29 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
       _animal = widget.currentProduct!.animalTypes.first;
     }
 
-    if (widget.initialQuestion != null && widget.initialQuestion!.trim().isNotEmpty) {
+    if (widget.initialQuestion != null &&
+        widget.initialQuestion!.trim().isNotEmpty) {
       final question = widget.initialQuestion!.trim();
       _messages.add(_ChatMessage(role: 'user', content: question));
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _send(question, isInitial: true);
       });
     } else if (widget.currentProduct != null) {
-      _messages.add(_ChatMessage(
-        role: 'assistant',
-        content:
-            'Hello! I am **Dr. Paw**, your AI pet companion. 🐾\n\nI can help you with dosage, administration, animal safety, active ingredients, or alternatives for **${widget.currentProduct!.name}**.',
-      ));
+      _messages.add(
+        _ChatMessage(
+          role: 'assistant',
+          content:
+              'Hello! I am **Dr. Paw**, your AI pet companion. 🐾\n\nI can help you with dosage, administration, animal safety, active ingredients, or alternatives for **${widget.currentProduct!.name}**.',
+        ),
+      );
     } else {
-      _messages.add(const _ChatMessage(
-        role: 'assistant',
-        content:
-            'Hello! I am **Dr. Paw**, your AI veterinary assistant. Choose your animal above, describe what symptoms or questions you have, and I will share immediate veterinary insights.\n\n*⚠️ Note: Urgent, worsening, or critical symptoms always require a qualified veterinary doctor.*',
-      ));
+      _messages.add(
+        const _ChatMessage(
+          role: 'assistant',
+          content:
+              'Hello! I am **Dr. Paw**, your AI veterinary assistant. Choose your animal above, describe what symptoms or questions you have, and I will share immediate veterinary insights.\n\n*⚠️ Note: Urgent, worsening, or critical symptoms always require a qualified veterinary doctor.*',
+        ),
+      );
     }
   }
 
@@ -127,7 +133,9 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
           .map((m) => {'role': m.role, 'text': m.content})
           .toList();
 
-      final reply = await ref.read(aiServiceProvider).ask(
+      final reply = await ref
+          .read(aiServiceProvider)
+          .ask(
             question: question,
             animalType: _animal,
             language: _language,
@@ -136,18 +144,27 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
           );
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(
-          role: 'assistant',
-          content: reply.content,
-          productIds: reply.productIds,
-          suggestedQuestions: reply.suggestedQuestions,
-        ));
+        _messages.add(
+          _ChatMessage(
+            role: 'assistant',
+            content: reply.content.trim().isEmpty
+                ? 'I could not generate a response just now. Please try asking again.'
+                : reply.content,
+            productIds: reply.productIds,
+            suggestedQuestions: reply.suggestedQuestions,
+          ),
+        );
         _sending = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(role: 'assistant', content: e.toString()));
+        _messages.add(
+          _ChatMessage(
+            role: 'assistant',
+            content: customerError(e, action: 'reach Dr. Paw'),
+          ),
+        );
         _sending = false;
       });
     }
@@ -158,11 +175,13 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
     AppHaptics.light();
     setState(() {
       _messages.clear();
-      _messages.add(const _ChatMessage(
-        role: 'assistant',
-        content:
-            'Hello! I am **Dr. Paw**, your AI veterinary assistant. Choose your animal above, describe what symptoms or questions you have, and I will share immediate veterinary insights.\n\n*⚠️ Note: Urgent, worsening, or critical symptoms always require a qualified veterinary doctor.*',
-      ));
+      _messages.add(
+        const _ChatMessage(
+          role: 'assistant',
+          content:
+              'Hello! I am **Dr. Paw**, your AI veterinary assistant. Choose your animal above, describe what symptoms or questions you have, and I will share immediate veterinary insights.\n\n*⚠️ Note: Urgent, worsening, or critical symptoms always require a qualified veterinary doctor.*',
+        ),
+      );
     });
   }
 
@@ -291,6 +310,8 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
                 isDense: true,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 14),
                 style: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontFamilyFallback: ['Roboto', 'sans-serif'],
                   fontSize: 10.5,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -376,8 +397,10 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -428,132 +451,16 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Welcome Card
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFE5EDE8)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A000000),
-                  blurRadius: 16,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/dr-paw-genz-avatar.webp'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE6F5ED),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'WELCOME TO DR. PAW! 🐾',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                              color: Color(0xFF0A6847),
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(Icons.circle, size: 6, color: Color(0xFF10B981)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Your 24/7 Veterinary Pet Companion',
-                  style: AppTheme.serif(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'I’m trained on animal clinical care, KK Nutrivet products, live order tracking, and live veterinary triage. Ask me anything!',
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.45,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // 2x2 capabilities grid
-                Row(
-                  children: [
-                    Expanded(
-                      child: _capabilityCard(
-                        Icons.healing_outlined,
-                        const Color(0xFF0A6847),
-                        'Symptom Checker',
-                        'Vomiting, itching, fever, dosage guidance',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _capabilityCard(
-                        Icons.local_shipping_outlined,
-                        const Color(0xFF2563EB),
-                        'Order Tracking',
-                        'Live package status & 1-tap re-ordering',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _capabilityCard(
-                        Icons.sync_alt_rounded,
-                        const Color(0xFFD97706),
-                        'Brand Equivalents',
-                        'Active formulas for Bravecto, Liv-52',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _capabilityCard(
-                        Icons.video_call_outlined,
-                        const Color(0xFF7C3AED),
-                        'Doctor Consultation',
-                        'Free initial chat · paid services quoted separately',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          Text(
+            'How can I help?',
+            style: AppTheme.sans(fontSize: 22, fontWeight: FontWeight.w700),
           ),
-
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          const Text(
+            'Ask about animal care, products or your order. For diagnosis and treatment, contact the care team.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 20),
           const Text(
             'SELECT YOUR PET TO GET TAILORED ADVICE',
             style: TextStyle(
@@ -589,76 +496,47 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          ..._starterPrompts.map((q) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Material(
-                  color: Colors.white,
+          ..._starterPrompts.map(
+            (q) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => _send(q),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE5EDE8)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              q,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
+                  onTap: () => _send(q),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5EDE8)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            q,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward_rounded,
-                              size: 16, color: AppColors.primaryDeep),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16,
+                          color: AppColors.primaryDeep,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _capabilityCard(
-      IconData icon, Color color, String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFCFA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEAF1EC)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 10,
-              height: 1.3,
-              color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -705,8 +583,7 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
                   animalName,
                   style: TextStyle(
                     fontSize: 10.5,
-                    fontWeight:
-                        selected ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     color: selected
                         ? AppColors.primaryDeep
                         : AppColors.textPrimary,
@@ -862,7 +739,8 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: _send,
                       decoration: const InputDecoration(
-                        hintText: 'Ask about pet care, orders, doctor consult...',
+                        hintText:
+                            'Ask about pet care, orders, doctor consult...',
                         hintStyle: TextStyle(
                           fontSize: 13,
                           color: AppColors.textTertiary,
@@ -933,8 +811,9 @@ class _MessageBubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.84),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.84,
+        ),
         decoration: BoxDecoration(
           color: isUser ? AppColors.primaryDeep : Colors.white,
           borderRadius: BorderRadius.only(
@@ -985,7 +864,9 @@ class _MessageBubble extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryWash,
                           borderRadius: BorderRadius.circular(10),
@@ -1035,7 +916,9 @@ class _MessageBubble extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryWashFaint,
                           borderRadius: BorderRadius.circular(10),

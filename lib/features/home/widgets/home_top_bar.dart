@@ -26,7 +26,7 @@ class HomeBrandBar extends ConsumerWidget {
       // so the brand bar + search read as a single elevated app bar.
       elevation: 0,
       scrolledUnderElevation: 0,
-      toolbarHeight: 56,
+      toolbarHeight: 48,
       titleSpacing: 16,
       title: Image.asset(
         'assets/images/logo.png',
@@ -79,11 +79,13 @@ class HomeBrandBar extends ConsumerWidget {
                         AnalyticsService.instance.logDrPawChatStarted();
                         context.push('/vet');
                       },
-                      child: const Center(
-                        child: Icon(
-                          Icons.pets_rounded,
-                          size: 20,
-                          color: AppColors.primaryDeep,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/dr-paw-genz-avatar.webp',
+                          width: 42,
+                          height: 42,
+                          fit: BoxFit.cover,
+                          excludeFromSemantics: true,
                         ),
                       ),
                     ),
@@ -208,194 +210,102 @@ class HomeBrandBar extends ConsumerWidget {
 }
 
 // ── 2. HomeTopBar: delivery line + search ──────────────────────────────────
-class HomeTopBarCard extends ConsumerWidget {
+class HomeTopBarCard extends ConsumerStatefulWidget {
   const HomeTopBarCard({super.key});
+  @override
+  ConsumerState<HomeTopBarCard> createState() => _HomeTopBarCardState();
+}
 
-  void _showPincodeModalSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const HomePincodeBottomSheet(),
-    );
+class _HomeTopBarCardState extends ConsumerState<HomeTopBarCard> {
+  bool _locating = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final savedPin = await ref.read(deliveryPincodeProvider.future);
+      if (!mounted || (savedPin != null && savedPin.isNotEmpty)) return;
+      await _useCurrentLocation();
+    });
+  }
+
+  void _showPincodeModalSheet() {
+    showModalBottomSheet<void>(context: context, useRootNavigator: true,
+      isScrollControlled: true, useSafeArea: true,
+      builder: (_) => const HomePincodeBottomSheet());
+  }
+
+  Future<void> _useCurrentLocation() async {
+    if (_locating) return;
+    setState(() { _locating = true; _error = null; });
+    try {
+      final location = await LocationService.instance.getCurrentLocation();
+      if (!mounted) return;
+      final pin = location.zipCode?.trim() ?? '';
+      if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
+        throw Exception('Could not detect your PIN. Please enter it manually.');
+      }
+      await ref.read(deliveryPincodeProvider.notifier).setPincode(pin);
+      ref.invalidate(deliveryEtaProvider);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pincode = ref.watch(deliveryPincodeProvider).value;
-    final etaAsync = ref.watch(deliveryEtaProvider);
-    final info = etaAsync.value;
+  Widget build(BuildContext context) {
+    final pin = ref.watch(deliveryPincodeProvider).value;
+    final delivery = ref.watch(deliveryEtaProvider).value;
     final settings = ref.watch(storeSettingsProvider).valueOrNull;
-    final freeThreshold = (settings != null && pincode != null)
-        ? settings.effectiveFreeDeliveryThreshold(pincode: pincode)
-        : (settings?.freeDeliveryThreshold ?? 500.0);
-    final cityLabel = (info?.city != null && info!.city!.trim().isNotEmpty)
-        ? '${info.city} ($pincode)'
-        : (pincode == null || pincode.isEmpty ? null : 'Pincode $pincode');
-
-    return Container(
+    final threshold = settings != null && pin != null
+        ? settings.effectiveFreeDeliveryThreshold(pincode: pin)
+        : settings?.freeDeliveryThreshold;
+    final hasPin = pin != null && pin.isNotEmpty;
+    final confirmed = hasPin && delivery?.serviceable == true;
+    final unavailable = hasPin && delivery?.serviceable == false;
+    final eta = confirmed ? delivery?.etaLabel.trim() ?? '' : '';
+    final city = delivery?.city?.trim();
+    final label = hasPin
+        ? city != null && city.isNotEmpty ? '$city · $pin' : pin
+        : _locating ? 'Detecting location…' : 'Set delivery location';
+    return ColoredBox(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-      child: Column(
-        children: [
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () {
-                Haptics.tap();
-                _showPincodeModalSheet(context);
-              },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(child: InkWell(
+              onTap: _showPincodeModalSheet,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 44),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 15,
-                        color: AppColors.primaryDeep,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: cityLabel == null
-                            ? const Row(
-                                children: [
-                                  Flexible(child: Text(
-                                    'Set delivery location',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  )),
-                                  SizedBox(width: 2),
-                                  Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 16,
-                                    color: AppColors.primaryDeep,
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Flexible(
-                                    child: Text.rich(
-                                      TextSpan(
-                                        children: [
-                                          const TextSpan(
-                                            text: 'Delivering to ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                          TextSpan(
-                                            text: cityLabel,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 12.5),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 16,
-                                    color: AppColors.primaryDeep,
-                                  ),
-                                ],
-                              ),
-                      ),
-
-                    ],
-                  ),
-                ),
+                child: Row(children: [
+                  const Icon(Icons.location_on_outlined, size: 16, color: AppColors.primaryDeep),
+                  const SizedBox(width: 4),
+                  Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+                  const SizedBox(width: 4),
+                  Icon(confirmed ? Icons.check_circle : unavailable ? Icons.error_outline : Icons.keyboard_arrow_down_rounded,
+                    size: 16, color: unavailable ? AppColors.error : AppColors.primaryDeep),
+                  if (eta.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Flexible(child: Text('· $eta', maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary))),
+                  ],
+                ]),
               ),
-            ),
-          ),
-          // Delivery Speed & Promise Pill
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 2, 4, 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: (info != null && !info.serviceable)
-                        ? const Color(0xFFFFF1F0)
-                        : const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: (info != null && !info.serviceable)
-                          ? const Color(0xFFFFA39E)
-                          : const Color(0xFFBBF7D0),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        (info != null && !info.serviceable)
-                            ? Icons.warning_amber_rounded
-                            : Icons.bolt_rounded,
-                        size: 13,
-                        color: (info != null && !info.serviceable)
-                            ? const Color(0xFFCF1322)
-                            : const Color(0xFF15803D),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        (info != null && !info.serviceable)
-                            ? 'Unserviceable Pincode'
-                            : (info != null && info.etaLabel.isNotEmpty)
-                                ? '${info.etaLabel} Delivery'
-                                : 'Fast All-India Delivery',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: (info != null && !info.serviceable)
-                              ? const Color(0xFFCF1322)
-                              : const Color(0xFF15803D),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    (info != null && !info.serviceable)
-                        ? 'Try entering another delivery pincode'
-                        : freeThreshold > 0
-                            ? 'Free delivery on orders over ₹${freeThreshold.toInt()}'
-                            : 'Genuine veterinary products guaranteed',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+            )),
+            const SizedBox(width: 8),
+            if (!unavailable && threshold != null && threshold > 0)
+              Text('Free delivery ₹${threshold.toInt()}+',
+                style: const TextStyle(fontSize: 11, color: AppColors.primaryDeep, fontWeight: FontWeight.w600)),
+            if (unavailable) const Text('Not serviceable', style: TextStyle(fontSize: 11, color: AppColors.error)),
+          ]),
+          if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 8),
+            child: Text(_error!, style: const TextStyle(fontSize: 12, color: AppColors.error))),
+        ]),
       ),
     );
   }
@@ -435,7 +345,7 @@ class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       height: _height,
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius:

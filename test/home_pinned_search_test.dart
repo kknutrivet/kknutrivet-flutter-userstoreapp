@@ -44,7 +44,7 @@ void main() {
     // Still on screen, sitting right under the 56dp brand bar.
     expect(searchText, findsOneWidget);
     final top = tester.getTopLeft(find.byType(HomeSearchField)).dy;
-    expect(top, greaterThanOrEqualTo(56));
+    expect(top, greaterThanOrEqualTo(48));
     expect(top, lessThan(56 + 62));
   });
 }

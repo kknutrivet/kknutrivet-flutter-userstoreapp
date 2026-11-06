@@ -31,21 +31,25 @@ class AddressesScreen extends ConsumerWidget {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryDeep,
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          AppHaptics.light();
-          await context.push('/addresses/new');
-          ref.invalidate(addressesProvider);
-        },
-        icon: const Icon(Icons.add_location_alt_outlined, color: Colors.white),
-        label: const Text(
-          'Add Address',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 13,
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(16),
+        child: FilledButton.icon(
+          onPressed: () async {
+            AppHaptics.light();
+            await context.push('/addresses/new');
+            ref.invalidate(addressesProvider);
+          },
+          icon: const Icon(
+            Icons.add_location_alt_outlined,
             color: Colors.white,
+          ),
+          label: const Text(
+            'Add Address',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -108,7 +112,7 @@ class AddressesScreen extends ConsumerWidget {
               child: AppEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load addresses',
-                description: customerError(e),
+                description: customerError(e, action: 'load your addresses'),
                 actionLabel: 'Try Again',
                 onAction: () => ref.invalidate(addressesProvider),
               ),

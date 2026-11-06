@@ -151,8 +151,8 @@ class CatalogueSortSheet extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(14),
                     onTap: () {
                       final f = ref.read(productFilterProvider);
-                      ref.read(productFilterProvider.notifier).state =
-                          f.copyWith(sort: opt.value);
+                      ref.read(productFilterProvider.notifier).state = f
+                          .copyWith(sort: opt.value);
                       Navigator.pop(context);
                     },
                     child: Container(
@@ -263,7 +263,9 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
     final filter = ref.watch(productFilterProvider);
     final facetsAsync = ref.watch(productFacetsProvider);
     final facets = facetsAsync.value;
-    final count = ref.watch(productsListProvider).maybeWhen(
+    final count = ref
+        .watch(productsListProvider)
+        .maybeWhen(
           data: (raw) => applyClientProductFilters(raw, filter).length,
           orElse: () => 0,
         );
@@ -292,9 +294,7 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
               bottom: 8,
             ),
             decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.background),
-              ),
+              border: Border(bottom: BorderSide(color: AppColors.background)),
             ),
             child: Row(
               children: [
@@ -357,7 +357,8 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
         case 'category':
           final cats = ref.watch(activeCategoriesProvider);
           final allCategories =
-              ref.watch(categoriesProvider).valueOrNull ?? const <ProductCategory>[];
+              ref.watch(categoriesProvider).valueOrNull ??
+              const <ProductCategory>[];
           return [
             if (matches('All categories'))
               choice(
@@ -375,14 +376,11 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
                 selected: filter.category == c && filter.subCategory == null,
                 onTap: () => notifier.state =
                     (filter.category == c && filter.subCategory == null)
-                        ? filter.copyWith(
-                            clearCategory: true,
-                            clearSubCategory: true,
-                          )
-                        : filter.copyWith(
-                            category: c,
-                            clearSubCategory: true,
-                          ),
+                    ? filter.copyWith(
+                        clearCategory: true,
+                        clearSubCategory: true,
+                      )
+                    : filter.copyWith(category: c, clearSubCategory: true),
                 count: facets?.categoryCounts[c],
               ),
               if (filter.category == c || _search.trim().isNotEmpty)
@@ -391,45 +389,46 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
                     (cat) =>
                         cat.name.toLowerCase() == c.toLowerCase() &&
                         !cat.isSubcategory,
-                    orElse: () => const ProductCategory(
-                      id: '',
-                      name: '',
-                      slug: '',
-                    ),
+                    orElse: () =>
+                        const ProductCategory(id: '', name: '', slug: ''),
                   );
                   if (parentObj.id.isEmpty) return <Widget>[];
                   final subcats = allCategories
                       .where(
-                        (cat) =>
-                            cat.active && cat.parentId == parentObj.id,
+                        (cat) => cat.active && cat.parentId == parentObj.id,
                       )
                       .toList();
-                  return subcats.where((sc) => matches(sc.name)).map(
-                    (sc) => choice(
-                      label: '↳ ${sc.name}',
-                      selected:
-                          filter.category == c && filter.subCategory == sc.name,
-                      indent: 16.0,
-                      onTap: () {
-                        if (filter.category == c &&
-                            filter.subCategory == sc.name) {
-                          notifier.state =
-                              filter.copyWith(clearSubCategory: true);
-                        } else {
-                          notifier.state = filter.copyWith(
-                            category: c,
-                            subCategory: sc.name,
-                          );
-                        }
-                      },
-                    ),
-                  );
+                  return subcats
+                      .where((sc) => matches(sc.name))
+                      .map(
+                        (sc) => choice(
+                          label: '↳ ${sc.name}',
+                          selected:
+                              filter.category == c &&
+                              filter.subCategory == sc.name,
+                          indent: 16.0,
+                          onTap: () {
+                            if (filter.category == c &&
+                                filter.subCategory == sc.name) {
+                              notifier.state = filter.copyWith(
+                                clearSubCategory: true,
+                              );
+                            } else {
+                              notifier.state = filter.copyWith(
+                                category: c,
+                                subCategory: sc.name,
+                              );
+                            }
+                          },
+                        ),
+                      );
                 }(),
             ],
           ];
         case 'animal':
           final hidden =
-              ref.watch(storeSettingsProvider).valueOrNull?.hiddenCategories ?? const [];
+              ref.watch(storeSettingsProvider).valueOrNull?.hiddenCategories ??
+              const [];
           const allAnimals = [
             'Dog',
             'Cat',
@@ -453,8 +452,8 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
               choice(
                 label: 'All animals',
                 selected: filter.animalType == null,
-                onTap: () => notifier.state =
-                    filter.copyWith(clearAnimalType: true),
+                onTap: () =>
+                    notifier.state = filter.copyWith(clearAnimalType: true),
               ),
             for (final a in animals.where((a) => matches(labels[a] ?? a)))
               choice(
@@ -544,8 +543,9 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
                           Switch.adaptive(
                             value: filter.inStockOnly,
                             activeThumbColor: AppColors.primary,
-                            onChanged: (v) => notifier.state =
-                                filter.copyWith(inStockOnly: v),
+                            onChanged: (v) => notifier.state = filter.copyWith(
+                              inStockOnly: v,
+                            ),
                           ),
                         ],
                       ),
@@ -714,55 +714,56 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             for (final t in _tabs)
-                            GestureDetector(
-                              onTap: () => setState(() {
-                                _tab = t.$1;
-                                _search = '';
-                                _searchController.clear();
-                              }),
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 20,
-                                    ),
-                                    color: _tab == t.$1
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    child: Text(
-                                      t.$2,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: _tab == t.$1
-                                            ? AppColors.primaryDeep
-                                            : AppColors.textSecondary,
+                              GestureDetector(
+                                onTap: () => setState(() {
+                                  _tab = t.$1;
+                                  _search = '';
+                                  _searchController.clear();
+                                }),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 20,
                                       ),
-                                    ),
-                                  ),
-                                  if (_tab == t.$1)
-                                    Positioned(
-                                      right: 0,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: Container(
-                                        width: 4,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius:
-                                              BorderRadius.circular(2),
+                                      color: _tab == t.$1
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                      child: Text(
+                                        t.$2,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: _tab == t.$1
+                                              ? AppColors.primaryDeep
+                                              : AppColors.textSecondary,
                                         ),
                                       ),
                                     ),
-                                ],
+                                    if (_tab == t.$1)
+                                      Positioned(
+                                        right: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        child: Container(
+                                          width: 4,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary,
+                                            borderRadius: BorderRadius.circular(
+                                              2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                     Expanded(
                       child: ListView(
                         shrinkWrap: true,
@@ -787,9 +788,9 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
                     height: 48,
                     child: OutlinedButton(
                       onPressed: filter.hasAny
-                          ? () => ref
-                              .read(productFilterProvider.notifier)
-                              .state = ProductFilter()
+                          ? () =>
+                                ref.read(productFilterProvider.notifier).state =
+                                    ProductFilter()
                           : null,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.primary),
@@ -821,7 +822,7 @@ class _CatalogueFilterSheetState extends ConsumerState<CatalogueFilterSheet> {
                         ),
                       ),
                       child: Text(
-                        'Apply · View $count product${count == 1 ? '' : 's'}',
+                        'Show $count results',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

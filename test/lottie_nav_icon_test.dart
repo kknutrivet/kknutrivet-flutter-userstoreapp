@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottie/lottie.dart';
-import 'package:nvit_app/core/widgets/lottie_nav_icon.dart';
 import 'package:nvit_app/features/home/screens/main_shell.dart';
 
 void main() {
@@ -32,9 +31,10 @@ void main() {
     }
   });
 
-  group('WebsiteBottomNav Lottie Integration Tests', () {
-    testWidgets('renders all 5 navigation tabs with LottieNavIcon widgets',
-        (tester) async {
+  group('Main navigation integration', () {
+    testWidgets('renders five standard navigation destinations', (
+      tester,
+    ) async {
       int tappedIndex = -1;
 
       await tester.pumpWidget(
@@ -56,7 +56,7 @@ void main() {
       expect(find.text('Account'), findsOneWidget);
 
       // Verify 5 LottieNavIcon widgets are rendered (4 standard + 1 raised consult)
-      expect(find.byType(LottieNavIcon), findsNWidgets(5));
+      expect(find.byType(NavigationDestination), findsNWidgets(5));
 
       // Tap 'Shop' tab
       await tester.tap(find.text('Shop'));
@@ -64,7 +64,7 @@ void main() {
       expect(tappedIndex, 1);
 
       // Tap 'Consult' floating button
-      await tester.tap(find.bySemanticsLabel('Care team chat').first);
+      await tester.tap(find.text('Care'));
       await tester.pump();
       expect(tappedIndex, 2);
 
@@ -74,8 +74,9 @@ void main() {
       expect(tappedIndex, 3);
     });
 
-    testWidgets('renders Account tab with user name when logged in',
-        (tester) async {
+    testWidgets('renders Account tab with user name when logged in', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -89,7 +90,7 @@ void main() {
       );
 
       expect(find.text('Account'), findsOneWidget);
-      expect(find.byType(LottieNavIcon), findsNWidgets(5));
+      expect(find.byType(NavigationDestination), findsNWidgets(5));
     });
   });
 }

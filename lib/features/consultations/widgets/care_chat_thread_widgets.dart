@@ -14,21 +14,14 @@ class CareChatWaitingRuleBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 9,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: const BoxDecoration(
         color: Color(0xFFFFF8E8),
         border: Border(bottom: BorderSide(color: Color(0xFFF1D39A))),
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            size: 16,
-            color: Color(0xFF71551D),
-          ),
+          Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF71551D)),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -62,10 +55,7 @@ class CareChatPaymentBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       color: AppColors.warningBg,
       child: Row(
         children: [
@@ -156,10 +146,7 @@ class CareChatBubble extends StatelessWidget {
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(6),
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 26),
-                    ),
+                    child: Text(emoji, style: const TextStyle(fontSize: 26)),
                   ),
                 ),
             ],
@@ -199,7 +186,7 @@ class CareChatBubble extends StatelessWidget {
     }
 
     final isCustomer = message.isCustomer;
-    final bubbleColor = isCustomer ? const Color(0xFFD9FDD3) : Colors.white;
+    final bubbleColor = isCustomer ? AppColors.primaryWash : Colors.white;
     final alignment = isCustomer ? Alignment.centerRight : Alignment.centerLeft;
 
     return Align(
@@ -213,13 +200,16 @@ class CareChatBubble extends StatelessWidget {
               ? () => _showReactionSheet(context)
               : null,
           child: Column(
-            crossAxisAlignment:
-                isCustomer ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isCustomer
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: bubbleColor,
                   borderRadius: BorderRadius.only(
@@ -242,265 +232,288 @@ class CareChatBubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              if (!isCustomer) ...[
-                Text(
-                  message.senderName,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-              ],
-              if (message.messageType == 'PRESCRIPTION')
-                InlinePrescriptionBubble(
-                  message: message,
-                  booking: booking,
-                  busyAction: busyAction,
-                  onUnlock: () => onUnlockPrescription(message),
-                  onOpenUrl: onOpenMedia,
-                )
-              else if (message.messageType == 'IMAGE' &&
-                  message.mediaUrl != null &&
-                  message.mediaUrl!.isNotEmpty) ...[
-                GestureDetector(
-                  onTap: () => onOpenMedia(message.mediaUrl!),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: message.mediaUrl!,
-                      height: 170,
-                      width: 240,
-                      fit: BoxFit.cover,
-                      placeholder: (_, _) => Container(
-                        height: 170,
-                        width: 240,
-                        color: AppColors.shimmerBase,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
+                    if (!isCustomer) ...[
+                      Text(
+                        message.senderName,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
-                      errorWidget: (_, _, _) => Container(
-                        height: 100,
-                        width: 200,
-                        color: AppColors.surfaceAlt,
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.broken_image_outlined),
-                      ),
-                    ),
-                  ),
-                ),
-                if (message.body.isNotEmpty &&
-                    message.body != 'Shared a photo') ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    message.body,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: isCustomer ? Colors.white : AppColors.textPrimary,
-                      height: 1.38,
-                    ),
-                  ),
-                ],
-              ] else if (message.messageType == 'VIDEO' &&
-                  message.mediaUrl != null &&
-                  message.mediaUrl!.isNotEmpty) ...[
-                GestureDetector(
-                  onTap: () => onOpenMedia(message.mediaUrl!),
-                  child: Container(
-                    height: 140,
-                    width: 240,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.play_circle_fill_rounded,
-                            size: 42,
-                            color: Colors.white,
+                      const SizedBox(height: 4),
+                    ],
+                    if (message.messageType == 'PRESCRIPTION')
+                      InlinePrescriptionBubble(
+                        message: message,
+                        booking: booking,
+                        busyAction: busyAction,
+                        onUnlock: () => onUnlockPrescription(message),
+                        onOpenUrl: onOpenMedia,
+                      )
+                    else if (message.messageType == 'IMAGE' &&
+                        message.mediaUrl != null &&
+                        message.mediaUrl!.isNotEmpty) ...[
+                      GestureDetector(
+                        onTap: () => onOpenMedia(message.mediaUrl!),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: message.mediaUrl!,
+                            height: 170,
+                            width: 240,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => Container(
+                              height: 170,
+                              width: 240,
+                              color: AppColors.shimmerBase,
+                              alignment: Alignment.center,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            errorWidget: (_, _, _) => Container(
+                              height: 100,
+                              width: 200,
+                              color: AppColors.surfaceAlt,
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.broken_image_outlined),
+                            ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 8,
-                          left: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.videocam_rounded,
-                                  size: 13,
+                      ),
+                      if (message.body.isNotEmpty &&
+                          message.body != 'Shared a photo') ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          message.body,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: isCustomer
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                            height: 1.38,
+                          ),
+                        ),
+                      ],
+                    ] else if (message.messageType == 'VIDEO' &&
+                        message.mediaUrl != null &&
+                        message.mediaUrl!.isNotEmpty) ...[
+                      GestureDetector(
+                        onTap: () => onOpenMedia(message.mediaUrl!),
+                        child: Container(
+                          height: 140,
+                          width: 240,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.play_circle_fill_rounded,
+                                  size: 42,
                                   color: Colors.white,
                                 ),
-                                SizedBox(width: 5),
+                              ),
+                              Positioned(
+                                bottom: 8,
+                                left: 10,
+                                right: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.videocam_rounded,
+                                        size: 13,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'Watch video clip',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (message.body.isNotEmpty &&
+                          message.body != 'Shared a video' &&
+                          message.body != 'Shared a photo') ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          message.body,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: isCustomer
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                            height: 1.38,
+                          ),
+                        ),
+                      ],
+                    ] else if (message.body.startsWith('Care Chat intake'))
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: const Text(
+                          'Your care details',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        children: [
+                          Text(
+                            message.body,
+                            style: const TextStyle(fontSize: 14, height: 1.4),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        message.body,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: AppColors.textPrimary,
+                          height: 1.38,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          formatTime(message.createdAt),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                        if (isCustomer) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.done_all_rounded,
+                            size: 13,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Reactions row & quick react button:
+              if (message.reactions.isNotEmpty || (canReact && onReact != null))
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final reaction in message.reactions)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: canReact && onReact != null
+                              ? () => onReact!(message, reaction.emoji)
+                              : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: reaction.mine
+                                  ? const Color(0xFFE2F4EB)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: reaction.mine
+                                    ? AppColors.primary
+                                    : const Color(0xFFD6E2DB),
+                                width: reaction.mine ? 1.2 : 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 Text(
-                                  'Watch video clip',
+                                  reaction.emoji,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${reaction.count}',
                                   style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w700,
+                                    color: reaction.mine
+                                        ? AppColors.primaryDeep
+                                        : AppColors.textSecondary,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      if (canReact && onReact != null)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _showReactionSheet(context),
+                          child: Container(
+                            width: 24,
+                            height: 22,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFD6E2DB),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.add_reaction_outlined,
+                              size: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                if (message.body.isNotEmpty &&
-                    message.body != 'Shared a video' &&
-                    message.body != 'Shared a photo') ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    message.body,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: isCustomer ? Colors.white : AppColors.textPrimary,
-                      height: 1.38,
-                    ),
-                  ),
-                ],
-              ] else
-                Text(
-                  message.body,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: AppColors.textPrimary,
-                    height: 1.38,
-                  ),
-                ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    formatTime(message.createdAt),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                  if (isCustomer) ...[
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.done_all_rounded,
-                      size: 13,
-                      color: AppColors.primaryDeep,
-                    ),
-                  ],
-                ],
-              ),
             ],
           ),
         ),
-        // Reactions row & quick react button:
-        if (message.reactions.isNotEmpty || (canReact && onReact != null))
-          Padding(
-            padding: const EdgeInsets.only(top: 3),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final reaction in message.reactions)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: canReact && onReact != null
-                        ? () => onReact!(message, reaction.emoji)
-                        : null,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: reaction.mine
-                            ? const Color(0xFFE2F4EB)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: reaction.mine
-                              ? AppColors.primary
-                              : const Color(0xFFD6E2DB),
-                          width: reaction.mine ? 1.2 : 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            reaction.emoji,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${reaction.count}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: reaction.mine
-                                  ? AppColors.primaryDeep
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (canReact && onReact != null)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => _showReactionSheet(context),
-                    child: Container(
-                      width: 24,
-                      height: 22,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFD6E2DB),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.add_reaction_outlined,
-                        size: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    ),
-  ),
-),
-);
-}
+      ),
+    );
+  }
 }
 
 class InlinePrescriptionBubble extends StatelessWidget {
@@ -562,11 +575,15 @@ class InlinePrescriptionBubble extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
-          if (hasUrl && (message.prescriptionUnlocked ?? !booking.prescriptionLocked))
+          if (hasUrl &&
+              (message.prescriptionUnlocked ?? !booking.prescriptionLocked))
             ElevatedButton.icon(
               onPressed: () => onOpenUrl(message.mediaUrl!),
-              icon: const Icon(Icons.picture_as_pdf_outlined,
-                  size: 16, color: Colors.white),
+              icon: const Icon(
+                Icons.picture_as_pdf_outlined,
+                size: 16,
+                color: Colors.white,
+              ),
               label: const Text('View / Download Prescription'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryDeep,
@@ -574,12 +591,15 @@ class InlinePrescriptionBubble extends StatelessWidget {
                 iconColor: Colors.white,
                 minimumSize: const Size.fromHeight(38),
                 textStyle: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontFamilyFallback: ['Roboto', 'sans-serif'],
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             )
-          else if (!(message.prescriptionUnlocked ?? !booking.prescriptionLocked))
+          else if (!(message.prescriptionUnlocked ??
+              !booking.prescriptionLocked))
             ElevatedButton.icon(
               onPressed: busyAction ? null : onUnlock,
               icon: busyAction
@@ -591,24 +611,30 @@ class InlinePrescriptionBubble extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.lock_open_rounded,
-                      size: 16, color: Colors.white),
+                  : const Icon(
+                      Icons.lock_open_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
               label: Text(
                 busyAction
                     ? 'Opening payment gateway…'
                     : (message.unlockAmount ?? booking.unlockAmount) != null
-                        ? 'Unlock Prescription (${formatPrice((message.unlockAmount ?? booking.unlockAmount)!)})'
-                        : 'Unlock Prescription',
+                    ? 'Unlock Prescription (${formatPrice((message.unlockAmount ?? booking.unlockAmount)!)})'
+                    : 'Unlock Prescription',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryDeep,
-                disabledBackgroundColor:
-                    AppColors.primaryDeep.withValues(alpha: 0.65),
+                disabledBackgroundColor: AppColors.primaryDeep.withValues(
+                  alpha: 0.65,
+                ),
                 foregroundColor: Colors.white,
                 disabledForegroundColor: Colors.white.withValues(alpha: 0.9),
                 iconColor: Colors.white,
                 minimumSize: const Size.fromHeight(38),
                 textStyle: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontFamilyFallback: ['Roboto', 'sans-serif'],
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -627,7 +653,9 @@ enum CareChatMediaChoice {
   galleryVideo,
 }
 
-Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) {
+Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(
+  BuildContext context,
+) {
   return showModalBottomSheet<CareChatMediaChoice>(
     context: context,
     backgroundColor: Colors.white,
@@ -663,10 +691,7 @@ Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) 
             const SizedBox(height: 4),
             const Text(
               'Capture live with camera or select from gallery',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             Row(
@@ -678,7 +703,8 @@ Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) 
                     subtitle: 'Live capture',
                     color: AppColors.primaryDeep,
                     bg: AppColors.primaryWash,
-                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.cameraPhoto),
+                    onTap: () =>
+                        Navigator.pop(ctx, CareChatMediaChoice.cameraPhoto),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -689,7 +715,8 @@ Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) 
                     subtitle: 'Live record',
                     color: const Color(0xFFD97706),
                     bg: const Color(0xFFFEF3C7),
-                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.cameraVideo),
+                    onTap: () =>
+                        Navigator.pop(ctx, CareChatMediaChoice.cameraVideo),
                   ),
                 ),
               ],
@@ -704,7 +731,8 @@ Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) 
                     subtitle: 'Pick image',
                     color: const Color(0xFF2563EB),
                     bg: const Color(0xFFEFF6FF),
-                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.galleryPhoto),
+                    onTap: () =>
+                        Navigator.pop(ctx, CareChatMediaChoice.galleryPhoto),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -715,7 +743,8 @@ Future<CareChatMediaChoice?> showCareChatMediaPickerSheet(BuildContext context) 
                     subtitle: 'Pick video (≤25MB)',
                     color: const Color(0xFF7C3AED),
                     bg: const Color(0xFFF5F3FF),
-                    onTap: () => Navigator.pop(ctx, CareChatMediaChoice.galleryVideo),
+                    onTap: () =>
+                        Navigator.pop(ctx, CareChatMediaChoice.galleryVideo),
                   ),
                 ),
               ],
@@ -841,103 +870,103 @@ class CareChatComposer extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: IconButton(
-                    onPressed: uploadingMedia || sending
-                        ? null
-                        : onPickAndSendPhoto,
-                    tooltip: 'Attach photo or video',
-                    icon: uploadingMedia
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(
-                            Icons.add_photo_alternate_outlined,
-                            color: AppColors.primaryDeep,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: IconButton(
+                      onPressed: uploadingMedia || sending
+                          ? null
+                          : onPickAndSendPhoto,
+                      tooltip: 'Attach photo or video',
+                      icon: uploadingMedia
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: AppColors.primaryDeep,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: TextField(
+                      controller: messageController,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => onSendTextMessage(),
+                      decoration: InputDecoration(
+                        hintText: 'Type your message…',
+                        filled: true,
+                        fillColor: AppColors.surfaceAlt,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 11,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: AppColors.borderWarm,
                           ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: TextField(
-                    controller: messageController,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSendTextMessage(),
-                    decoration: InputDecoration(
-                      hintText: 'Type your message…',
-                      filled: true,
-                      fillColor: AppColors.surfaceAlt,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 11,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: const BorderSide(
-                          color: AppColors.borderWarm,
                         ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: const BorderSide(
-                          color: AppColors.borderWarm,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: AppColors.borderWarm,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Material(
-                    color: AppColors.primaryDeep,
-                    borderRadius: BorderRadius.circular(14),
-                    child: InkWell(
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Material(
+                      color: AppColors.primaryDeep,
                       borderRadius: BorderRadius.circular(14),
-                      onTap: sending ? null : onSendTextMessage,
-                      child: Center(
-                        child: sending
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: sending ? null : onSendTextMessage,
+                        child: Center(
+                          child: sending
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.send_rounded,
                                   color: Colors.white,
+                                  size: 20,
                                 ),
-                              )
-                            : const Icon(
-                                Icons.send_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'For emergencies, contact the nearest veterinary hospital immediately.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'For emergencies, contact the nearest veterinary hospital immediately.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class CareChatMessagesSection extends StatelessWidget {
@@ -978,10 +1007,7 @@ class CareChatMessagesSection extends StatelessWidget {
         child: Center(
           child: Text(
             'Your conversation with the care team starts here.',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
           ),
         ),
       );
@@ -997,7 +1023,8 @@ class CareChatMessagesSection extends StatelessWidget {
                 booking: booking,
                 canReact: canReact,
                 onReact: onReact,
-                busyAction: busyAction &&
+                busyAction:
+                    busyAction &&
                     (busyMessageId == null || busyMessageId == msg.id),
                 onUnlockPrescription: onUnlockPrescription,
                 onOpenMedia: onOpenMedia,

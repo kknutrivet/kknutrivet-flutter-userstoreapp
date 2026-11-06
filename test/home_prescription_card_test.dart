@@ -50,8 +50,8 @@ void main() {
         }
         expect(caughtDetails, isNull);
 
-        expect(find.text('Upload care slip'), findsOneWidget);
-        expect(find.text('Free review · Camera or gallery photo'), findsOneWidget);
+        expect(find.byType(Image), findsOneWidget);
+        expect(find.bySemanticsLabel('Upload care slip. Camera or gallery photo.'), findsOneWidget);
       });
     }
 

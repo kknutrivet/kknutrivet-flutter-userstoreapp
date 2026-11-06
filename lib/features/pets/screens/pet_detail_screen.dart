@@ -142,7 +142,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen>
               child: AppEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load profile',
-                description: customerError(e),
+                description: customerError(e, action: 'load this profile'),
                 actionLabel: 'Retry',
                 onAction: () => ref.invalidate(petDetailProvider(widget.id)),
               ),
@@ -418,7 +418,7 @@ class _PetDetailScreenState extends ConsumerState<PetDetailScreen>
           Text(
             contentText.isNotEmpty
                 ? contentText
-                : 'Veterinary care guidance is currently being generated for this profile.',
+                : 'No care guide available yet. Ask the care team for advice tailored to your animal.',
             style: const TextStyle(
               color: AppColors.textSecondary,
               height: 1.4,

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/prescription_banner.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/skeletons.dart';
 import '../../../providers/app_providers.dart';
@@ -123,7 +124,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     if (oldWidget.initialAnimalType != widget.initialAnimalType ||
         oldWidget.initialCategory != widget.initialCategory ||
         oldWidget.initialSearch != widget.initialSearch ||
-        oldWidget.initialDisease != widget.initialDisease || oldWidget.initialSort != widget.initialSort) {
+        oldWidget.initialDisease != widget.initialDisease ||
+        oldWidget.initialSort != widget.initialSort) {
       Future.microtask(() {
         if (!mounted) return;
         ref.read(productFilterProvider.notifier).state = ProductFilter(
@@ -141,20 +143,22 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     if (widget.initialAnimalType != null ||
         widget.initialCategory != null ||
         widget.initialSearch != null ||
-        widget.initialDisease != null || widget.initialSort != null) {
+        widget.initialDisease != null ||
+        widget.initialSort != null) {
       Future.microtask(() {
         if (!mounted) return;
         final current = ref.read(productFilterProvider);
         if (current.animalType != widget.initialAnimalType ||
             current.category != widget.initialCategory ||
             current.search != widget.initialSearch ||
-            current.disease != widget.initialDisease || current.sort != (widget.initialSort ?? 'relevance')) {
+            current.disease != widget.initialDisease ||
+            current.sort != (widget.initialSort ?? 'relevance')) {
           ref.read(productFilterProvider.notifier).state = ProductFilter(
             animalType: widget.initialAnimalType,
             category: widget.initialCategory,
             search: widget.initialSearch,
             disease: widget.initialDisease,
-          sort: widget.initialSort ?? 'relevance',
+            sort: widget.initialSort ?? 'relevance',
           );
         }
       });
@@ -200,10 +204,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               final animalLabel = filter.animalType == 'Dog'
                   ? 'Dog Products'
                   : filter.animalType == 'Cat'
-                      ? 'Cat Products'
-                      : filter.animalType == 'Cattle'
-                          ? 'Cattle Products'
-                          : '${filter.animalType} Products';
+                  ? 'Cat Products'
+                  : filter.animalType == 'Cattle'
+                  ? 'Cattle Products'
+                  : '${filter.animalType} Products';
               title = animalLabel;
             } else if (filter.category != null) {
               title = filter.category!;
@@ -327,8 +331,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                               CatalogueActiveChips(
                                 onClearAll: () =>
                                     ref
-                                        .read(productFilterProvider.notifier)
-                                        .state = ProductFilter(),
+                                            .read(
+                                              productFilterProvider.notifier,
+                                            )
+                                            .state =
+                                        ProductFilter(),
                               ),
                             ],
                           ),
@@ -457,7 +464,9 @@ class _CatalogueBody extends ConsumerWidget {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryWash,
                           borderRadius: BorderRadius.circular(12),
@@ -525,9 +534,7 @@ class _CatalogueBody extends ConsumerWidget {
           controller: scrollController,
           slivers: [
             SliverToBoxAdapter(child: SizedBox(height: topPadding)),
-            SliverToBoxAdapter(
-              child: _prescriptionSupportCard(context),
-            ),
+            const SliverToBoxAdapter(child: PrescriptionBanner()),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 6, 14, 4),
@@ -579,138 +586,8 @@ class _CatalogueBody extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _prescriptionSupportCard(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F7F4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCDE4D8)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryDeep,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Flexible(
-                      child: Text(
-                        'PRESCRIPTION SUPPORT',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
-                          color: AppColors.primaryDeep,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
-                ),
-                child: const Row(
-                  children: [
-                    Text('🪙 ', style: TextStyle(fontSize: 10)),
-                    Text(
-                      '+5% KK Coins',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFB45309),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Have a vet prescription?',
-            style: TextStyle(
-              fontSize: 16.5,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 3),
-          const Text(
-            'Photo from camera or gallery. Reviewed by our care team.',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: ElevatedButton(
-              onPressed: () => context.push('/prescriptions'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryDeep,
-                foregroundColor: Colors.white,
-                iconColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.file_upload_outlined, size: 15, color: Colors.white),
-                  SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      'Upload prescription',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_rounded, size: 13),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-/// "No products match" empty state with Clear filters / Ask Dr. Paw /
-/// Browse health concerns actions.
 class _EmptyState extends ConsumerWidget {
   const _EmptyState({required this.filter});
   final ProductFilter filter;
@@ -778,10 +655,7 @@ class _EmptyState extends ConsumerWidget {
                   ),
                   child: const Text(
                     'Clear filters →',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -800,10 +674,7 @@ class _EmptyState extends ConsumerWidget {
                   ),
                   child: const Text(
                     '✦ Ask Dr. Paw for help',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -822,10 +693,7 @@ class _EmptyState extends ConsumerWidget {
                   ),
                   child: const Text(
                     'Browse health concerns',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

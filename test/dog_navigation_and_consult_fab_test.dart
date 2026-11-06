@@ -127,7 +127,9 @@ void main() {
   });
 
   group('Floating Center Consult Button Tests', () {
-    testWidgets('WebsiteBottomNav renders raised floating 52dp circular emerald Consult button', (tester) async {
+    testWidgets('WebsiteBottomNav renders Care tab that fires index 2 on tap', (
+      tester,
+    ) async {
       int tappedIndex = -1;
 
       await tester.pumpWidget(
@@ -141,17 +143,16 @@ void main() {
         ),
       );
 
-      // Verify "Consult" label and medical icon exist
+      // Care tab shows the outlined medical icon while Home is selected.
       expect(find.text('Care'), findsOneWidget);
-      final consultIconFinder = find.byIcon(Icons.medical_services_rounded);
+      final consultIconFinder = find.byIcon(Icons.medical_services_outlined);
       expect(consultIconFinder, findsOneWidget);
 
-      // Verify tapping the floating icon triggers onTap(2)
+      // Tapping the icon or the label triggers onTap(2).
       await tester.tap(consultIconFinder);
       await tester.pumpAndSettle();
       expect(tappedIndex, 2);
 
-      // Verify tapping "Consult" label also triggers onTap(2)
       tappedIndex = -1;
       await tester.tap(find.text('Care'));
       await tester.pumpAndSettle();

@@ -167,7 +167,7 @@ void main() {
     });
 
     testWidgets(
-        'Disease detail screen gap from filter chips to product grid is compact',
+        'Disease detail screen gap from remedies count to product grid is compact',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -191,16 +191,16 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final chipFinder = find.widgetWithText(ChoiceChip, 'All (2)');
-      expect(chipFinder, findsOneWidget);
+      final countFinder = find.text('2 remedies');
+      expect(countFinder, findsOneWidget);
 
       final firstCardFinder = find.byType(CompactProductCard).first;
       expect(firstCardFinder, findsOneWidget);
 
-      final chipBottom = tester.getBottomLeft(chipFinder).dy;
+      final countBottom = tester.getBottomLeft(countFinder).dy;
       final cardTop = tester.getTopLeft(firstCardFinder).dy;
 
-      final gap = cardTop - chipBottom;
+      final gap = cardTop - countBottom;
       // Gap should be compact (< 25px)
       expect(gap, lessThan(25.0));
       expect(gap, greaterThan(0.0));
