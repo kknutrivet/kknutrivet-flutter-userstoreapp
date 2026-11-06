@@ -18,7 +18,7 @@ void main() {
     size: '200 ml',
     category: 'Supplements',
     animalTypes: ['Dog'],
-    image: 'assets/images/animal-dog.png',
+    image: 'assets/images/animal-categories/dog.webp',
   );
 
   group('CompactProductCard Gap Tests', () {

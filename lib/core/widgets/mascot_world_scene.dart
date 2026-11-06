@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 class MascotWorldScene extends StatefulWidget {
   const MascotWorldScene({
     super.key,
-    this.mascotAsset = 'assets/images/dr-paw-genz.png',
+    this.mascotAsset = 'assets/images/dr-paw-genz.webp',
     this.centerWidget,
     this.mascotHeight = 240,
     this.bottomContent,

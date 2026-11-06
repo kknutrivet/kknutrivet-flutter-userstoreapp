@@ -114,7 +114,7 @@ class HeroSlideData {
         fallback: Icons.shopping_bag_outlined,
       ),
       image: json['image']?.toString() ??
-          'assets/marketing_image/hero-animals-cutout-v1.png',
+          'assets/marketing_image/hero-animals-cutout-v1.webp',
       imageCover: json['imageCover'] == true,
       route: json['route']?.toString() ?? '/products',
       bg: bgColors,

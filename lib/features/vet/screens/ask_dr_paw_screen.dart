@@ -199,7 +199,7 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
               ),
               clipBehavior: Clip.antiAlias,
               child: Image.asset(
-                'assets/marketing_image/dr-paw-genz-avatar.webp',
+                'assets/images/dr-paw-genz-avatar.webp',
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => Container(
                   color: AppColors.homeLavender,
@@ -454,7 +454,7 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         image: DecorationImage(
-                          image: AssetImage('assets/marketing_image/dr-paw-genz-avatar.webp'),
+                          image: AssetImage('assets/images/dr-paw-genz-avatar.webp'),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -566,15 +566,15 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
           const SizedBox(height: 10),
           Row(
             children: [
-              _animalSelectCard('Dog', 'assets/images/animal-dog.png'),
+              _animalSelectCard('Dog', 'assets/images/animal-categories/dog.webp'),
               const SizedBox(width: 8),
-              _animalSelectCard('Cat', 'assets/images/animal-cat.png'),
+              _animalSelectCard('Cat', 'assets/images/animal-categories/cat.webp'),
               const SizedBox(width: 8),
-              _animalSelectCard('Cattle', 'assets/images/animal-cattle.png'),
+              _animalSelectCard('Cattle', 'assets/images/animal-categories/cattle.webp'),
               const SizedBox(width: 8),
-              _animalSelectCard('Poultry', 'assets/images/animal-poultry.png'),
+              _animalSelectCard('Poultry', 'assets/images/animal-categories/poultry.webp'),
               const SizedBox(width: 8),
-              _animalSelectCard('Goat/Sheep', 'assets/images/animal-goat.png'),
+              _animalSelectCard('Goat/Sheep', 'assets/images/animal-categories/goat.webp'),
             ],
           ),
 

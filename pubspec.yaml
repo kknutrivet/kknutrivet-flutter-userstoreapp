@@ -56,10 +56,7 @@ flutter:
     - assets/images/
     - assets/images/animal-categories/
     - assets/images/category/
-    - assets/images/health/
     - assets/marketing_image/
-    - assets/icons/animals/
-    - assets/icons/payments/
 
   fonts:
     - family: Lora

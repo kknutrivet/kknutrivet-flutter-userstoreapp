@@ -217,7 +217,7 @@ class PetCareScreen extends ConsumerWidget {
                 height: 180,
                 width: double.infinity,
                 child: Image.asset(
-                  'assets/images/pet-profile-care-v1.png',
+                  'assets/images/pet-profile-care-v1.webp',
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(color: AppColors.primaryWash),
                 ),

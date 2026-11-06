@@ -465,7 +465,7 @@ class HomeCategorySelector extends ConsumerWidget {
           HomeCategoryEntry(
             name: catName,
             label: catName,
-            asset: 'assets/images/category/supplements-v1.png',
+            asset: 'assets/images/category/supplements-v1.webp',
             background: const Color(0xFFECF6EC),
             color: AppColors.primaryDeep,
             fallbackIcon: Icons.category_outlined,

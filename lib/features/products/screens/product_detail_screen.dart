@@ -979,7 +979,7 @@ class _DetailsCard extends ConsumerWidget {
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Image.asset(
-                          'assets/marketing_image/dr-paw-genz-avatar.webp',
+                          'assets/images/dr-paw-genz-avatar.webp',
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const Icon(
                             Icons.auto_awesome,
@@ -2606,7 +2606,7 @@ class _AskDrPawCompanionCard extends StatelessWidget {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Image.asset(
-                  'assets/marketing_image/dr-paw-genz-avatar.webp',
+                  'assets/images/dr-paw-genz-avatar.webp',
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
                     color: AppColors.primaryDeep,

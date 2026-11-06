@@ -138,7 +138,7 @@ class HomeCareProductRail extends ConsumerWidget {
         AppColors.homeCareRailAccent,
       ),
       tone: AppColors.homeCareRailBorder,
-      assetPath: 'assets/images/category/homecare-v1.png',
+      assetPath: 'assets/images/category/homecare-v1.webp',
       fallbackIcon: Icons.home_outlined,
     );
   }

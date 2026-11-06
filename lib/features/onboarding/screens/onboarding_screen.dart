@@ -32,7 +32,7 @@ class _OnboardingSlide {
 
 const _slides = [
   _OnboardingSlide(
-    imagePath: 'assets/images/mobile-shop-hero-v3.png',
+    imagePath: 'assets/images/mobile-shop-hero-v3.webp',
     fallbackIcon: Icons.local_hospital_outlined,
     title: 'Authentic Veterinary Care',
     subtitle: 'CERTIFIED MEDICINES & CLINICAL DIETS',
@@ -64,7 +64,7 @@ const _slides = [
     badge2: (text: 'Instant Digital Rx', icon: Icons.bolt_rounded),
   ),
   _OnboardingSlide(
-    imagePath: 'assets/images/prescription-img.png',
+    imagePath: 'assets/images/prescription-img.webp',
     fallbackIcon: Icons.receipt_long_outlined,
     title: 'Prescription Concierge',
     subtitle: 'FREE PRESCRIPTION REVIEW',
@@ -80,7 +80,7 @@ const _slides = [
     badge2: (text: 'Pharmacist Review', icon: Icons.fact_check_rounded),
   ),
   _OnboardingSlide(
-    imagePath: 'assets/images/pet-profile-care-v1.png',
+    imagePath: 'assets/images/pet-profile-care-v1.webp',
     fallbackIcon: Icons.pets_outlined,
     title: 'Smart Pet Care & Reminders',
     subtitle: 'VACCINATIONS & DR. PAW AI',

@@ -238,7 +238,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Medicine',
     label: 'Health & Care',
-    asset: 'assets/images/category/medicine-v1.png',
+    asset: 'assets/images/category/medicine-v1.webp',
     color: Color(0xFF326C69),
     background: Color(0xFFE9F3F1),
     fallbackIcon: Icons.medication_outlined,
@@ -246,7 +246,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Supplement & Nutrition',
     label: 'Supplements',
-    asset: 'assets/images/category/supplements-v1.png',
+    asset: 'assets/images/category/supplements-v1.webp',
     color: Color(0xFF926526),
     background: Color(0xFFFBF2DF),
     fallbackIcon: Icons.favorite_border_rounded,
@@ -254,7 +254,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Feed',
     label: 'Feed',
-    asset: 'assets/images/category/feed-v1.png',
+    asset: 'assets/images/category/feed-v1.webp',
     color: Color(0xFF6B7640),
     background: Color(0xFFF0F3E4),
     fallbackIcon: Icons.spa_outlined,
@@ -262,7 +262,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Grooming',
     label: 'Grooming',
-    asset: 'assets/images/category/grooming-v1.png',
+    asset: 'assets/images/category/grooming-v1.webp',
     color: Color(0xFF86638D),
     background: Color(0xFFF4ECF6),
     fallbackIcon: Icons.content_cut_outlined,
@@ -270,7 +270,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Spray',
     label: 'Spray',
-    asset: 'assets/images/category/spray-v1.png',
+    asset: 'assets/images/category/spray-v1.webp',
     color: Color(0xFF4B7798),
     background: Color(0xFFEAF2F8),
     fallbackIcon: Icons.cleaning_services_outlined,
@@ -278,7 +278,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Device',
     label: 'Equipment',
-    asset: 'assets/images/category/device-v1.png',
+    asset: 'assets/images/category/device-v1.webp',
     color: Color(0xFF5C6994),
     background: Color(0xFFEDEFF7),
     fallbackIcon: Icons.medical_services_outlined,
@@ -286,7 +286,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Deworming',
     label: 'Digestive Care',
-    asset: 'assets/images/category/deworming-v1.png',
+    asset: 'assets/images/category/deworming-v1.webp',
     color: Color(0xFFAD7255),
     background: Color(0xFFFBEEE7),
     fallbackIcon: Icons.verified_user_outlined,
@@ -294,7 +294,7 @@ const kHomeCategories = [
   HomeCategoryEntry(
     name: 'Home Care',
     label: 'Home Care',
-    asset: 'assets/images/category/homecare-v1.png',
+    asset: 'assets/images/category/homecare-v1.webp',
     color: Color(0xFF497868),
     background: Color(0xFFE8F2EB),
     fallbackIcon: Icons.home_outlined,
@@ -306,7 +306,7 @@ const kHomeAnimals = [
     name: 'Dogs',
     value: 'Dog',
     query: 'Dog',
-    asset: 'assets/images/animal-categories/dog.png',
+    asset: 'assets/images/animal-categories/dog.webp',
     tone: AppColors.dogTone,
     surface: HomeRailSurface(
       AppColors.dogRailBg,
@@ -322,7 +322,7 @@ const kHomeAnimals = [
     name: 'Cats',
     value: 'Cat',
     query: 'Cat',
-    asset: 'assets/images/animal-categories/cat.png',
+    asset: 'assets/images/animal-categories/cat.webp',
     tone: AppColors.catTone,
     surface: HomeRailSurface(
       AppColors.catRailBg,
@@ -338,7 +338,7 @@ const kHomeAnimals = [
     name: 'Cattle',
     value: 'Cattle',
     query: 'Cattle',
-    asset: 'assets/images/animal-categories/cattle.png',
+    asset: 'assets/images/animal-categories/cattle.webp',
     tone: AppColors.cattleTone,
     surface: HomeRailSurface(
       AppColors.cattleRailBg,
@@ -354,7 +354,7 @@ const kHomeAnimals = [
     name: 'Goats & Sheep',
     value: 'Goat',
     query: 'Goat/Sheep',
-    asset: 'assets/images/animal-categories/goat.png',
+    asset: 'assets/images/animal-categories/goat.webp',
     tone: AppColors.goatTone,
     surface: HomeRailSurface(
       AppColors.goatRailBg,
@@ -370,7 +370,7 @@ const kHomeAnimals = [
     name: 'Poultry',
     value: 'Poultry',
     query: 'Poultry',
-    asset: 'assets/images/animal-categories/poultry.png',
+    asset: 'assets/images/animal-categories/poultry.webp',
     tone: AppColors.poultryTone,
     surface: HomeRailSurface(
       AppColors.poultryRailBg,
@@ -387,7 +387,7 @@ const kHomeAnimals = [
     selectorLabel: 'Small Pets',
     value: 'Exotic & Small Pets',
     query: 'Exotic & Small Pets',
-    asset: 'assets/images/animal-categories/exotic.png',
+    asset: 'assets/images/animal-categories/exotic.webp',
     tone: AppColors.exoticTone,
     surface: HomeRailSurface(
       AppColors.exoticRailBg,
@@ -406,7 +406,7 @@ const kHomeOtherAnimalEntry = HomeAnimalEntry(
   selectorLabel: 'Other',
   value: 'Other',
   query: 'Other',
-  asset: 'assets/images/animal-categories/other-v1.png',
+  asset: 'assets/images/animal-categories/other-v1.webp',
   tone: Color(0xFFE2EDE6),
   surface: HomeRailSurface(
     Color(0xFFF3F8F5),

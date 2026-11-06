@@ -233,7 +233,7 @@ class HomeCareSpaceCard extends ConsumerWidget {
                               fallbackIcon: Icons.pets,
                             )
                           : Image.asset(
-                              'assets/images/animal-dog.png',
+                              'assets/images/animal-categories/dog.webp',
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => const Icon(
                                 Icons.pets,

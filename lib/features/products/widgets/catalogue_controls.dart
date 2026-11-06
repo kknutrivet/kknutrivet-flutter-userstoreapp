@@ -190,25 +190,25 @@ class CatalogueAnimalRail extends ConsumerWidget {
   const CatalogueAnimalRail({super.key});
 
   static const _animals = [
-    ('Dog', 'Dogs', 'assets/images/animal-dog.png', AppColors.dogTone),
-    ('Cat', 'Cats', 'assets/images/animal-cat.png', AppColors.catTone),
-    ('Cattle', 'Cattle', 'assets/images/animal-cattle.png', AppColors.cattleTone),
+    ('Dog', 'Dogs', 'assets/images/animal-categories/dog.webp', AppColors.dogTone),
+    ('Cat', 'Cats', 'assets/images/animal-categories/cat.webp', AppColors.catTone),
+    ('Cattle', 'Cattle', 'assets/images/animal-categories/cattle.webp', AppColors.cattleTone),
     (
       'Goat/Sheep',
       'Goats & Sheep',
-      'assets/images/animal-goat.png',
+      'assets/images/animal-categories/goat.webp',
       AppColors.goatTone,
     ),
     (
       'Poultry',
       'Poultry',
-      'assets/images/animal-poultry.png',
+      'assets/images/animal-categories/poultry.webp',
       AppColors.poultryTone,
     ),
     (
       'Exotic & Small Pets',
       'Small pets',
-      'assets/images/animal-exotic.png',
+      'assets/images/animal-categories/exotic.webp',
       AppColors.exoticTone,
     ),
   ];
@@ -377,25 +377,25 @@ class CatalogueHorizontalAnimalRail extends ConsumerWidget {
   const CatalogueHorizontalAnimalRail({super.key});
 
   static const _animals = [
-    ('Dog', 'Dogs', 'assets/images/animal-dog.png', AppColors.dogTone),
-    ('Cat', 'Cats', 'assets/images/animal-cat.png', AppColors.catTone),
-    ('Cattle', 'Cattle', 'assets/images/animal-cattle.png', AppColors.cattleTone),
+    ('Dog', 'Dogs', 'assets/images/animal-categories/dog.webp', AppColors.dogTone),
+    ('Cat', 'Cats', 'assets/images/animal-categories/cat.webp', AppColors.catTone),
+    ('Cattle', 'Cattle', 'assets/images/animal-categories/cattle.webp', AppColors.cattleTone),
     (
       'Poultry',
       'Poultry',
-      'assets/images/animal-poultry.png',
+      'assets/images/animal-categories/poultry.webp',
       AppColors.poultryTone,
     ),
     (
       'Goat/Sheep',
       'Goats',
-      'assets/images/animal-goat.png',
+      'assets/images/animal-categories/goat.webp',
       AppColors.goatTone,
     ),
     (
       'Exotic & Small Pets',
       'Small pets',
-      'assets/images/animal-exotic.png',
+      'assets/images/animal-categories/exotic.webp',
       AppColors.exoticTone,
     ),
   ];

@@ -128,7 +128,7 @@ class _DrPawFloatingButtonState extends State<DrPawFloatingButton>
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: Image.asset(
-                              'assets/marketing_image/dr-paw-genz-avatar.webp',
+                              'assets/images/dr-paw-genz-avatar.webp',
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => Image.asset(
                                 'assets/images/dr-paw-genz-avatar.webp',
