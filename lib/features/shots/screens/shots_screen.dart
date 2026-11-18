@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,7 +47,7 @@ class _AnimalFilterItem {
 class _ShotsScreenState extends ConsumerState<ShotsScreen>
     with WidgetsBindingObserver {
   late String _selectedAnimal;
-  bool _muted = true;
+  bool _muted = false;
   final Set<String> _likedIds = <String>{};
   final Set<String> _addedIds = <String>{};
   String? _addingId;

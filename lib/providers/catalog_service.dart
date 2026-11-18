@@ -7,6 +7,7 @@ class CatalogService {
   CatalogService(this._client);
   final ApiClient _client;
 
+  static const int _maxCacheEntries = 40;
   final Map<String, (DateTime, List<Product>)> _productsCache = {};
 
   void invalidateCache() {
@@ -46,6 +47,14 @@ class CatalogService {
       },
     );
     final products = (data as List).map((e) => Product.fromJson(e)).toList();
+    if (_productsCache.length >= _maxCacheEntries) {
+      _productsCache.removeWhere(
+        (_, entry) => DateTime.now().difference(entry.$1).inMinutes >= 5,
+      );
+      if (_productsCache.length >= _maxCacheEntries) {
+        _productsCache.remove(_productsCache.keys.first);
+      }
+    }
     _productsCache[cacheKey] = (DateTime.now(), products);
     return products;
   }
@@ -59,6 +68,30 @@ class CatalogService {
   /// /api/products/:id/stock-alert. Requires login — 401 opens login.
   Future<void> saveStockAlert(String productId) async {
     await _client.post('/products/$productId/stock-alert');
+  }
+
+  /// Submits or updates a customer product review from Order Details:
+  /// POST /api/products/:id/reviews.
+  Future<void> submitProductReview({
+    required String productId,
+    required int rating,
+    String? title,
+    required String comment,
+    String? variantLabel,
+    bool isAnonymous = false,
+  }) async {
+    await _client.post(
+      '/products/$productId/reviews',
+      data: {
+        'rating': rating,
+        if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+        'comment': comment.trim(),
+        'images': const <String>[],
+        if (variantLabel != null && variantLabel.trim().isNotEmpty)
+          'variantLabel': variantLabel.trim(),
+        'isAnonymous': isAnonymous,
+      },
+    );
   }
 
   /// Mirrors `useSearchSuggestions` (hooks/nav): GET

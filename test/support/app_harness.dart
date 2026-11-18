@@ -3,7 +3,7 @@
 /// coverage, golden screens) should start here so behaviour stays consistent.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -182,7 +182,8 @@ Future<TestApp> pumpTestApp(
   Size size = const Size(390, 844),
   double devicePixelRatio = 1.0,
 }) async {
-  await loadAppFonts();
+  await tester.runAsync(loadAppFonts);
+  await tester.pump();
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
   tester.view.devicePixelRatio = devicePixelRatio;

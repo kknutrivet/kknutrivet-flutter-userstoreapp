@@ -1,20 +1,31 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../models/pet.dart';
+import '../../../providers/app_providers.dart';
+
+const Map<String, String> kCareLanguageDisplayNames = {
+  'English': 'English',
+  'Hindi': 'हिन्दी (Hindi)',
+  'Odia': 'ଓଡ଼ିଆ (Odia)',
+  'Kannada': 'ಕನ್ನಡ (Kannada)',
+  'Bengali': 'বাংলা (Bengali)',
+  'Telugu': 'తెలుగు (Telugu)',
+  'Tamil': 'தமிழ் (Tamil)',
+  'Marathi': 'मराठी (Marathi)',
+};
+
+String getCareLanguageLabel(String code) =>
+    kCareLanguageDisplayNames[code] ?? code;
 
 const List<(String code, String label)> careChatLanguages = [
   ('English', 'English'),
   ('Hindi', 'हिन्दी (Hindi)'),
-  ('Kannada', 'ಕನ್ನಡ (Kannada)'),
   ('Odia', 'ଓଡ଼ିଆ (Odia)'),
-  ('Bengali', 'বাংলা (Bengali)'),
-  ('Telugu', 'తెలుగు (Telugu)'),
-  ('Tamil', 'தமிழ் (Tamil)'),
-  ('Marathi', 'मराठी (Marathi)'),
 ];
 
 const List<(String name, IconData icon)> careChatAnimals = [
@@ -26,18 +37,24 @@ const List<(String name, IconData icon)> careChatAnimals = [
   ('Other', Icons.add_circle_outline_rounded),
 ];
 
-class CareChatStep1Language extends StatelessWidget {
+class CareChatStep1Language extends ConsumerWidget {
   const CareChatStep1Language({
     super.key,
     required this.selectedLanguage,
     required this.onSelectLanguage,
+    this.languages,
   });
 
   final String selectedLanguage;
   final ValueChanged<String> onSelectLanguage;
+  final List<String>? languages;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final languageList = languages ??
+        ref.watch(careIntakeLanguagesProvider).valueOrNull ??
+        const ['English', 'Hindi', 'Odia'];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -54,60 +71,73 @@ class CareChatStep1Language extends StatelessWidget {
           'Tap a language to continue. We’ll share your preference with the care team.',
           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: careChatLanguages.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.8,
-          ),
-          itemBuilder: (context, index) {
-            final (code, label) = careChatLanguages[index];
-            final selected = selectedLanguage == code;
-            return Material(
-              color: selected ? AppColors.primaryWash : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+        const SizedBox(height: 12),
+        for (final code in languageList) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Material(
+              color: selectedLanguage == code
+                  ? AppColors.primaryWash
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(14),
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 onTap: () {
                   AppHaptics.selection();
                   onSelectLanguage(code);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: selected
-                          ? AppColors.primary
+                      color: selectedLanguage == code
+                          ? AppColors.primaryDeep
                           : AppColors.borderWarm,
-                      width: selected ? 1.5 : 1,
+                      width: selectedLanguage == code ? 1.5 : 1,
                     ),
                   ),
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                      color: selected
-                          ? AppColors.primaryDeep
-                          : AppColors.textPrimary,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        selectedLanguage == code
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        size: 20,
+                        color: selectedLanguage == code
+                            ? AppColors.primaryDeep
+                            : AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          getCareLanguageLabel(code),
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: selectedLanguage == code
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                            color: selectedLanguage == code
+                                ? AppColors.primaryDeep
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -610,7 +640,7 @@ class CareChatStep4Concern extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Send up to 5 messages while waiting. Photos and videos count separately. You can send more after the team replies.',
+                  'Share initial details & photos while waiting for a doctor. Messaging pauses once initial messages are sent until a doctor joins — no coins are deducted while waiting.',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,

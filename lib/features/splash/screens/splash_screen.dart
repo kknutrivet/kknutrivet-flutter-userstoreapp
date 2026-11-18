@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/services/app_update_service.dart';
+import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/mascot_world_scene.dart';
 import '../../../providers/app_providers.dart';
 
@@ -124,15 +125,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         ),
         bottomContent: Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
+          child: Semantics(
+            label: 'Opening KK Nutrivet',
+            child: AppLoader(
+              size: 22,
               strokeWidth: 2.2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Colors.white.withValues(alpha: 0.85),
-              ),
-              semanticsLabel: 'Opening KK Nutrivet',
+              color: Colors.white.withValues(alpha: 0.85),
             ),
           ),
         ),

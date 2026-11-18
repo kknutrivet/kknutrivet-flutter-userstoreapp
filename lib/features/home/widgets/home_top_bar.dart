@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,119 +8,278 @@ import '../../../core/location/location_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../models/address.dart';
 import '../../../providers/app_providers.dart';
+import 'home_models_and_data.dart';
 
-// ── 1. Mobile brand bar (Navbar.tsx mobile-app-header, h-14) ──────────────
+/// Tracks whether we have already auto-detected GPS location during this app launch
+/// so we don't repeatedly re-trigger GPS every time the Home screen rebuilds,
+/// while ensuring a fresh app launch in a new city (e.g. Hyderabad) updates the PIN.
+final _sessionGpsCheckedProvider = StateProvider<bool>((ref) => false);
+
+String _greetingForHour(int hour) {
+  if (hour >= 4 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 22) return 'Good evening';
+  return 'Hey';
+}
+
+// ── 1. Mobile brand bar (Matches webview mobile HomeTopBar.tsx Row 1) ────────
 class HomeBrandBar extends ConsumerWidget {
   const HomeBrandBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
+    final animalTheme = homeAnimalThemeFor(selectedAnimal);
     final cartCount = ref.watch(cartCountProvider);
+    final user = ref.watch(authProvider).valueOrNull;
+    final customerName =
+        user != null && !user.isAnonymous && (user.name?.trim().isNotEmpty ?? false)
+            ? user.name!.trim()
+            : null;
+    final firstName = customerName != null
+        ? customerName.split(RegExp(r'\s+')).first
+        : 'there';
+    final greetingWord = _greetingForHour(DateTime.now().hour);
+
+    final pin = ref.watch(deliveryPincodeProvider).value;
+    final addresses = user != null
+        ? (ref.watch(addressesProvider).valueOrNull ?? const <Address>[])
+        : const <Address>[];
+    final selectedAddressId = ref.watch(selectedDeliveryAddressIdProvider);
+
+    Address? activeAddress;
+    if (addresses.isNotEmpty) {
+      if (selectedAddressId != null) {
+        activeAddress =
+            addresses.where((a) => a.id == selectedAddressId).firstOrNull;
+      } else if (pin != null && pin.isNotEmpty) {
+        final trimmedPin = pin.trim();
+        activeAddress = addresses
+                .where((a) => a.isDefault && a.zipCode.trim() == trimmedPin)
+                .firstOrNull ??
+            addresses.where((a) => a.zipCode.trim() == trimmedPin).firstOrNull;
+      }
+    }
+
+    final effectivePin = activeAddress?.zipCode.trim().isNotEmpty == true
+        ? activeAddress!.zipCode.trim()
+        : pin?.trim();
+    final rawCity = activeAddress?.city.trim().isNotEmpty == true
+        ? activeAddress!.city.trim()
+        : null;
+    final cityLabel = rawCity != null && rawCity.isNotEmpty
+        ? _HomeTopBarCardState._formatCityName(rawCity)
+        : (effectivePin != null && effectivePin.isNotEmpty
+            ? 'Pincode $effectivePin'
+            : null);
+    final locationText = cityLabel != null
+        ? (effectivePin != null &&
+                effectivePin.isNotEmpty &&
+                !cityLabel.contains(effectivePin)
+            ? '$cityLabel, $effectivePin'
+            : cityLabel)
+        : 'Set delivery location';
+
     return SliverAppBar(
       pinned: true,
       floating: false,
-      backgroundColor: Colors.white,
+      backgroundColor: animalTheme.headerBg,
       surfaceTintColor: Colors.transparent,
-      // Elevation shadow is drawn by the pinned search header directly below,
-      // so the brand bar + search read as a single elevated app bar.
       elevation: 0,
       scrolledUnderElevation: 0,
-      toolbarHeight: 48,
-      titleSpacing: 16,
-      title: Image.asset(
-        'assets/images/logo.png',
-        height: 34,
-        fit: BoxFit.contain,
-        alignment: Alignment.centerLeft,
-        errorBuilder: (_, _, _) => const Text(
-          'KK NUTRIVET',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-            color: AppColors.primaryDeep,
+      toolbarHeight: 54,
+      titleSpacing: 14,
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      flexibleSpace: AnimatedContainer(
+        duration: const Duration(milliseconds: 280),
+        color: animalTheme.headerBg,
+      ),
+      title: Row(
+        children: [
+          Material(
+            color: const Color(0xFFE5F0EA),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Haptics.tap();
+                if (customerName != null) {
+                  context.go('/profile');
+                } else {
+                  context.push('/login');
+                }
+              },
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Center(
+                  child: customerName != null
+                      ? Text(
+                          firstName.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF07583F),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.person_outline_rounded,
+                          size: 19,
+                          color: Color(0xFF07583F),
+                        ),
+                ),
+              ),
+            ),
           ),
-        ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      height: 1.2,
+                      color: Color(0xFF374151),
+                    ),
+                    children: [
+                      TextSpan(text: '$greetingWord '),
+                      TextSpan(
+                        text: firstName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1C1C1C),
+                        ),
+                      ),
+                      const TextSpan(text: ','),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    Haptics.tap();
+                    showModalBottomSheet<void>(
+                      context: context,
+                      useRootNavigator: true,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      builder: (_) => const HomePincodeBottomSheet(),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 12.5,
+                        color: Color(0xFF07583F),
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          locationText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 14,
+                        color: Color(0xFF4B5563),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       actions: [
-        // Dr. Paw AI Companion Action with Paw Icon & "AI" badge
+        // Dr. Paw AI Companion Action
         Semantics(
           button: true,
           label: 'Ask Dr. Paw AI veterinary assistant',
           child: Container(
-            width: 42,
-            height: 42,
-            margin: const EdgeInsets.only(right: 10),
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: 6),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFE8ECE9)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x0C173C32),
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () {
-                        Haptics.tap();
-                        AnalyticsService.instance.logDrPawChatStarted();
-                        context.push('/vet');
-                      },
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/dr-paw-genz-avatar.webp',
-                          width: 42,
-                          height: 42,
-                          fit: BoxFit.cover,
-                          excludeFromSemantics: true,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      Haptics.tap();
+                      AnalyticsService.instance.logDrPawChatStarted();
+                      context.push('/vet');
+                    },
+                    child: Center(
+                      child: Image.asset(
+                        'assets/marketing_image/dr-paw-genz-avatar.webp',
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.support_agent_rounded,
+                          size: 19,
+                          color: Color(0xFF07583F),
                         ),
                       ),
                     ),
                   ),
                 ),
                 Positioned(
-                  right: -2,
-                  top: -2,
+                  right: -1,
+                  top: -1,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC9FF67),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: const Color(0xFF17322B),
-                        width: 1,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x1F000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
+                      color: const Color(0xFF07583F),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.pets_rounded,
+                          size: 7,
+                          color: Color(0xFFC9FF67),
+                        ),
+                        SizedBox(width: 1),
+                        Text(
+                          'AI',
+                          style: TextStyle(
+                            fontSize: 7.5,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFC9FF67),
+                            height: 1.0,
+                          ),
                         ),
                       ],
-                    ),
-                    child: const Text(
-                      'AI',
-                      style: TextStyle(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.2,
-                        color: Color(0xFF17322B),
-                        height: 1.1,
-                      ),
                     ),
                   ),
                 ),
@@ -129,36 +288,31 @@ class HomeBrandBar extends ConsumerWidget {
           ),
         ),
 
-        // Cart Action with Badge (circular button matching Navbar.tsx)
+        // Cart Action with Badge
         Semantics(
           button: true,
           label: 'Shopping Cart${cartCount > 0 ? " ($cartCount items)" : ""}',
           child: Container(
-            width: 42,
-            height: 42,
-            margin: const EdgeInsets.only(right: 16),
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: 14),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFE8ECE9)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x0C173C32),
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFE4E2DC),
+                    ),
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      customBorder: const CircleBorder(),
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         Haptics.tap();
                         context.push('/cart');
@@ -166,8 +320,8 @@ class HomeBrandBar extends ConsumerWidget {
                       child: const Center(
                         child: Icon(
                           Icons.shopping_cart_outlined,
-                          size: 20,
-                          color: AppColors.textPrimary,
+                          size: 18,
+                          color: Color(0xFF1C1C1C),
                         ),
                       ),
                     ),
@@ -175,25 +329,29 @@ class HomeBrandBar extends ConsumerWidget {
                 ),
                 if (cartCount > 0)
                   Positioned(
-                    right: -2,
-                    top: -2,
+                    right: -4,
+                    top: -4,
                     child: IgnorePointer(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 1),
-                        constraints:
-                            const BoxConstraints(minWidth: 16, minHeight: 16),
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF087E58),
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFF07583F),
+                          borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           '$cartCount',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
                             height: 1.1,
                           ),
                         ),
@@ -209,7 +367,7 @@ class HomeBrandBar extends ConsumerWidget {
   }
 }
 
-// ── 2. HomeTopBar: delivery line + search ──────────────────────────────────
+// ── 2. HomeTopBar: Integrated Delivery Capsule & Promise Strip ─────────────
 class HomeTopBarCard extends ConsumerStatefulWidget {
   const HomeTopBarCard({super.key});
   @override
@@ -224,35 +382,66 @@ class _HomeTopBarCardState extends ConsumerState<HomeTopBarCard> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final alreadyChecked = ref.read(_sessionGpsCheckedProvider);
+      final selectedAddressId = ref.read(selectedDeliveryAddressIdProvider);
+      if (alreadyChecked || selectedAddressId != null) return;
+      ref.read(_sessionGpsCheckedProvider.notifier).state = true;
       final savedPin = await ref.read(deliveryPincodeProvider.future);
-      if (!mounted || (savedPin != null && savedPin.isNotEmpty)) return;
-      await _useCurrentLocation();
+      if (!mounted) return;
+      await _useCurrentLocation(silent: savedPin != null && savedPin.isNotEmpty);
     });
   }
 
   void _showPincodeModalSheet() {
-    showModalBottomSheet<void>(context: context, useRootNavigator: true,
-      isScrollControlled: true, useSafeArea: true,
-      builder: (_) => const HomePincodeBottomSheet());
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => const HomePincodeBottomSheet(),
+    );
   }
 
-  Future<void> _useCurrentLocation() async {
+  Future<void> _useCurrentLocation({bool silent = false}) async {
     if (_locating) return;
-    setState(() { _locating = true; _error = null; });
+    setState(() {
+      _locating = true;
+      if (!silent) _error = null;
+    });
     try {
       final location = await LocationService.instance.getCurrentLocation();
       if (!mounted) return;
       final pin = location.zipCode?.trim() ?? '';
       if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
-        throw Exception('Could not detect your PIN. Please enter it manually.');
+        if (!silent) {
+          throw Exception('Could not detect your PIN. Please enter it manually.');
+        }
+        return;
       }
+      ref.read(selectedDeliveryAddressIdProvider.notifier).state = null;
       await ref.read(deliveryPincodeProvider.notifier).setPincode(pin);
       ref.invalidate(deliveryEtaProvider);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted && !silent) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _locating = false);
     }
+  }
+
+  /// Title-cases an uppercase city name (`"BERHAMPUR"` -> `"Berhampur"`, `"HYDERABAD"` -> `"Hyderabad"`).
+  static String _formatCityName(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return '';
+    return trimmed
+        .split(RegExp(r'\s+'))
+        .map((w) {
+          if (w.isEmpty) return w;
+          return w[0].toUpperCase() + w.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   @override
@@ -260,72 +449,243 @@ class _HomeTopBarCardState extends ConsumerState<HomeTopBarCard> {
     final pin = ref.watch(deliveryPincodeProvider).value;
     final delivery = ref.watch(deliveryEtaProvider).value;
     final settings = ref.watch(storeSettingsProvider).valueOrNull;
-    final threshold = settings != null && pin != null
-        ? settings.effectiveFreeDeliveryThreshold(pincode: pin)
+    final addresses = ref.watch(addressesProvider).valueOrNull ?? const <Address>[];
+    final selectedAddressId = ref.watch(selectedDeliveryAddressIdProvider);
+
+    Address? activeAddress;
+    if (addresses.isNotEmpty) {
+      if (selectedAddressId != null) {
+        activeAddress =
+            addresses.where((a) => a.id == selectedAddressId).firstOrNull;
+      } else if (pin != null && pin.isNotEmpty) {
+        final trimmedPin = pin.trim();
+        activeAddress = addresses
+                .where(
+                  (a) => a.isDefault && a.zipCode.trim() == trimmedPin,
+                )
+                .firstOrNull ??
+            addresses
+                .where((a) => a.zipCode.trim() == trimmedPin)
+                .firstOrNull;
+      }
+    }
+
+    final effectivePin = activeAddress?.zipCode.trim().isNotEmpty == true
+        ? activeAddress!.zipCode.trim()
+        : pin;
+    final threshold = settings != null && effectivePin != null
+        ? settings.effectiveFreeDeliveryThreshold(pincode: effectivePin)
         : settings?.freeDeliveryThreshold;
-    final hasPin = pin != null && pin.isNotEmpty;
+    final hasPin = effectivePin != null && effectivePin.isNotEmpty;
     final confirmed = hasPin && delivery?.serviceable == true;
     final unavailable = hasPin && delivery?.serviceable == false;
     final eta = confirmed ? delivery?.etaLabel.trim() ?? '' : '';
-    final city = delivery?.city?.trim();
-    final label = hasPin
-        ? city != null && city.isNotEmpty ? '$city · $pin' : pin
-        : _locating ? 'Detecting location…' : 'Set delivery location';
+    final rawCity = activeAddress?.city.trim().isNotEmpty == true
+        ? activeAddress!.city.trim()
+        : delivery?.city?.trim();
+    final city = rawCity != null && rawCity.isNotEmpty
+        ? _formatCityName(rawCity)
+        : null;
+    final addressTag = activeAddress?.label?.trim().isNotEmpty == true
+        ? activeAddress!.label!.trim()
+        : null;
+
+    final String label;
+    if (hasPin) {
+      if (addressTag != null && city != null) {
+        label = '$addressTag: $city · $effectivePin';
+      } else if (city != null) {
+        label = '$city · $effectivePin';
+      } else {
+        label = effectivePin;
+      }
+    } else if (_locating) {
+      label = 'Detecting location…';
+    } else {
+      label = 'Set delivery location';
+    }
+
     return ColoredBox(
-      color: Colors.white,
+      color: const Color(0xFF07583F),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(child: InkWell(
-              onTap: _showPincodeModalSheet,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
-                child: Row(children: [
-                  const Icon(Icons.location_on_outlined, size: 16, color: AppColors.primaryDeep),
-                  const SizedBox(width: 4),
-                  Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                  const SizedBox(width: 4),
-                  Icon(confirmed ? Icons.check_circle : unavailable ? Icons.error_outline : Icons.keyboard_arrow_down_rounded,
-                    size: 16, color: unavailable ? AppColors.error : AppColors.primaryDeep),
-                  if (eta.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Flexible(child: Text('· $eta', maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary))),
-                  ],
-                ]),
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Material(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: _showPincodeModalSheet,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 34),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isNarrowConstraint =
+                                  constraints.maxWidth < 160;
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 13,
+                                    color: Color(0xFFC9FF67),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        label,
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Icon(
+                                    confirmed
+                                        ? Icons.check_circle
+                                        : unavailable
+                                            ? Icons.error_outline
+                                            : Icons.keyboard_arrow_down_rounded,
+                                    size: 13,
+                                    color: unavailable
+                                        ? const Color(0xFFFECDD3)
+                                        : const Color(0xFFC9FF67),
+                                  ),
+                                  if (eta.isNotEmpty) ...[
+                                    const SizedBox(width: 3),
+                                    if (isNarrowConstraint)
+                                      Flexible(
+                                        child: Text(
+                                          '· $eta',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFFD8F7A8),
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      Text(
+                                        '· $eta',
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFFD8F7A8),
+                                        ),
+                                      ),
+                                  ],
+                                  if (!isNarrowConstraint &&
+                                      (addresses.length > 1 || confirmed)) ...[
+                                    const SizedBox(width: 2),
+                                    const Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (!unavailable && threshold != null && threshold > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Free delivery ₹${threshold.toInt()}+',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                if (unavailable)
+                  const Text(
+                    'Not serviceable',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFECDD3),
+                    ),
+                  ),
+              ],
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(fontSize: 12, color: AppColors.error),
+                ),
               ),
-            )),
-            const SizedBox(width: 8),
-            if (!unavailable && threshold != null && threshold > 0)
-              Text('Free delivery ₹${threshold.toInt()}+',
-                style: const TextStyle(fontSize: 11, color: AppColors.primaryDeep, fontWeight: FontWeight.w600)),
-            if (unavailable) const Text('Not serviceable', style: TextStyle(fontSize: 11, color: AppColors.error)),
-          ]),
-          if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 8),
-            child: Text(_error!, style: const TextStyle(fontSize: 12, color: AppColors.error))),
-        ]),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ── 2b. Pinned search bar — stays visible under the app bar while scrolling ──
-class HomePinnedSearchBar extends StatelessWidget {
+class HomePinnedSearchBar extends ConsumerWidget {
   const HomePinnedSearchBar({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
+    final animalTheme = homeAnimalThemeFor(selectedAnimal);
     return SliverPersistentHeader(
       pinned: true,
-      delegate: _PinnedSearchDelegate(),
+      delegate: _PinnedSearchDelegate(
+        headerBg: animalTheme.headerBg,
+        storeTitle: animalTheme.storeTitle,
+      ),
     );
   }
 }
 
 class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
-  static const double _height = 62;
+  _PinnedSearchDelegate({
+    required this.headerBg,
+    required this.storeTitle,
+  });
+
+  final Color headerBg;
+  final String storeTitle;
+  static const double _height = 60;
 
   @override
   double get minExtent => _height;
@@ -339,107 +699,76 @@ class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    // Elevate once content scrolls underneath the pinned header.
-    final elevated = overlapsContent || shrinkOffset > 0;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 280),
       height: _height,
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(18)),
-        border: elevated
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.border)),
-        boxShadow: [
-          BoxShadow(
-            color: elevated
-                ? const Color(0x1F0B3D2C)
-                : const Color(0x0A000000),
-            blurRadius: elevated ? 14 : 16,
-            offset: Offset(0, elevated ? 5 : 4),
-          ),
-        ],
-      ),
-      child: const HomeSearchField(),
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+      color: headerBg,
+      child: HomeSearchField(storeTitle: storeTitle),
     );
   }
 
   @override
-  bool shouldRebuild(covariant _PinnedSearchDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _PinnedSearchDelegate oldDelegate) =>
+      oldDelegate.headerBg != headerBg || oldDelegate.storeTitle != storeTitle;
 }
 
-/// Tappable search pill that opens the full search screen.
+/// Tappable search pill that opens the full search screen (matches cream Blinkit-style HomeTopBar.tsx).
 class HomeSearchField extends StatelessWidget {
-  const HomeSearchField({super.key});
+  const HomeSearchField({super.key, this.storeTitle = ''});
+  final String storeTitle;
 
   @override
   Widget build(BuildContext context) {
+    final placeholder =
+        storeTitle.isNotEmpty ? 'Search in $storeTitle…' : 'Search products';
     return Material(
-      color: const Color(0xFFF4F7F5),
-      borderRadius: BorderRadius.circular(24),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           Haptics.tap();
           context.push('/search');
         },
         child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE2EBE6)),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E2DA)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryWash,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.search_rounded,
-                  size: 15,
-                  color: AppColors.primaryDeep,
-                ),
+              const Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: Color(0xFF1C1C1C),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Search products',
+                  placeholder,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: Color(0xFF525252),
                   ),
                 ),
               ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryDeep,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x2407583F),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 15,
-                  color: Colors.white,
-                ),
+              const Icon(
+                Icons.mic_none_rounded,
+                size: 18,
+                color: Color(0xFF4B5563),
               ),
             ],
           ),
@@ -508,7 +837,21 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
     }
   }
 
-  Future<void> _submitPincode() async {
+  Future<void> _selectSavedAddress(Address addr) async {
+    AppHaptics.selection();
+    ref.read(selectedDeliveryAddressIdProvider.notifier).state = addr.id;
+    final zip = addr.zipCode.trim();
+    if (RegExp(r'^\d{6}$').hasMatch(zip)) {
+      _controller.text = zip;
+      await ref.read(deliveryPincodeProvider.notifier).setPincode(zip);
+      ref.invalidate(deliveryEtaProvider);
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _submitPincode({bool clearSelectedAddress = true}) async {
     final pin = _controller.text.trim();
     if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
       setState(() => _error = 'Please enter a valid 6-digit pincode');
@@ -520,6 +863,9 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
     });
     try {
       Haptics.success();
+      if (clearSelectedAddress) {
+        ref.read(selectedDeliveryAddressIdProvider.notifier).state = null;
+      }
       await ref.read(deliveryPincodeProvider.notifier).setPincode(pin);
       ref.invalidate(deliveryEtaProvider);
       await ref.read(deliveryEtaProvider.future);
@@ -535,10 +881,34 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final currentPincode = ref.watch(deliveryPincodeProvider).value;
     final etaAsync = ref.watch(deliveryEtaProvider);
+    final addresses =
+        ref.watch(addressesProvider).valueOrNull ?? const <Address>[];
+    final selectedAddressId = ref.watch(selectedDeliveryAddressIdProvider);
+    final user = ref.watch(authProvider).valueOrNull;
+    final isLoggedIn = user != null;
+    final String? effectiveSelectedAddressId = selectedAddressId ??
+        (currentPincode != null && currentPincode.trim().isNotEmpty
+            ? (addresses
+                        .where(
+                          (a) =>
+                              a.isDefault &&
+                              a.zipCode.trim() == currentPincode.trim(),
+                        )
+                        .firstOrNull ??
+                    addresses
+                        .where(
+                          (a) => a.zipCode.trim() == currentPincode.trim(),
+                        )
+                        .firstOrNull)
+                ?.id
+            : null);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        ),
         decoration: const BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -549,269 +919,521 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
           20,
           24 + MediaQuery.paddingOf(context).bottom,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 48,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderStrong,
-                  borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.borderStrong,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryWash,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.location_on_outlined,
-                    size: 20,
-                    color: AppColors.primaryDeep,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Check delivery & speed',
-                        style: AppTheme.serif(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const Text(
-                        'Enter your 6-digit pincode for dispatch ETA & COD availability',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Close delivery check',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    autofocus: true,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onSubmitted: (_) => _submitPincode(),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: 'e.g. 760004',
-                      errorText: _error,
-                      prefixIcon: const Icon(
-                        Icons.pin_drop_outlined,
-                        size: 18,
-                        color: AppColors.primaryDeep,
-                      ),
-                      suffixIcon: _detectingLocation
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                            )
-                          : IconButton(
-                              tooltip: 'Use current location',
-                              icon: const Icon(
-                                Icons.my_location_rounded,
-                                size: 19,
-                                color: AppColors.primaryDeep,
-                              ),
-                              onPressed: _detectCurrentLocation,
-                            ),
-                      filled: true,
-                      fillColor: AppColors.surfaceAlt,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.borderStrong),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.borderStrong),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primaryDeep,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  height: 48,
-                  child: FilledButton(
-                    onPressed: _checking ? null : _submitPincode,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryDeep,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _checking
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'Check',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final preset in const [
-                  ('Brahmapur · 760004', '760004'),
-                  ('Bhubaneswar · 751001', '751001'),
-                  ('Cuttack · 753001', '753001'),
-                ])
-                  ActionChip(
-                    label: Text(
-                      preset.$1,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    backgroundColor: AppColors.primaryWashFaint,
-                    side: const BorderSide(color: AppColors.primaryWashDeep),
-                    onPressed: () {
-                      _controller.text = preset.$2;
-                      _submitPincode();
-                    },
-                  ),
-              ],
-            ),
-            if (currentPincode != null && currentPincode.length == 6) ...[
               const SizedBox(height: 14),
-              etaAsync.when(
-                data: (info) {
-                  final isBrahmapur = currentPincode.startsWith('7600');
-                  final serviceable = info?.serviceable ?? true;
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: serviceable
-                          ? AppColors.primaryWashFaint
-                          : AppColors.errorBg,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: serviceable
-                            ? AppColors.primaryWashDeep
-                            : AppColors.error.withValues(alpha: 0.3),
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryWash,
+                      shape: BoxShape.circle,
                     ),
-                    child: Row(
+                    child: const Icon(
+                      Icons.location_on_outlined,
+                      size: 20,
+                      color: AppColors.primaryDeep,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          serviceable
-                              ? Icons.check_circle_rounded
-                              : Icons.info_outline_rounded,
-                          size: 20,
-                          color: serviceable
-                              ? AppColors.primaryDeep
-                              : AppColors.error,
+                        Text(
+                          addresses.isNotEmpty
+                              ? 'Select delivery location'
+                              : 'Check delivery & speed',
+                          style: AppTheme.serif(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isBrahmapur
-                                    ? '⚡ 24h Local Dispatch to $currentPincode'
-                                    : serviceable
-                                        ? 'Delivering to ${info?.city ?? currentPincode} (${info?.etaLabel.isNotEmpty == true ? info!.etaLabel : "Fast courier delivery"})'
-                                        : 'Currently unserviceable for $currentPincode',
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              if (info != null && info.message.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  info.message,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ],
+                        Text(
+                          addresses.isNotEmpty
+                              ? 'Choose a saved address or enter a 6-digit pincode'
+                              : 'Enter your 6-digit pincode for dispatch ETA & COD availability',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: LinearProgressIndicator(
-                    color: AppColors.primaryDeep,
-                    backgroundColor: AppColors.primaryWash,
+                  ),
+                  IconButton(
+                    tooltip: 'Close delivery check',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                  ),
+                ],
+              ),
+              if (addresses.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'SAVED ADDRESSES (${addresses.length})',
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                    if (isLoggedIn)
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () async {
+                          Navigator.of(context).pop();
+                          final newAddr =
+                              await context.push<Address?>('/addresses/new');
+                          ref.invalidate(addressesProvider);
+                          if (newAddr != null) {
+                            ref
+                                    .read(
+                                      selectedDeliveryAddressIdProvider
+                                          .notifier,
+                                    )
+                                    .state =
+                                newAddr.id;
+                            if (RegExp(r'^\d{6}$')
+                                .hasMatch(newAddr.zipCode.trim())) {
+                              await ref
+                                  .read(deliveryPincodeProvider.notifier)
+                                  .setPincode(newAddr.zipCode.trim());
+                              ref.invalidate(deliveryEtaProvider);
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.add_rounded, size: 15),
+                        label: const Text(
+                          'Add',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                for (final addr in addresses) ...[
+                  Builder(
+                    builder: (context) {
+                      final isSelected = effectiveSelectedAddressId != null &&
+                          effectiveSelectedAddressId == addr.id;
+                      final titleLabel =
+                          (addr.label != null && addr.label!.trim().isNotEmpty)
+                              ? '${addr.label!.trim()} · ${addr.fullName}'
+                              : addr.fullName;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          color: isSelected
+                              ? AppColors.primaryWashFaint
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () => _selectSavedAddress(addr),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.primaryDeep
+                                      : AppColors.border,
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    isSelected
+                                        ? Icons.radio_button_checked_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                    size: 19,
+                                    color: isSelected
+                                        ? AppColors.primaryDeep
+                                        : AppColors.textTertiary,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                titleLabel,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w800
+                                                      : FontWeight.w700,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ),
+                                            if (addr.zipCode.trim().isNotEmpty)
+                                              Text(
+                                                addr.zipCode.trim(),
+                                                style: const TextStyle(
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${addr.formattedAddress}, ${addr.city}${addr.state.trim().isNotEmpty ? ", ${addr.state.trim()}" : ""}, ${addr.zipCode}',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            height: 1.35,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                if (isLoggedIn) ...[
+                  const SizedBox(height: 2),
+                  Material(
+                    color: const Color(0xFFF4FAF6),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        final newAddr =
+                            await context.push<Address?>('/addresses/new');
+                        ref.invalidate(addressesProvider);
+                        if (newAddr != null) {
+                          ref
+                                  .read(
+                                    selectedDeliveryAddressIdProvider.notifier,
+                                  )
+                                  .state =
+                              newAddr.id;
+                          if (RegExp(r'^\d{6}$')
+                              .hasMatch(newAddr.zipCode.trim())) {
+                            await ref
+                                .read(deliveryPincodeProvider.notifier)
+                                .setPincode(newAddr.zipCode.trim());
+                            ref.invalidate(deliveryEtaProvider);
+                          }
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 11,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primaryDeep.withValues(
+                              alpha: 0.45,
+                            ),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          '+ Add new address',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                const Divider(height: 16),
+                const Text(
+                  'OR CHECK BY PINCODE / GPS',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                error: (_, _) => const SizedBox.shrink(),
+                const SizedBox(height: 8),
+              ] else
+                const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      autofocus: addresses.isEmpty,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onSubmitted: (_) => _submitPincode(),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: 'e.g. 500081',
+                        errorText: _error,
+                        prefixIcon: const Icon(
+                          Icons.pin_drop_outlined,
+                          size: 18,
+                          color: AppColors.primaryDeep,
+                        ),
+                        suffixIcon: _detectingLocation
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                tooltip: 'Use current location',
+                                icon: const Icon(
+                                  Icons.my_location_rounded,
+                                  size: 19,
+                                  color: AppColors.primaryDeep,
+                                ),
+                                onPressed: _detectCurrentLocation,
+                              ),
+                        filled: true,
+                        fillColor: AppColors.surfaceAlt,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: AppColors.borderStrong),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: AppColors.borderStrong),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryDeep,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: _checking ? null : _submitPincode,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryDeep,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _checking
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Check',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(
+                      Icons.my_location_rounded,
+                      size: 14,
+                      color: AppColors.primaryDeep,
+                    ),
+                    label: Text(
+                      _detectingLocation
+                          ? 'Detecting GPS…'
+                          : 'Use Current GPS Location',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                    backgroundColor: AppColors.primaryWash,
+                    side: const BorderSide(color: AppColors.primaryWashDeep),
+                    onPressed:
+                        _detectingLocation ? null : _detectCurrentLocation,
+                  ),
+                  for (final preset in const [
+                    ('Hyderabad · 500081', '500081'),
+                    ('Brahmapur · 760004', '760004'),
+                    ('Bhubaneswar · 751001', '751001'),
+                  ])
+                    ActionChip(
+                      label: Text(
+                        preset.$1,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: AppColors.primaryWashFaint,
+                      side: const BorderSide(color: AppColors.primaryWashDeep),
+                      onPressed: () {
+                        _controller.text = preset.$2;
+                        _submitPincode();
+                      },
+                    ),
+                ],
+              ),
+              if (currentPincode != null && currentPincode.length == 6) ...[
+                const SizedBox(height: 14),
+                etaAsync.when(
+                  data: (info) {
+                    final isBrahmapur = currentPincode.startsWith('7600');
+                    final serviceable = info?.serviceable ?? true;
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: serviceable
+                            ? AppColors.primaryWashFaint
+                            : AppColors.errorBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: serviceable
+                              ? AppColors.primaryWashDeep
+                              : AppColors.error.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            serviceable
+                                ? Icons.check_circle_rounded
+                                : Icons.info_outline_rounded,
+                            size: 20,
+                            color: serviceable
+                                ? AppColors.primaryDeep
+                                : AppColors.error,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isBrahmapur
+                                      ? '⚡ 24h Local Dispatch to $currentPincode'
+                                      : serviceable
+                                          ? 'Delivering to ${info?.city ?? currentPincode} (${info?.etaLabel.isNotEmpty == true ? info!.etaLabel : "Fast courier delivery"})'
+                                          : 'Currently unserviceable for $currentPincode',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (info != null && info.message.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    info.message,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: LinearProgressIndicator(
+                      color: AppColors.primaryDeep,
+                      backgroundColor: AppColors.primaryWash,
+                    ),
+                  ),
+                  error: (_, _) => const SizedBox.shrink(),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

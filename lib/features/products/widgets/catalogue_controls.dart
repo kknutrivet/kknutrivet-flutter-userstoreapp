@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -363,13 +363,18 @@ class CatalogueAnimalRail extends ConsumerWidget {
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: Image.asset(
-                    a.$3,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.pets,
-                      size: 18,
-                      color: AppColors.textPrimary,
+                  child: ClipOval(
+                    child: Transform.scale(
+                      scale: 1.85,
+                      child: Image.asset(
+                        a.$3,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.pets,
+                          size: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ),
                   ),
                 ),

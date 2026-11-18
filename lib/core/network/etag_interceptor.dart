@@ -213,13 +213,19 @@ class ETagInterceptor extends Interceptor {
         lower.contains('/auth/send-otp') ||
         lower.contains('/auth/verify-otp') ||
         lower.contains('/payments/cashfree') ||
-        lower.contains('/payments/order-session');
+        lower.contains('/payments/order-session') ||
+        lower.contains('/search/suggestions') ||
+        lower.contains('/delivery') ||
+        lower.contains('/coupons/validate') ||
+        lower.contains('/scratch-reward') ||
+        (lower.contains('/consultations/') && lower.contains('/messages'));
   }
 
   bool _isUserScoped(String path) {
     final lower = path.toLowerCase();
     return lower.startsWith('/cart') ||
         lower.startsWith('/auth/profile') ||
+        lower.startsWith('/auth/me') ||
         lower.startsWith('/orders') ||
         lower.startsWith('/pets') ||
         lower.startsWith('/prescriptions') ||

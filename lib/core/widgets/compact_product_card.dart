@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -40,11 +40,13 @@ class CompactProductCard extends ConsumerStatefulWidget {
     super.key,
     required this.product,
     this.variant = CompactCardVariant.catalogue,
+    this.singleLineTitle = false,
     this.heroTag,
   });
 
   final Product product;
   final CompactCardVariant variant;
+  final bool singleLineTitle;
   final String? heroTag;
 
   @override
@@ -78,6 +80,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
     final isCatalogue = widget.variant == CompactCardVariant.catalogue;
     final displayPrice = v?.price ?? product.effectivePrice;
     final displayMrp = v?.mrp ?? product.mrp;
+    final inStock = v != null ? v.stock > 0 : product.inStock;
     final hasDiscount = displayMrp != null && displayMrp > displayPrice;
     final discountPercent = hasDiscount
         ? (((displayMrp - displayPrice) / displayMrp) * 100).round()
@@ -91,23 +94,12 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1407271F),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 4,
-              offset: Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.borderSubtle, width: 1),
+          boxShadow: AppShadows.card,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(AppRadius.lg - 1),
           child: Material(
             color: Colors.white,
             child: LayoutBuilder(
@@ -121,16 +113,10 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                               child: ProductImageCover(
                                 imageUrl: image,
                                 showPlaceholderOnLoading: false,
-                                enableBackdrop: false,
-                                fit: BoxFit.cover,
-                                innerPadding: EdgeInsets.zero,
-                                backgroundColor: Colors.white,
-                                border: const Border(
-                                  bottom: BorderSide(
-                                    color: Color(0xFFF1F5F9),
-                                    width: 1,
-                                  ),
-                                ),
+                                enableBackdrop: true,
+                                fit: BoxFit.contain,
+                                innerPadding: const EdgeInsets.all(6),
+                                backgroundColor: const Color(0xFFF6F9F7),
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(15),
                                 ),
@@ -139,22 +125,54 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                           : ProductImageCover(
                               imageUrl: image,
                               showPlaceholderOnLoading: false,
-                              enableBackdrop: false,
-                              fit: BoxFit.cover,
-                              innerPadding: EdgeInsets.zero,
-                              backgroundColor: Colors.white,
-                              border: const Border(
-                                bottom: BorderSide(
-                                  color: Color(0xFFF1F5F9),
-                                  width: 1,
-                                ),
-                              ),
+                              enableBackdrop: true,
+                              fit: BoxFit.contain,
+                              innerPadding: const EdgeInsets.all(6),
+                              backgroundColor: const Color(0xFFF6F9F7),
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(15),
                               ),
                             ),
                     ),
-                  if (hasDiscount &&
+                  if (!inStock)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F5),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFDC2626),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'Sold out',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF991B1B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (hasDiscount &&
                       discountPercent > 0 &&
                       !product.requiresPrescription)
                     Positioned(
@@ -205,6 +223,83 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                         ),
                       ),
                     ),
+                  if (product.ratingCount > 0)
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(0xFFDCEAE2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${product.ratingAverage.toStringAsFixed(1)} ★',
+                                style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF166534),
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '(${product.ratingCount})',
+                                style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xBF142D24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.visibility_outlined,
+                              size: 10,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              product.formattedViewsLabel,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               );
 
@@ -224,7 +319,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                       children: [
                         Text(
                           product.name,
-                          maxLines: 2,
+                          maxLines: widget.singleLineTitle ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 14,
@@ -360,6 +455,30 @@ class _CompactAddButton extends ConsumerStatefulWidget {
 
 class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
   bool _busy = false;
+  bool _notified = false;
+
+  Future<void> _handleNotifyMe() async {
+    if (_busy || _notified) return;
+    final user = ref.read(authProvider).valueOrNull;
+    if (user == null || user.isAnonymous) {
+      Haptics.tap();
+      context.push('/login');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref.read(catalogServiceProvider).saveStockAlert(widget.product.id);
+      AppHaptics.success();
+      if (mounted) {
+        setState(() => _notified = true);
+        showToast("We'll notify you when ${widget.product.name} is back in stock");
+      }
+    } catch (e) {
+      if (mounted) showToast(e.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _handleInitialAdd() async {
     if (widget.product.variants.length > 1) {
@@ -462,19 +581,63 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
     }
 
     if (!inStock) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(widget.outlined ? 8 : 20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Center(
-          child: Text(
-            'Out of stock',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textTertiary,
+      return Semantics(
+        button: true,
+        label: _notified
+            ? "We'll notify you when ${product.name} is back"
+            : 'Notify me when ${product.name} is back in stock',
+        child: AppBounce(
+          pressedScale: 0.95,
+          onTap: _busy || _notified ? null : _handleNotifyMe,
+          child: Container(
+            decoration: BoxDecoration(
+              color: _notified ? const Color(0xFFFFF8F6) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: _notified
+                    ? const Color(0xFFF3D2C8)
+                    : const Color(0xFFD6E0DA),
+              ),
+            ),
+            child: Center(
+              child: _busy
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFA8553F),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _notified
+                              ? Icons.check_rounded
+                              : Icons.notifications_none_rounded,
+                          size: 13,
+                          color: _notified
+                              ? const Color(0xFFA8553F)
+                              : AppColors.primaryDeep,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            _notified ? "We'll notify you" : 'Notify Me',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: _notified
+                                  ? const Color(0xFFA8553F)
+                                  : AppColors.primaryDeep,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -576,15 +739,12 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
           onTap: _busy ? null : _handleInitialAdd,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF07583F),
+              color: const Color(0xFFEEF7F2),
               borderRadius: BorderRadius.circular(17),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF07583F).withValues(alpha: 0.22),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: const Color(0xFF07583F).withValues(alpha: 0.35),
+                width: 1.2,
+              ),
             ),
             child: Center(
               child: _busy
@@ -593,7 +753,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Color(0xFF07583F),
                       ),
                     )
                   : Row(
@@ -603,7 +763,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                           const Icon(
                             Icons.add,
                             size: 13,
-                            color: Colors.white,
+                            color: Color(0xFF07583F),
                           ),
                           const SizedBox(width: 2),
                         ],
@@ -612,7 +772,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: Color(0xFF07583F),
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -621,7 +781,7 @@ class _CompactAddButtonState extends ConsumerState<_CompactAddButton> {
                           const Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 14,
-                            color: Colors.white,
+                            color: Color(0xFF07583F),
                           ),
                         ],
                       ],

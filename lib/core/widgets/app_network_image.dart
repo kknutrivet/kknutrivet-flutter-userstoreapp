@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../config/app_config.dart';
 import '../theme/app_colors.dart';
@@ -194,15 +195,11 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
     if (!widget.showPlaceholderOnLoading) {
       return const SizedBox.shrink();
     }
-    return Center(
-      child: SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.brandPrimary.withValues(alpha: 0.8),
-        ),
-      ),
+    return Shimmer.fromColors(
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
+      period: const Duration(milliseconds: 1250),
+      child: Container(color: AppColors.shimmerBase),
     );
   }
 

@@ -1,8 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nvit_app/features/home/screens/main_shell.dart';
+import 'package:nvit_app/features/home/widgets/home_animal_selector.dart';
+import 'package:nvit_app/models/store_settings.dart';
+import 'package:nvit_app/providers/app_providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +60,116 @@ void main() {
       await tester.pumpAndSettle();
       expect(selectedTab, 2);
     });
+
+    testWidgets(
+      'tapping an animal in HomeAnimalSelector filters home in place while Shop nav switches to Shop (index 1)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final router = GoRouter(
+          initialLocation: '/home',
+          routes: [
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, navigationShell) =>
+                  MainShell(navigationShell: navigationShell),
+              branches: [
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/home',
+                      builder: (context, state) => const Scaffold(
+                        body: HomeAnimalSelector(),
+                      ),
+                    ),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/products',
+                      builder: (context, state) => Scaffold(
+                        body: Text(
+                          'Shop branch: ${state.uri.queryParameters['animalType'] ?? 'all'}',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/consultations',
+                      builder: (context, state) => const SizedBox(),
+                    ),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/shots',
+                      builder: (context, state) => const SizedBox(),
+                    ),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/profile',
+                      builder: (context, state) => const SizedBox(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            storeSettingsProvider.overrideWith(
+              (ref) => Future.value(StoreSettings.defaults()),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially on Home tab (index 0) with no animal filter
+        expect(
+          tester.widget<WebsiteBottomNav>(find.byType(WebsiteBottomNav)).currentIndex,
+          0,
+        );
+        expect(container.read(selectedHomeAnimalProvider), isNull);
+
+        // Tap "Dogs" in HomeAnimalSelector — stays on Home and sets filter
+        await tester.tap(find.text('Dogs'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<WebsiteBottomNav>(find.byType(WebsiteBottomNav)).currentIndex,
+          0,
+        );
+        expect(container.read(selectedHomeAnimalProvider), 'Dog');
+
+        // Tap bottom nav "Shop" — switches StatefulNavigationShell to Shop (index 1)
+        await tester.tap(find.text('Shop'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<WebsiteBottomNav>(find.byType(WebsiteBottomNav)).currentIndex,
+          1,
+        );
+        expect(find.text('Shop branch: all'), findsOneWidget);
+      },
+    );
   });
 
   group('CartFloatingBar Tests', () {

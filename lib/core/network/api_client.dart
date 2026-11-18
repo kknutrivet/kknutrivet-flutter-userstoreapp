@@ -9,10 +9,11 @@ import '../storage/token_storage.dart';
 import 'etag_interceptor.dart';
 
 class ApiException implements Exception {
-  ApiException(this.message, {this.statusCode, this.code});
+  ApiException(this.message, {this.statusCode, this.code, this.meta});
   final String message;
   final int? statusCode;
   final String? code;
+  final Map<String, dynamic>? meta;
 
   @override
   String toString() => message;
@@ -226,18 +227,28 @@ class ApiClient {
       final data = e.response?.data;
       String message = 'Something went wrong. Please try again.';
       String? code;
-      if (data is Map && data['error'] != null) {
-        message = data['error'].toString();
+      Map<String, dynamic>? meta;
+      if (data is Map) {
+        if (data['meta'] is Map) {
+          meta = Map<String, dynamic>.from(data['meta'] as Map);
+        }
         code = data['code']?.toString();
-      } else if (data is Map && data['message'] != null) {
-        message = data['message'].toString();
-        code = data['code']?.toString();
+        if (data['error'] != null) {
+          message = data['error'].toString();
+        } else if (data['message'] != null) {
+          message = data['message'].toString();
+        }
       } else if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.connectionError) {
         message = 'Could not connect. Check your internet connection.';
       }
-      throw ApiException(message, statusCode: e.response?.statusCode, code: code);
+      throw ApiException(
+        message,
+        statusCode: e.response?.statusCode,
+        code: code,
+        meta: meta,
+      );
     }
   }
 }

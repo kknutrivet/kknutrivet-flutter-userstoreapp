@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -374,19 +374,12 @@ class _ConsultationsHomeScreenState
                   }
                 },
               ),
-              title: Image.asset(
-                'assets/images/logo.png',
-                height: 32,
-                fit: BoxFit.contain,
-                alignment: Alignment.centerLeft,
-                errorBuilder: (_, _, _) => const Text(
-                  'KK NUTRIVET',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.6,
-                    color: AppColors.primaryDeep,
-                  ),
+              title: Text(
+                'Veterinary Care',
+                style: AppTheme.serif(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
               ),
               actions: [
@@ -398,13 +391,14 @@ class _ConsultationsHomeScreenState
                     border: Border.all(color: const Color(0xFFE2ECE6)),
                   ),
                   child: IconButton(
+                    tooltip: 'Ask Dr. Paw AI',
                     padding: EdgeInsets.zero,
                     icon: const Icon(
-                      Icons.videocam_outlined,
-                      size: 20,
-                      color: AppColors.textPrimary,
+                      Icons.auto_awesome_outlined,
+                      size: 19,
+                      color: AppColors.primaryDeep,
                     ),
-                    onPressed: () => context.push('/consultations'),
+                    onPressed: () => context.push('/vet'),
                   ),
                 ),
                 const SizedBox(width: 8),

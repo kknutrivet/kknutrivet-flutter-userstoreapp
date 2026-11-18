@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_colors.dart';
 
@@ -11,17 +11,19 @@ class AppTypography {
   static TextStyle serif({
     double fontSize = 20,
     FontWeight fontWeight = FontWeight.w700,
+    FontStyle fontStyle = FontStyle.normal,
     Color color = AppColors.textPrimary,
     double? height,
     double? letterSpacing,
   }) => TextStyle(
-    fontFamily: 'PlusJakartaSans',
-    fontFamilyFallback: const ['Roboto', 'sans-serif'],
+    fontFamily: 'Lora',
+    fontFamilyFallback: const ['PlusJakartaSans', 'Georgia', 'serif'],
     fontSize: fontSize,
     fontWeight: fontWeight,
+    fontStyle: fontStyle,
     color: color,
-    height: height ?? 1.2,
-    letterSpacing: letterSpacing ?? -0.25,
+    height: height ?? 1.18,
+    letterSpacing: letterSpacing ?? -0.3,
   );
 
   /// Clean body font for body copy, titles, labels, chips, and buttons.

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -603,9 +603,28 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
   Future<void> _removeItem(String title) async {
     if (_busy) return;
     setState(() => _busy = true);
+    final removedItem = widget.item;
     try {
-      await ref.read(cartProvider.notifier).removeItem(widget.item.id);
-      showToast('$title removed from cart');
+      await ref.read(cartProvider.notifier).removeItem(removedItem.id);
+      if (removedItem.product != null) {
+        showToast(
+          '$title removed from cart',
+          type: AppToastType.info,
+          duration: const Duration(milliseconds: 3500),
+          actionLabel: 'Undo',
+          onAction: () {
+            ref.read(cartProvider.notifier).addItem(
+                  productId: removedItem.productId,
+                  variantId: removedItem.variantId,
+                  product: removedItem.product,
+                  variant: removedItem.variant,
+                  quantity: removedItem.quantity,
+                );
+          },
+        );
+      } else {
+        showToast('$title removed from cart', type: AppToastType.info);
+      }
     } catch (e) {
       showToast('Could not remove item: $e', isError: true);
     } finally {

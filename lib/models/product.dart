@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class QuantityDiscountTier {
   const QuantityDiscountTier({
     required this.minQuantity,
@@ -92,6 +94,9 @@ class Product {
     this.stock = 0,
     this.offerPrice,
     this.offerLabel,
+    this.ratingAverage = 0,
+    this.ratingCount = 0,
+    this.viewCount = 0,
     this.variants = const [],
     this.quantityDiscounts = const [],
   });
@@ -118,8 +123,15 @@ class Product {
   final int stock;
   final double? offerPrice;
   final String? offerLabel;
+  final double ratingAverage;
+  final int ratingCount;
+  final int viewCount;
   final List<ProductVariant> variants;
   final List<QuantityDiscountTier> quantityDiscounts;
+
+  String get formattedViewsLabel => viewCount >= 10
+      ? NumberFormat.decimalPattern('en_IN').format(viewCount)
+      : '10+';
 
   double get effectivePrice => offerPrice ?? price;
   bool get inStock => stock > 0 || variants.any((v) => v.stock > 0);
@@ -156,6 +168,12 @@ class Product {
         stock: (json['stock'] as num?)?.toInt() ?? 0,
         offerPrice: (json['offerPrice'] as num?)?.toDouble(),
         offerLabel: json['offerLabel']?.toString(),
+        ratingAverage: (json['ratingAverage'] as num?)?.toDouble() ?? 0,
+        ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
+        viewCount:
+            (json['viewCount'] as num?)?.toInt() ??
+            (json['views'] as num?)?.toInt() ??
+            0,
         variants: (json['variants'] as List?)
                 ?.map((e) => ProductVariant.fromJson(Map<String, dynamic>.from(e as Map)))
                 .toList() ??
@@ -189,6 +207,9 @@ class Product {
         'stock': stock,
         if (offerPrice != null) 'offerPrice': offerPrice,
         if (offerLabel != null) 'offerLabel': offerLabel,
+        'ratingAverage': ratingAverage,
+        'ratingCount': ratingCount,
+        'viewCount': viewCount,
         'variants': variants.map((v) => v.toJson()).toList(),
         'quantityDiscounts': quantityDiscounts.map((q) => q.toJson()).toList(),
       };

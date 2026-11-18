@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Centralized KK Nutrivet mobile design tokens extracted directly from
 /// the Next.js website (`src/app/globals.css`).
@@ -121,8 +121,8 @@ class AppColors {
   static const starGold = Color(0xFFFAB400);
 
   // Shimmer skeleton tokens
-  static const shimmerBase = Color(0xFFEEF2EF);
-  static const shimmerHighlight = Color(0xFFF8FAF8);
+  static const shimmerBase = Color(0xFFE6EEE9);
+  static const shimmerHighlight = Color(0xFFFAFCFB);
   static const shimmerBorder = Color(0xFFE4ECE7);
 
   // Animal category rails (exact match with `src/lib/animal-category-images.ts`)

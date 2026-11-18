@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1102,6 +1102,63 @@ class _DetailsCard extends ConsumerWidget {
                   Icons.share_outlined,
                   size: 20,
                   color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (product.ratingCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF166534),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${product.ratingAverage.toStringAsFixed(1)} ★ (${product.ratingCount})',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryWashFaint,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.primaryWashDeep),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.visibility_outlined,
+                      size: 12,
+                      color: AppColors.primaryDeep,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${product.formattedViewsLabel} views',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

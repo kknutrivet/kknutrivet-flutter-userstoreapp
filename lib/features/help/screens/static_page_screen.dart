@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
@@ -58,8 +58,8 @@ class StaticPageScreen extends StatelessWidget {
   ];
 
   static const returns = <StaticPageSection>[
-    StaticPageSection('Returns & replacements',
-        'Products can be returned or replaced within 7 days of delivery if they are damaged, defective, or incorrect. Items must be in original condition with original packaging intact.'),
+    StaticPageSection('Return eligibility',
+        'Eligible unopened items and order issues (damaged, defective, expired, or incorrect) can be reported promptly upon delivery with your order ID. Items must be in original condition with original packaging intact.'),
     StaticPageSection('Non-returnable items',
         'Opened medicines, temperature-sensitive vaccines, and used healthcare products cannot be returned for safety reasons.'),
     StaticPageSection('Cancellations',

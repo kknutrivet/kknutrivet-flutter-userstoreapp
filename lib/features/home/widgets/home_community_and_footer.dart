@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -607,7 +607,7 @@ class HomeBrandsRail extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                           onTap: () {
                             Haptics.tap();
-                            context.push(
+                            context.go(
                               '/products?search=${Uri.encodeComponent(brand.name)}',
                             );
                           },
@@ -927,7 +927,14 @@ class _HomeMobileFooterState extends State<HomeMobileFooter> {
                           children: col.$2
                               .map(
                                 (link) => InkWell(
-                                  onTap: () => context.push(link.$2),
+                                  onTap: () {
+                                    if (link.$2.startsWith('/products') ||
+                                        link.$2.startsWith('/consultations')) {
+                                      context.go(link.$2);
+                                    } else {
+                                      context.push(link.$2);
+                                    }
+                                  },
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 6,

@@ -1,7 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
+import '../config/firebase_options.dart';
 
 /// Same Firebase project as the website (`src/lib/firebase.ts`).
 ///
@@ -35,6 +38,7 @@ class FirebaseAuthService {
       '446688659304-cql9915fjkl985vqm88nhe3pdbpo04bf.apps.googleusercontent.com';
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: kIsWeb ? _webClientId : null,
     serverClientId: _webClientId,
   );
 
@@ -45,11 +49,14 @@ class FirebaseAuthService {
     if (_initialized) return true;
     try {
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
+        await Firebase.initializeApp(options: platformFirebaseOptions);
       }
       _initialized = true;
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint(
+        '[Firebase] initializeApp failed; Google/phone sign-in disabled: $e',
+      );
       return false;
     }
   }

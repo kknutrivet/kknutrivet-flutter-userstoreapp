@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/utils/order_status.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../models/order.dart';
 import '../../../providers/app_providers.dart';
 
@@ -50,14 +51,19 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         backgroundColor: AppColors.homeCanvas,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: handleBack,
           ),
-          title: Text(
+          title: const Text(
             'My Orders',
-            style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFF07583F),
+          foregroundColor: Colors.white,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
         ),
@@ -177,7 +183,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
-                              child: _OrderCard(order: filteredOrders[i]),
+                              child: AppFadeSlide(
+                                delay: Duration(
+                                  milliseconds: (i * 40).clamp(0, 200),
+                                ),
+                                offsetY: 12,
+                                child: _OrderCard(order: filteredOrders[i]),
+                              ),
                             ),
                             childCount: filteredOrders.length,
                           ),
@@ -187,7 +199,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               );
             },
-            loading: () => const Center(child: AppLoader.large()),
+            loading: () => const OrderListSkeleton(),
             error: (e, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -207,12 +219,41 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerWidget {
   const _OrderCard({required this.order});
   final Order order;
 
+  Future<void> _reorder(BuildContext context, WidgetRef ref) async {
+    AppHaptics.tap();
+    final cartNotifier = ref.read(cartProvider.notifier);
+    var addedCount = 0;
+    for (final item in order.items) {
+      final product = item.product;
+      if (product == null) continue;
+      await cartNotifier.addItem(
+        productId: product.id,
+        variantId: item.variant?.id,
+        product: product,
+        variant: item.variant,
+        quantity: item.quantity > 0 ? item.quantity : 1,
+      );
+      addedCount++;
+    }
+    if (addedCount > 0) {
+      showToast(
+        'Added $addedCount ${addedCount == 1 ? 'item' : 'items'} to cart',
+        actionLabel: 'View Cart',
+        onAction: () {
+          if (context.mounted) context.push('/cart');
+        },
+      );
+    } else {
+      showToast('No reorderable items found', type: AppToastType.warning);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final info = statusInfoFor(order.status);
     final isOnline = order.paymentMethod == 'CASHFREE' || order.partialCod;
     final paid =
@@ -364,9 +405,37 @@ class _OrderCard extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
-              const Row(
+              Row(
                 children: [
-                  Text(
+                  if (order.items.any((i) => i.product != null)) ...[
+                    OutlinedButton.icon(
+                      onPressed: () => _reorder(context, ref),
+                      icon: const Icon(Icons.replay_rounded, size: 14),
+                      label: const Text(
+                        'Reorder',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryDeep,
+                        side: const BorderSide(color: AppColors.primaryWashDeep),
+                        backgroundColor: AppColors.primaryWashFaint,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  const Text(
                     'View order',
                     style: TextStyle(
                       color: AppColors.primaryDeep,
@@ -374,8 +443,8 @@ class _OrderCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(
+                  const SizedBox(width: 4),
+                  const Icon(
                     Icons.arrow_forward_rounded,
                     size: 14,
                     color: AppColors.primaryDeep,

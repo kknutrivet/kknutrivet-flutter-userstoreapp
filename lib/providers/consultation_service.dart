@@ -1,6 +1,13 @@
 import '../core/network/api_client.dart';
 import '../models/consultation.dart';
 
+class CareChatSendResult {
+  const CareChatSendResult({required this.message, this.coinStatus});
+
+  final CareChatMessage message;
+  final CareChatCoinStatus? coinStatus;
+}
+
 class ConsultationService {
   ConsultationService(this._client);
   final ApiClient _client;
@@ -22,6 +29,25 @@ class ConsultationService {
     );
     final data = _payload(response);
     return Map<String, dynamic>.from(data);
+  }
+
+  Future<List<String>> fetchCareIntakeLanguages() async {
+    try {
+      final response = await _client.get('/consultations/chat/languages');
+      final data = _payload(response);
+      if (data is Map && data['languages'] is List) {
+        final list = (data['languages'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+        if (list.isNotEmpty) {
+          return list;
+        }
+      }
+    } catch (_) {
+      // Fallback
+    }
+    return const ['English', 'Hindi', 'Odia'];
   }
 
   Future<ConsultationBooking> holdSlot({
@@ -161,6 +187,21 @@ class ConsultationService {
     String messageType = 'TEXT',
     String? mediaUrl,
   }) async {
+    final result = await sendChatMessageResult(
+      bookingId,
+      body: body,
+      messageType: messageType,
+      mediaUrl: mediaUrl,
+    );
+    return result.message;
+  }
+
+  Future<CareChatSendResult> sendChatMessageResult(
+    String bookingId, {
+    required String body,
+    String messageType = 'TEXT',
+    String? mediaUrl,
+  }) async {
     final response = await _client.post(
       '/consultations/$bookingId/messages',
       data: {
@@ -172,30 +213,63 @@ class ConsultationService {
       },
     );
     final data = _payload(response);
+    CareChatCoinStatus? coinStatus;
+    if (data is Map && data['coinStatus'] is Map) {
+      coinStatus = CareChatCoinStatus.fromJson(
+        Map<String, dynamic>.from(data['coinStatus'] as Map),
+      );
+    }
     if (data is Map && data['message'] is Map) {
-      return CareChatMessage.fromJson(
-        Map<String, dynamic>.from(data['message'] as Map),
+      return CareChatSendResult(
+        message: CareChatMessage.fromJson(
+          Map<String, dynamic>.from(data['message'] as Map),
+        ),
+        coinStatus: coinStatus,
       );
     }
     if (data is Map) {
-      return CareChatMessage.fromJson(Map<String, dynamic>.from(data));
+      return CareChatSendResult(
+        message: CareChatMessage.fromJson(Map<String, dynamic>.from(data)),
+        coinStatus: coinStatus,
+      );
     }
-    return CareChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'me',
-      senderRole: 'CUSTOMER',
-      senderName: 'You',
-      messageType: messageType,
-      body: body,
-      mediaUrl: mediaUrl,
-      createdAt: DateTime.now(),
+    return CareChatSendResult(
+      message: CareChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        senderId: 'me',
+        senderRole: 'CUSTOMER',
+        senderName: 'You',
+        messageType: messageType,
+        body: body,
+        mediaUrl: mediaUrl,
+        createdAt: DateTime.now(),
+      ),
+      coinStatus: coinStatus,
     );
   }
 
-  Future<Map<String, dynamic>> createPayment(String bookingId, {String? prescriptionMessageId, bool video = false}) async {
+  Future<Map<String, dynamic>> createPayment(
+    String bookingId, {
+    String? prescriptionMessageId,
+    bool video = false,
+    String? purpose,
+    int? coinPackAmount,
+    String? customerPhone,
+    bool skipPhoneVerification = false,
+  }) async {
+    final resolvedPurpose =
+        purpose ??
+        (video ? 'VIDEO' : (coinPackAmount != null ? 'COIN_RECHARGE' : null));
     final response = await _client.post(
       '/consultations/payment',
-      data: {'bookingId': bookingId, 'prescriptionMessageId': ?prescriptionMessageId, if (video) 'purpose': 'VIDEO'},
+      data: {
+        'bookingId': bookingId,
+        'prescriptionMessageId': ?prescriptionMessageId,
+        'purpose': ?resolvedPurpose,
+        'coinPackAmount': ?coinPackAmount,
+        'customerPhone': ?customerPhone,
+        if (skipPhoneVerification) 'skipPhoneVerification': true,
+      },
     );
     final data = _payload(response);
     return Map<String, dynamic>.from(data);
@@ -209,10 +283,22 @@ class ConsultationService {
     return Map<String, dynamic>.from(data);
   }
 
-  Future<Map<String, dynamic>> verifyBooking(String bookingId, {String? orderId, String? prescriptionMessageId, bool video = false}) async {
+  Future<Map<String, dynamic>> verifyBooking(
+    String bookingId, {
+    String? orderId,
+    String? prescriptionMessageId,
+    bool video = false,
+    bool coinRecharge = false,
+  }) async {
     final response = await _client.get(
       '/consultations/verify',
-      query: {'booking_id': bookingId, 'order_id': ?orderId, 'prescription_message_id': ?prescriptionMessageId, if (video) 'video': '1'},
+      query: {
+        'booking_id': bookingId,
+        'order_id': ?orderId,
+        'prescription_message_id': ?prescriptionMessageId,
+        if (video) 'video': '1',
+        if (coinRecharge) 'coin_recharge': '1',
+      },
     );
     final data = _payload(response);
     return Map<String, dynamic>.from(data);

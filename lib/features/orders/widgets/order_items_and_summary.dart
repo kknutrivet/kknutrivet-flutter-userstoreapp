@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -370,73 +370,340 @@ class OrderComboBundleGroupCard extends StatelessWidget {
   }
 }
 
-/// Standalone item row inside Order Details.
-class OrderStandaloneItemRow extends StatelessWidget {
+/// Standalone item row inside Order Details with inline star rating & review sheet.
+class OrderStandaloneItemRow extends ConsumerStatefulWidget {
   const OrderStandaloneItemRow({super.key, required this.item});
   final OrderItem item;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: item.product?.image != null
-                  ? CachedNetworkImage(
-                      imageUrl: item.product!.image!,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      color: AppColors.background,
-                      child: const Icon(
-                        Icons.pets,
-                        color: AppColors.textSecondary,
+  ConsumerState<OrderStandaloneItemRow> createState() =>
+      _OrderStandaloneItemRowState();
+}
+
+class _OrderStandaloneItemRowState
+    extends ConsumerState<OrderStandaloneItemRow> {
+  int? _submittedRating;
+
+  void _openReviewSheet(int initialRating) {
+    final productId = widget.item.product?.id;
+    if (productId == null || productId.isEmpty) return;
+    final productName = widget.item.product?.name ?? 'Product';
+    final variantLabel = widget.item.variant?.name;
+
+    int rating = initialRating;
+    final titleCtrl = TextEditingController();
+    final commentCtrl = TextEditingController();
+    bool isAnonymous = false;
+    bool submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final bottomInset =
+                MediaQuery.viewInsetsOf(ctx).bottom +
+                MediaQuery.paddingOf(ctx).bottom;
+            return Container(
+              padding: EdgeInsets.fromLTRB(18, 12, 18, 16 + bottomInset),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
-            ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'RATE & REVIEW',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                productName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        final star = index + 1;
+                        final filled = star <= rating;
+                        return IconButton(
+                          onPressed: () => setSheetState(() => rating = star),
+                          icon: Icon(
+                            filled
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 34,
+                            color: filled
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFFCBD5E1),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Headline (optional)',
+                        hintText: 'e.g. Great results for my pet',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: commentCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Your review',
+                        hintText:
+                            'Share how this product helped your pet or herd…',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: isAnonymous,
+                      onChanged: (val) =>
+                          setSheetState(() => isAnonymous = val ?? false),
+                      title: const Text(
+                        'Post review anonymously',
+                        style: TextStyle(fontSize: 12.5),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton(
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                setSheetState(() => submitting = true);
+                                try {
+                                  await ref
+                                      .read(catalogServiceProvider)
+                                      .submitProductReview(
+                                        productId: productId,
+                                        rating: rating,
+                                        title: titleCtrl.text,
+                                        comment: commentCtrl.text.trim().isEmpty
+                                            ? 'Rated $rating stars'
+                                            : commentCtrl.text,
+                                        variantLabel: variantLabel,
+                                        isAnonymous: isAnonymous,
+                                      );
+                                  if (!ctx.mounted) return;
+                                  Navigator.pop(ctx);
+                                  if (mounted) {
+                                    setState(() => _submittedRating = rating);
+                                  }
+                                  showToast('Thank you! Your review is live.');
+                                } catch (e) {
+                                  if (ctx.mounted) {
+                                    setSheetState(() => submitting = false);
+                                    showToast(e.toString(), isError: true);
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryDeep,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          submitting ? 'Submitting…' : 'Submit Review',
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final hasProductId =
+        item.product?.id != null && item.product!.id.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFDFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5EFE9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: item.product?.image != null
+                      ? CachedNetworkImage(
+                          imageUrl: item.product!.image!,
+                          fit: BoxFit.contain,
+                        )
+                      : Container(
+                          color: AppColors.background,
+                          child: const Icon(
+                            Icons.pets,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.product?.name ?? 'Item',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    if (item.variant != null)
+                      Text(
+                        item.variant!.name,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Qty ${item.quantity} · ${formatPrice(item.price)} each',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                formatPrice(item.lineTotal),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (hasProductId) ...[
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: Color(0xFFE5EFE9)),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  item.product?.name ?? 'Item',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  _submittedRating != null
+                      ? 'Your rating · Tap to edit'
+                      : 'How was this product?',
                   style: const TextStyle(
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                if (item.variant != null)
-                  Text(
-                    item.variant!.name,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                const SizedBox(height: 4),
-                Text(
-                  'Qty ${item.quantity} · ${formatPrice(item.price)} each',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    final star = index + 1;
+                    final filled =
+                        _submittedRating != null && star <= _submittedRating!;
+                    return GestureDetector(
+                      onTap: () => _openReviewSheet(star),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Icon(
+                          filled
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          size: 20,
+                          color: filled
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
               ],
             ),
-          ),
-          Text(
-            formatPrice(item.lineTotal),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-          ),
+          ],
         ],
       ),
     );

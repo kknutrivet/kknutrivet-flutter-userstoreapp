@@ -35,10 +35,10 @@ class AppConfig {
   // Override at build time with: --dart-define=API_BASE_URL=https://your-domain.com
   static const String _buildTimeApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://kknutrivet.in',
+    defaultValue: 'https://test.kknutrivet.in',
   );
 
-  static AppEnvironment _currentEnv = AppEnvironment.prod;
+  static AppEnvironment _currentEnv = AppEnvironment.test;
   static String _activeBaseUrl = _buildTimeApiBaseUrl;
 
   /// Currently active server environment

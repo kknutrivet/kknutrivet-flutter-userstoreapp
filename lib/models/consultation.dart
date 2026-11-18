@@ -56,6 +56,153 @@ class VetSummary {
   );
 }
 
+const String kCareChatNoVetAvailableText =
+    "No vet is available at this moment. We'll notify you as soon as a doctor responds.";
+
+const String kCareChatDoctorConnectingReassuranceText =
+    "We are connecting with our internal veterinary doctors to review your case details. This usually takes 2–5 minutes. If you step away, we'll notify you via SMS/WhatsApp as soon as the doctor responds.";
+
+const List<String> kCareChatNoVetWaitTexts = [
+  kCareChatNoVetAvailableText,
+  kCareChatDoctorConnectingReassuranceText,
+];
+
+bool isCareChatNoVetWaitText(String? text) {
+  final trimmed = text?.trim() ?? '';
+  return trimmed.isNotEmpty && kCareChatNoVetWaitTexts.contains(trimmed);
+}
+
+String normalizeCareChatSystemBody(String rawBody) {
+  final trimmed = rawBody.trim();
+  if (trimmed == kCareChatDoctorConnectingReassuranceText) {
+    return kCareChatNoVetAvailableText;
+  }
+  return rawBody;
+}
+
+class CareCoinRechargePack {
+  const CareCoinRechargePack({
+    required this.amount,
+    required this.coins,
+    required this.label,
+  });
+
+  final int amount;
+  final int coins;
+  final String label;
+
+  factory CareCoinRechargePack.fromJson(Map<String, dynamic> json) =>
+      CareCoinRechargePack(
+        amount: (json['amount'] as num?)?.toInt() ?? 0,
+        coins: (json['coins'] as num?)?.toInt() ?? 0,
+        label: json['label']?.toString() ?? '',
+      );
+}
+
+const List<CareCoinRechargePack> kDefaultCareCoinRechargePacks = [
+  CareCoinRechargePack(amount: 49, coins: 49, label: 'Starter'),
+  CareCoinRechargePack(amount: 99, coins: 110, label: 'Popular · +11 bonus'),
+  CareCoinRechargePack(
+    amount: 199,
+    coins: 230,
+    label: 'Best Value · +31 bonus',
+  ),
+];
+
+class CareChatCoinStatus {
+  const CareChatCoinStatus({
+    required this.enabled,
+    required this.exempt,
+    this.exemptReason,
+    this.intakeFree = false,
+    this.waitingForDoctor = false,
+    this.waitingLockActive = false,
+    this.waitingMessagesLimit = 3,
+    this.waitingMessagesUsed = 0,
+    this.waitingMessagesRemaining = 3,
+    this.isFollowUp = false,
+    this.phase = 'DISABLED',
+    this.freeMessagesTotal = 3,
+    this.freeMessagesUsed = 0,
+    this.freeMessagesRemaining = 0,
+    this.coinsPerMessage = 5,
+    this.userCoinsBalance = 0,
+    this.requiresCoinsNow = false,
+    this.canAffordNextMessage = true,
+    this.packs = kDefaultCareCoinRechargePacks,
+  });
+
+  final bool enabled;
+  final bool exempt;
+  final String? exemptReason;
+  final bool intakeFree;
+  final bool waitingForDoctor;
+  final bool waitingLockActive;
+  final int waitingMessagesLimit;
+  final int waitingMessagesUsed;
+  final int waitingMessagesRemaining;
+  final bool isFollowUp;
+  final String phase;
+  final int freeMessagesTotal;
+  final int freeMessagesUsed;
+  final int freeMessagesRemaining;
+  final int coinsPerMessage;
+  final int userCoinsBalance;
+  final bool requiresCoinsNow;
+  final bool canAffordNextMessage;
+  final List<CareCoinRechargePack> packs;
+
+  bool get isActiveForCustomer => enabled && !exempt;
+
+  bool get outOfCoins =>
+      isActiveForCustomer &&
+      !waitingLockActive &&
+      requiresCoinsNow &&
+      !canAffordNextMessage;
+
+  List<CareCoinRechargePack> get effectivePacks =>
+      packs.isEmpty ? kDefaultCareCoinRechargePacks : packs;
+
+  factory CareChatCoinStatus.fromJson(Map<String, dynamic> json) {
+    final rawPacks = json['packs'];
+    final parsedPacks = rawPacks is List
+        ? rawPacks
+              .whereType<Map>()
+              .map(
+                (p) => CareCoinRechargePack.fromJson(
+                  Map<String, dynamic>.from(p),
+                ),
+              )
+              .where((p) => p.amount > 0 && p.coins > 0)
+              .toList()
+        : const <CareCoinRechargePack>[];
+    return CareChatCoinStatus(
+      enabled: json['enabled'] == true,
+      exempt: json['exempt'] == true,
+      exemptReason: json['exemptReason']?.toString(),
+      intakeFree: json['intakeFree'] == true,
+      waitingForDoctor: json['waitingForDoctor'] == true,
+      waitingLockActive: json['waitingLockActive'] == true,
+      waitingMessagesLimit:
+          (json['waitingMessagesLimit'] as num?)?.toInt() ?? 3,
+      waitingMessagesUsed: (json['waitingMessagesUsed'] as num?)?.toInt() ?? 0,
+      waitingMessagesRemaining:
+          (json['waitingMessagesRemaining'] as num?)?.toInt() ?? 0,
+      isFollowUp: json['isFollowUp'] == true,
+      phase: json['phase']?.toString() ?? 'DISABLED',
+      freeMessagesTotal: (json['freeMessagesTotal'] as num?)?.toInt() ?? 3,
+      freeMessagesUsed: (json['freeMessagesUsed'] as num?)?.toInt() ?? 0,
+      freeMessagesRemaining:
+          (json['freeMessagesRemaining'] as num?)?.toInt() ?? 0,
+      coinsPerMessage: (json['coinsPerMessage'] as num?)?.toInt() ?? 5,
+      userCoinsBalance: (json['userCoinsBalance'] as num?)?.toInt() ?? 0,
+      requiresCoinsNow: json['requiresCoinsNow'] == true,
+      canAffordNextMessage: json['canAffordNextMessage'] != false,
+      packs: parsedPacks.isEmpty ? kDefaultCareCoinRechargePacks : parsedPacks,
+    );
+  }
+}
+
 class CareChatPage {
   const CareChatPage({
     required this.messages,
@@ -67,29 +214,65 @@ class CareChatPage {
     this.bookingStatus,
     this.videoAmount,
     this.careChatAssignedAt,
+    this.followUpUntil,
+    this.careChatCoinsEnabled = false,
+    this.coinStatus,
+    this.intakeState,
+    this.hasAppointment = false,
+    this.doctorName,
+    this.prescriptionUnlocked = false,
   });
   final List<CareChatMessage> messages;
-  final bool canMessage, hasMore, followUpRequested, videoAvailable, videoEligible;
+  final bool canMessage,
+      hasMore,
+      followUpRequested,
+      videoAvailable,
+      videoEligible,
+      careChatCoinsEnabled,
+      hasAppointment,
+      prescriptionUnlocked;
   final String? bookingStatus;
+  final String? intakeState;
+  final String? doctorName;
   final double? videoAmount;
   final DateTime? careChatAssignedAt;
+  final DateTime? followUpUntil;
+  final CareChatCoinStatus? coinStatus;
 
-  factory CareChatPage.fromJson(Map<String, dynamic> json) => CareChatPage(
-    messages: (json['messages'] as List? ?? [])
-        .whereType<Map>()
-        .map((m) => CareChatMessage.fromJson(Map<String, dynamic>.from(m)))
-        .toList(),
-    canMessage: json['canMessage'] == true,
-    hasMore: json['hasMore'] == true,
-    followUpRequested: json['followUpRequested'] == true,
-    videoAvailable: json['videoCallAvailable'] == true,
-    videoEligible: json['videoCallEligible'] == true,
-    bookingStatus: json['bookingStatus']?.toString(),
-    videoAmount: (json['videoAmount'] as num?)?.toDouble(),
-    careChatAssignedAt: json['careChatAssignedAt'] != null
-        ? DateTime.tryParse(json['careChatAssignedAt'].toString())
-        : null,
-  );
+  factory CareChatPage.fromJson(Map<String, dynamic> json) {
+    final rawCoinStatus = json['coinStatus'];
+    final coinStatus = rawCoinStatus is Map
+        ? CareChatCoinStatus.fromJson(Map<String, dynamic>.from(rawCoinStatus))
+        : null;
+    final rawDoctor = json['doctorName']?.toString().trim();
+    return CareChatPage(
+      messages: (json['messages'] as List? ?? [])
+          .whereType<Map>()
+          .map((m) => CareChatMessage.fromJson(Map<String, dynamic>.from(m)))
+          .toList(),
+      canMessage: json['canMessage'] == true,
+      hasMore: json['hasMore'] == true,
+      followUpRequested: json['followUpRequested'] == true,
+      videoAvailable: json['videoCallAvailable'] == true,
+      videoEligible: json['videoCallEligible'] == true,
+      bookingStatus: json['bookingStatus']?.toString(),
+      videoAmount: (json['videoAmount'] as num?)?.toDouble(),
+      careChatAssignedAt: json['careChatAssignedAt'] != null
+          ? DateTime.tryParse(json['careChatAssignedAt'].toString())
+          : null,
+      followUpUntil: json['followUpUntil'] != null
+          ? DateTime.tryParse(json['followUpUntil'].toString())
+          : null,
+      careChatCoinsEnabled:
+          json['careChatCoinsEnabled'] == true ||
+          (coinStatus?.enabled ?? false),
+      coinStatus: coinStatus,
+      intakeState: json['intakeState']?.toString(),
+      hasAppointment: json['hasAppointment'] == true,
+      doctorName: rawDoctor != null && rawDoctor.isNotEmpty ? rawDoctor : null,
+      prescriptionUnlocked: json['prescriptionUnlocked'] == true,
+    );
+  }
 }
 
 class ChatReaction {
@@ -172,6 +355,8 @@ class CareChatMessage {
     );
   }
 
+  bool get isNoVetWaitNotice => isCareChatNoVetWaitText(body);
+
   bool get isSystem {
     final role = senderRole.toUpperCase();
     if (role == 'SYSTEM') return true;
@@ -179,7 +364,8 @@ class CareChatMessage {
     if (type == 'CALL_REQUEST' || type == 'VIDEO_REQUEST') return true;
     final text = body.trim();
     if (text.isEmpty) return false;
-    return text.contains('has been assigned to your care chat') ||
+    return isCareChatNoVetWaitText(text) ||
+        text.contains('has been assigned to your care chat') ||
         text.contains('recommends a video consultation') ||
         text.contains('Video call requested') ||
         text.contains('Payment successful! Your video consultation is now unlocked') ||
@@ -193,11 +379,14 @@ class CareChatMessage {
   factory CareChatMessage.fromJson(Map<String, dynamic> json) {
     final rawRole = (json['senderRole'] ?? '').toString().toUpperCase();
     final rawType = (json['messageType'] ?? json['type'] ?? 'TEXT').toString().toUpperCase();
-    final rawBody = (json['body'] ?? json['text'] ?? '').toString();
+    final rawBody = normalizeCareChatSystemBody(
+      (json['body'] ?? json['text'] ?? '').toString(),
+    );
 
     final isSystemMessage = rawRole == 'SYSTEM' ||
         rawType == 'CALL_REQUEST' ||
         rawType == 'VIDEO_REQUEST' ||
+        isCareChatNoVetWaitText(rawBody) ||
         rawBody.contains('has been assigned to your care chat') ||
         rawBody.contains('recommends a video consultation') ||
         rawBody.contains('Video call requested') ||

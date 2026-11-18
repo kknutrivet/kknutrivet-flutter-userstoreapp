@@ -2,10 +2,11 @@ name: nvit_app
 description: "KK Nutrivet - Animal Nutrition & Veterinary Care mobile app."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+4
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
 
 dependencies:
   flutter:
@@ -43,6 +44,8 @@ dependencies:
   video_player: ^2.9.2
   geolocator: ^14.0.2
 
+  material_ui: any
+  cupertino_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

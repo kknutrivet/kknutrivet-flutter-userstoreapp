@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/order_status.dart';
 import '../../../core/widgets/common.dart';
 import '../../../models/order.dart';
@@ -938,6 +941,545 @@ class _OrderPaymentRetryBannerState
                           : 'Pay ${formatPrice(widget.order.totalAmount)}',
                       style: TextStyle(fontSize: 12.5),
                     ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Interactive Order Scratch-to-Win Reward Card matching
+/// `src/components/orders/ScratchToWinCard.tsx` (`/api/orders/[id]/scratch-reward`).
+class OrderScratchToWinCard extends ConsumerStatefulWidget {
+  const OrderScratchToWinCard({super.key, required this.order});
+  final Order order;
+
+  @override
+  ConsumerState<OrderScratchToWinCard> createState() =>
+      _OrderScratchToWinCardState();
+}
+
+class _OrderScratchToWinCardState extends ConsumerState<OrderScratchToWinCard> {
+  bool _loading = true;
+  bool _eligible = true;
+  bool _expired = false;
+  Map<String, dynamic>? _reward;
+  bool _revealed = false;
+  bool _claiming = false;
+  bool _copied = false;
+  double _scratchProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final upper = widget.order.status.toUpperCase();
+    if (upper == 'CANCELLED' || upper == 'RETURNED') {
+      _eligible = false;
+      _loading = false;
+      return;
+    }
+    final expiry = widget.order.createdAt.add(const Duration(days: 3));
+    _expired = DateTime.now().isAfter(expiry);
+    _loadStatus();
+  }
+
+  Future<void> _loadStatus() async {
+    try {
+      final data = await ref
+          .read(orderServiceProvider)
+          .fetchScratchReward(widget.order.id);
+      if (!mounted) return;
+      final rewardRaw = data['reward'];
+      setState(() {
+        if (data['eligible'] == false) _eligible = false;
+        if (data['expired'] == true) _expired = true;
+        if (rewardRaw is Map) {
+          _reward = Map<String, dynamic>.from(rewardRaw);
+          _revealed = true;
+          _expired = false;
+        }
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _claimReward() async {
+    if (_claiming || _revealed) return;
+    setState(() {
+      _claiming = true;
+      _revealed = true;
+    });
+    AppHaptics.success();
+    try {
+      final data = await ref
+          .read(orderServiceProvider)
+          .claimScratchReward(widget.order.id);
+      if (!mounted) return;
+      final rewardRaw = data['reward'];
+      if (rewardRaw is Map) {
+        final rewardMap = Map<String, dynamic>.from(rewardRaw);
+        setState(() => _reward = rewardMap);
+        if ((rewardMap['coins'] as num? ?? 0) > 0) {
+          ref.read(authProvider.notifier).refreshProfile();
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _revealed = false;
+        _scratchProgress = 0;
+      });
+      showToast('Could not claim scratch reward: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _claiming = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading || !_eligible) return const SizedBox.shrink();
+
+    final shortId = widget.order.orderNumber.length > 6
+        ? widget.order.orderNumber.substring(
+            widget.order.orderNumber.length - 6,
+          )
+        : widget.order.orderNumber;
+
+    if (_reward == null && _expired) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('⏳', style: TextStyle(fontSize: 18)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Scratch Card Expired',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Unscratched rewards for order #$shortId expired 3 days after placing the order.',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Text(
+                  'Expired',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final coupon = _reward?['coupon']?.toString();
+    final couponLabel = _reward?['couponLabel']?.toString() ?? 'REWARD';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFFDF9), Color(0xFFFAF6F0), Color(0xFFF5EFE6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFFDE68A)),
+          boxShadow: AppShadows.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('🎁', style: TextStyle(fontSize: 15)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _reward != null
+                            ? 'Order Perk Claimed!'
+                            : 'Scratch & Win: Order Perk Unlocked!',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF451A03),
+                        ),
+                      ),
+                      Text(
+                        _reward != null
+                            ? 'Claimed reward for order #$shortId'
+                            : '1 free scratch card for order #$shortId',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD1FAE5),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    _reward != null ? '✓ Claimed' : '✓ Guaranteed Win',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF065F46),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 148,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
+                ),
+                child: Stack(
+                  children: [
+                    // Revealed layer
+                    Positioned.fill(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFFFFFBEB),
+                              Colors.white,
+                              Color(0xFFECFDF5),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: const Color(0xFFFCD34D),
+                                ),
+                              ),
+                              child: Text(
+                                '🎉 ${_reward?['badge'] ?? 'ORDER REWARD'}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF451A03),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _reward?['icon']?.toString() ?? '🎁',
+                                  style: const TextStyle(fontSize: 28),
+                                ),
+                                const SizedBox(width: 10),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _reward?['title']?.toString() ??
+                                            'Revealing Prize…',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF173D30),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _reward?['desc']?.toString() ??
+                                            'Rub or tap the foil to uncover your guaranteed perk!',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF475569),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: coupon != null && coupon.isNotEmpty
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFECFDF5),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: const Color(0xFF6EE7B7),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  '$couponLabel: $coupon',
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: Color(0xFF064E3B),
+                                                  ),
+                                                ),
+                                              ),
+                                              if (coupon != 'AUTO-CREDITED')
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    Clipboard.setData(
+                                                      ClipboardData(
+                                                        text: coupon,
+                                                      ),
+                                                    );
+                                                    setState(
+                                                      () => _copied = true,
+                                                    );
+                                                    showToast(
+                                                      'Coupon code copied!',
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 3,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                        0xFF126B50,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      _copied
+                                                          ? 'Copied! ✓'
+                                                          : 'Copy',
+                                                      style: const TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        )
+                                      : Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFD1FAE5),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            '✓ Auto-Credited to Wallet',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w900,
+                                              color: Color(0xFF064E3B),
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () => context.go('/products'),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF126B50),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Shop Again →',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Top metallic foil layer
+                    if (!_revealed)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: _claimReward,
+                          onPanUpdate: (details) {
+                            setState(() {
+                              _scratchProgress =
+                                  (_scratchProgress + details.delta.distance / 180)
+                                      .clamp(0.0, 1.0);
+                            });
+                            if (_scratchProgress >= 0.35) {
+                              _claimReward();
+                            }
+                          },
+                          child: AnimatedOpacity(
+                            opacity: (1.0 - _scratchProgress).clamp(0.0, 1.0),
+                            duration: const Duration(milliseconds: 120),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFFF59E0B),
+                                    Color(0xFFFBBF24),
+                                    Color(0xFFD97706),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Text('✨', style: TextStyle(fontSize: 26)),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'SCRATCH OR TAP TO REVEAL',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Win up to 250 KK Coins or ₹75 OFF',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFFFEF3C7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

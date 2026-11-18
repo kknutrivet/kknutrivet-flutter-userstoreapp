@@ -13,6 +13,7 @@ import '../core/storage/onboarding_storage.dart';
 import '../core/storage/token_storage.dart';
 import '../core/storage/wishlist_storage.dart';
 import '../models/cart_item.dart';
+import '../models/address.dart';
 import '../models/category.dart';
 import '../models/delivery.dart';
 import '../models/product.dart';
@@ -44,6 +45,9 @@ final orderServiceProvider = Provider((ref) => OrderService(ref.watch(apiClientP
 final petServiceProvider = Provider((ref) => PetService(ref.watch(apiClientProvider)));
 final consultationServiceProvider =
     Provider((ref) => ConsultationService(ref.watch(apiClientProvider)));
+final careIntakeLanguagesProvider = FutureProvider<List<String>>((ref) {
+  return ref.read(consultationServiceProvider).fetchCareIntakeLanguages();
+});
 final prescriptionServiceProvider =
     Provider((ref) => PrescriptionService(ref.watch(apiClientProvider)));
 final contentServiceProvider = Provider((ref) => ContentService(ref.watch(apiClientProvider)));
@@ -864,6 +868,7 @@ final comboCartQuantityProvider = Provider.family<int, String>((ref, comboId) {
 });
 
 final homeCombosProvider = FutureProvider.autoDispose<List<ComboBundle>>((ref) {
+  ref.keepAlive();
   return ref.read(catalogServiceProvider).fetchCombos();
 });
 
@@ -882,6 +887,28 @@ final comboDetailProvider =
 
 /// Selected animal on the Home screen (`useHomeAnimal` on web). Null = All animals.
 final selectedHomeAnimalProvider = StateProvider<String?>((ref) => null);
+
+/// Saved user addresses (available when logged in; empty list for guests or errors).
+final addressesProvider = FutureProvider.autoDispose<List<Address>>((ref) async {
+  ref.keepAlive();
+  final user = ref.watch(authProvider.select((a) => a.valueOrNull));
+  if (user == null) return const [];
+  try {
+    return await ref.read(addressServiceProvider).fetchAddresses();
+  } catch (_) {
+    return const [];
+  }
+});
+
+/// Selected delivery address ID shared across Home, Cart, and Checkout.
+final selectedDeliveryAddressIdProvider = StateProvider<String?>((ref) {
+  ref.listen(authProvider, (prev, next) {
+    if (prev?.valueOrNull?.id != next.valueOrNull?.id) {
+      ref.controller.state = null;
+    }
+  });
+  return null;
+});
 
 /// Delivery pincode the user has set on-device, and the live NimbusPost-backed
 /// serviceability/ETA for it — powers the Blinkit-style "Deliver to ..." bar.

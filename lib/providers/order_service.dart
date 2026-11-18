@@ -85,4 +85,14 @@ class OrderService {
     final data = await _client.get('/payments/cashfree/verify', query: {'order_id': orderIdOrNumber});
     return Map<String, dynamic>.from(data);
   }
+
+  Future<Map<String, dynamic>> fetchScratchReward(String orderId) async {
+    final data = await _client.get('/orders/$orderId/scratch-reward');
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
+  }
+
+  Future<Map<String, dynamic>> claimScratchReward(String orderId) async {
+    final data = await _client.post('/orders/$orderId/scratch-reward');
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
+  }
 }

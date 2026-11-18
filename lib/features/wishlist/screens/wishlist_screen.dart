@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
@@ -77,7 +78,7 @@ class WishlistScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: AppLoader.large()),
+        loading: () => const ProductGridSkeleton(itemCount: 4),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

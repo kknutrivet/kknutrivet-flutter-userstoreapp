@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -35,9 +35,14 @@ class HomeTrustPanel extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.primaryWashFaint,
+          gradient: const LinearGradient(
+            colors: [AppColors.primaryWashFaint, Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           border: Border.all(color: AppColors.primaryWashDeep),
           borderRadius: BorderRadius.circular(22),
+          boxShadow: AppShadows.card,
         ),
         child: Column(
           children: [
@@ -120,11 +125,12 @@ class HomeTrustPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.78),
+        color: Colors.white,
         border: Border.all(
-          color: AppColors.primaryWashDeep.withValues(alpha: 0.6),
+          color: AppColors.primaryWashDeep.withValues(alpha: 0.75),
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppShadows.subtle,
       ),
       child: Row(
         children: [
@@ -132,7 +138,11 @@ class HomeTrustPanel extends ConsumerWidget {
             width: 36,
             height: 36,
             decoration: const BoxDecoration(
-              color: Colors.white,
+              gradient: LinearGradient(
+                colors: [AppColors.primaryWash, Colors.white],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -835,7 +845,11 @@ class HomeMonsoonCareBanner extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(999),
                             onTap: () {
                               Haptics.tap();
-                              context.push(features[i].route);
+                              if (features[i].route.startsWith('/products')) {
+                                context.go(features[i].route);
+                              } else {
+                                context.push(features[i].route);
+                              }
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -871,7 +885,11 @@ class HomeMonsoonCareBanner extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(999),
                             onTap: () {
                               Haptics.tap();
-                              context.push(features[i].route);
+                              if (features[i].route.startsWith('/products')) {
+                                context.go(features[i].route);
+                              } else {
+                                context.push(features[i].route);
+                              }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(

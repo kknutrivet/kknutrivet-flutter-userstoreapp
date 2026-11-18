@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/compact_product_card.dart';
 import '../../../models/content.dart';
 import '../../../models/product.dart';
 import 'home_animal_selector.dart';
@@ -51,8 +52,8 @@ class HomeFeaturedProductsRail extends ConsumerWidget {
         : '/products';
 
     return HomeScrollProductSection(
-      title: 'Featured Products · Handpicked Essentials',
-      description: 'Top picks & best-selling essentials',
+      title: 'Featured products',
+      description: '',
       route: route,
       products: mixed,
       surface: const HomeRailSurface(
@@ -68,7 +69,162 @@ class HomeFeaturedProductsRail extends ConsumerWidget {
   }
 }
 
-// ── 6b. HomeReorderRail (Buy Again in 1-Click for Returning Shoppers) ─────
+// ── 6b. HomeActiveOrderBanner (matches HomeCustomerPulse.tsx active order) ──
+class HomeActiveOrderBanner extends ConsumerWidget {
+  const HomeActiveOrderBanner({super.key});
+
+  static const Map<String, String> _statusCopy = {
+    'PENDING': 'Order placed',
+    'CONFIRMED': 'Confirmed',
+    'PROCESSING': 'Packing your order',
+    'SHIPPED': 'On the way',
+    'OUT_FOR_DELIVERY': 'Out for delivery',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeOrder = ref.watch(homeActiveOrderProvider).valueOrNull;
+    if (activeOrder == null) return const SizedBox.shrink();
+
+    final statusLabel =
+        _statusCopy[activeOrder.status.toUpperCase()] ?? 'Active order';
+    final orderNo = activeOrder.orderNumber.isNotEmpty
+        ? ' · #${activeOrder.orderNumber}'
+        : '';
+    final itemCount = activeOrder.items.isNotEmpty
+        ? activeOrder.items.length
+        : 1;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Haptics.tap();
+            context.push('/order/${activeOrder.id}');
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEDF8F2), Colors.white],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBFE0CE)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14073A29),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF07583F),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2_outlined,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF22C55E),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$statusLabel$orderNo',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF123D2F),
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '$itemCount ${itemCount == 1 ? 'item' : 'items'} · Tap for live delivery updates',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF4A6B5D),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF07583F),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Track',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 3),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 11,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 6c. HomeReorderRail ("Order again in 1 tap" — matches HomeCustomerPulse.tsx) ──
 class HomeReorderRail extends ConsumerWidget {
   const HomeReorderRail({super.key});
 
@@ -78,21 +234,121 @@ class HomeReorderRail extends ConsumerWidget {
     final products = reorderAsync.valueOrNull ?? const <Product>[];
 
     if (products.isEmpty) return const SizedBox.shrink();
+    final shown = products.take(8).toList();
 
-    return HomeScrollProductSection(
-      title: 'Buy Again · Quick Reorder',
-      description: 'Frequently ordered supplies for your pets & livestock',
-      route: '/orders',
-      products: products,
-      surface: const HomeRailSurface(
-        Color(0xFFFBF8F2),
-        Color(0xFFEFE6D8),
-        Color(0xFF5A3C13),
-        Color(0xFF8A6536),
-        Color(0xFFB45309),
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5FAF7),
+        border: Border.symmetric(
+          horizontal: BorderSide(color: Color(0xFFDCE8E0)),
+        ),
       ),
-      tone: const Color(0xFFEFE6D8),
-      fallbackIcon: Icons.repeat_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3F1E8),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x141C4637),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.replay_rounded,
+                    size: 20,
+                    color: Color(0xFF07583F),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order again in 1 tap',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF143D2E),
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Quick reorder from your past orders',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF4A6B5D),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Material(
+                  color: const Color(0xFF07583F),
+                  shape: const CircleBorder(),
+                  elevation: 2,
+                  shadowColor: const Color(0x291C4637),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
+                      Haptics.tap();
+                      context.push('/orders');
+                    },
+                    child: const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 242 + 30 * MediaQuery.textScalerOf(context).scale(1),
+            child: ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: shown.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, i) => SizedBox(
+                width: 152,
+                child: CompactProductCard(
+                  product: shown[i],
+                  variant: CompactCardVariant.homeGrid,
+                  singleLineTitle: true,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -156,47 +412,36 @@ class HomeShotsRail extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: const BoxDecoration(
-        color: AppColors.shotsRailBg,
-        border: Border(
-          top: BorderSide(color: AppColors.shotsRailBorder),
-          bottom: BorderSide(color: AppColors.shotsRailBorder),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: AppColors.shotsTone,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x141C4637),
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.shotsRailBorder,
+                      width: 1.2,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: const Icon(
                     Icons.movie_creation_outlined,
-                    size: 24,
+                    size: 19,
                     color: AppColors.shotsRailAccent,
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
+                const SizedBox(width: 11),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -204,45 +449,55 @@ class HomeShotsRail extends ConsumerWidget {
                         'Product Video Shots',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppTheme.serif(
+                          fontSize: 17.5,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: -0.28,
-                          color: AppColors.shotsRailHeading,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 1),
+                      const Text(
                         'Video demos and care guides',
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.shotsRailSubtitle,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Material(
-                  color: AppColors.shotsRailAccent,
-                  shape: const CircleBorder(),
-                  elevation: 2,
-                  shadowColor: const Color(0x291C4637),
+                  color: Colors.transparent,
                   child: InkWell(
-                    customBorder: const CircleBorder(),
+                    borderRadius: BorderRadius.circular(20),
                     onTap: () {
                       Haptics.tap();
                       context.go('/shots');
                     },
-                    child: const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
-                        color: Colors.white,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Watch all',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDeep,
+                            ),
+                          ),
+                          SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -257,7 +512,7 @@ class HomeShotsRail extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: shots.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
               itemBuilder: (context, i) => _HomeShotCard(shot: shots[i]),
             ),
           ),
@@ -435,9 +690,53 @@ class _HomeShotCard extends StatelessWidget {
   }
 }
 
-// ── 10. ConcernsGrid ("Care by Concern") ───────────────────────────────────
+// ── 10. ConcernsGrid ("Care by concern" — 4-Column Borderless Pastel Tiles) ──
 class HomeConcernsRail extends ConsumerWidget {
   const HomeConcernsRail({super.key});
+
+  static const _concernPastels = <Color>[
+    Color(0xFFFFF3E8),
+    Color(0xFFEAF7EF),
+    Color(0xFFF2EEFA),
+    Color(0xFFE8F4FC),
+    Color(0xFFFDF5E2),
+    Color(0xFFFCEEF2),
+    Color(0xFFEAF6F4),
+    Color(0xFFF2F6E8),
+  ];
+
+  static ({IconData icon, Color fg}) _visualForSlug(String slug) {
+    final lower = slug.toLowerCase();
+    if (lower.contains('tick') ||
+        lower.contains('flea') ||
+        lower.contains('skin') ||
+        lower.contains('coat')) {
+      return (icon: Icons.shield_outlined, fg: const Color(0xFFB45309));
+    }
+    if (lower.contains('worm') ||
+        lower.contains('gut') ||
+        lower.contains('digest') ||
+        lower.contains('liver')) {
+      return (icon: Icons.medication_liquid_outlined, fg: const Color(0xFF15803D));
+    }
+    if (lower.contains('milk') ||
+        lower.contains('calcium') ||
+        lower.contains('udder') ||
+        lower.contains('mastitis')) {
+      return (icon: Icons.water_drop_outlined, fg: const Color(0xFF0369A1));
+    }
+    if (lower.contains('joint') ||
+        lower.contains('bone') ||
+        lower.contains('mobility')) {
+      return (icon: Icons.accessibility_new_rounded, fg: const Color(0xFF7E22CE));
+    }
+    if (lower.contains('immun') ||
+        lower.contains('vitamin') ||
+        lower.contains('growth')) {
+      return (icon: Icons.bolt_rounded, fg: const Color(0xFFC2410C));
+    }
+    return (icon: Icons.healing_outlined, fg: AppColors.primaryDeep);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -445,193 +744,80 @@ class HomeConcernsRail extends ConsumerWidget {
     return concernsAsync.maybeWhen(
       data: (concerns) {
         if (concerns.isEmpty) return const SizedBox.shrink();
-        final shown = concerns.take(10).toList();
+        final shown = concerns.take(8).toList();
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 0, 6),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                'VET-CURATED GUIDANCE',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.7,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Care by Health Concern',
-                            style: AppTheme.serif(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Care by concern',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.35,
+                        color: Color(0xFF1C1C1C),
                       ),
                     ),
-                    Material(
-                      color: AppColors.primaryWash,
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () {
-                          Haptics.tap();
-                          context.push('/diseases');
-                        },
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 48),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          alignment: Alignment.center,
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'View all',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                              SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 14,
-                                color: AppColors.primaryDeep,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 130 + 65 * (MediaQuery.textScalerOf(context).scale(12) / 12 - 1).clamp(0, 2),
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(right: 16),
-                  itemCount: shown.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (context, i) {
-                    final concern = shown[i];
-                    return AppBounce(
-                      pressedScale: 0.94,
                       onTap: () {
                         Haptics.tap();
-                        context.push('/diseases/${concern.slug}');
+                        context.push('/diseases');
                       },
-                      child: Container(
-                        width: 114,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFF4FAF6), Color(0xFFFDFAF6)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(
-                            color: const Color(0xFFD6EAE0),
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0A17322B),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x10000000),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child:
-                                  concern.imageUrl != null &&
-                                      concern.imageUrl!.isNotEmpty
-                                  ? AppNetworkImage(
-                                      imageUrl: concern.imageUrl!,
-                                      fit: BoxFit.cover,
-                                      memCacheWidth: 120,
-                                      errorWidget: (_, _, _) =>
-                                          _concernFallback(concern),
-                                    )
-                                  : _concernFallback(concern),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              concern.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                height: 1.2,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            const Text(
-                              'Remedies →',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primaryDeep,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'See all →',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF07583F),
+                          ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final textScale =
+                      (MediaQuery.textScalerOf(context).scale(12) / 12)
+                          .clamp(1.0, 2.0);
+                  final cols = textScale > 1.35 ? 2 : 4;
+                  const spacing = 10.0;
+                  final tileWidth =
+                      (constraints.maxWidth - spacing * (cols - 1)) / cols;
+                  final tileHeight = 108.0 + (textScale - 1.0) * 26.0;
+
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (var i = 0; i < shown.length; i++)
+                        SizedBox(
+                          width: tileWidth,
+                          height: tileHeight,
+                          child: _buildPastelConcernTile(
+                            context,
+                            shown[i],
+                            _concernPastels[i % _concernPastels.length],
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -641,18 +827,68 @@ class HomeConcernsRail extends ConsumerWidget {
     );
   }
 
-  Widget _concernFallback(HealthConcern concern) {
-    return Container(
-      alignment: Alignment.center,
-      color: AppColors.primaryWash,
-      child: Text(
-        concern.icon?.isNotEmpty == true
-            ? concern.icon!
-            : (concern.name.isNotEmpty ? concern.name.substring(0, 1) : 'C'),
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: AppColors.primaryDeep,
+  Widget _buildPastelConcernTile(
+    BuildContext context,
+    HealthConcern concern,
+    Color bg,
+  ) {
+    final visual = _visualForSlug(concern.slug);
+    return AppBounce(
+      pressedScale: 0.96,
+      onTap: () {
+        Haptics.tap();
+        context.push('/diseases/${concern.slug}');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              concern.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11.5,
+                height: 1.16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1C1C1C),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: concern.imageUrl != null && concern.imageUrl!.isNotEmpty
+                    ? AppNetworkImage(
+                        imageUrl: concern.imageUrl!,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 100,
+                        errorWidget: (_, _, _) => Icon(
+                          visual.icon,
+                          size: 20,
+                          color: visual.fg,
+                        ),
+                      )
+                    : Icon(
+                        visual.icon,
+                        size: 20,
+                        color: visual.fg,
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );

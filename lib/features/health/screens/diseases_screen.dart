@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
 
@@ -138,12 +139,11 @@ class _DiseasesScreenState extends ConsumerState<DiseasesScreen> {
             }
           },
         ),
-        title: const Text(
+        title: Text(
           'Health Concerns',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
+          style: AppTheme.serif(
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),
@@ -389,7 +389,7 @@ class _DiseasesScreenState extends ConsumerState<DiseasesScreen> {
               ),
             );
           },
-          loading: () => const Center(child: AppLoader.large()),
+          loading: () => const ListCardSkeleton(cardHeight: 118),
           error: (e, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),

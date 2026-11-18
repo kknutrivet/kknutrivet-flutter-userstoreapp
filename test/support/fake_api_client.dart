@@ -169,6 +169,10 @@ class FakeApiClient implements ApiClient {
           'date': query['date'] ?? 'today',
           'slots': const <Map<String, dynamic>>[],
         };
+      case '/consultations/chat/languages':
+        return <String, dynamic>{
+          'languages': const ['English', 'Hindi', 'Odia'],
+        };
       case '/search/suggestions':
         return <String, dynamic>{'suggestions': const <Map<String, dynamic>>[]};
       case '/homepage-sections':

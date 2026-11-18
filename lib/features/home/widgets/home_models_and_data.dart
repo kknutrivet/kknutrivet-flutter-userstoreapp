@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../models/content.dart';
 import '../../../models/homepage_section.dart';
+import '../../../models/order.dart';
 import '../../../models/pet.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
@@ -38,19 +39,48 @@ final homePetsProvider = FutureProvider.autoDispose<List<PetProfile>>((
   return ref.read(petServiceProvider).fetchPets();
 });
 
+const _activeOrderStatuses = <String>{
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'OUT_FOR_DELIVERY',
+};
+
+final homeActiveOrderProvider = FutureProvider.autoDispose<Order?>((ref) async {
+  final user = ref.watch(authProvider).value;
+  if (user == null || user.isAnonymous) return null;
+  try {
+    final orders = await ref.read(orderServiceProvider).fetchOrders();
+    for (final order in orders) {
+      if (_activeOrderStatuses.contains(order.status.toUpperCase())) {
+        return order;
+      }
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+});
+
 final recentReorderProductsProvider = FutureProvider.autoDispose<List<Product>>((
   ref,
 ) async {
   final user = ref.watch(authProvider).value;
-  if (user == null) return const [];
+  if (user == null || user.isAnonymous) return const [];
   try {
     final orders = await ref.read(orderServiceProvider).fetchOrders();
     final seen = <String>{};
     final products = <Product>[];
     for (final order in orders) {
+      if (order.status.toUpperCase() == 'CANCELLED') continue;
       for (final item in order.items) {
+        if (item.comboId != null) continue;
         final p = item.product;
-        if (p != null && !seen.contains(p.id)) {
+        if (p != null &&
+            !p.onlyForCombo &&
+            !p.requiresPrescription &&
+            !seen.contains(p.id)) {
           seen.add(p.id);
           products.add(p);
         }
@@ -577,7 +607,14 @@ class HomeSectionTitle extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               onTap: () {
                 Haptics.tap();
-                context.push(route!);
+                if (route!.startsWith('/products') ||
+                    route!.startsWith('/consultations') ||
+                    route!.startsWith('/shots') ||
+                    route!.startsWith('/profile')) {
+                  context.go(route!);
+                } else {
+                  context.push(route!);
+                }
               },
               child: Container(
                 constraints: const BoxConstraints(minHeight: 44),
@@ -607,4 +644,115 @@ class HomeSectionTitle extends StatelessWidget {
       ],
     );
   }
+}
+
+class HomeAnimalTheme {
+  const HomeAnimalTheme({
+    required this.headerBg,
+    required this.headerBorder,
+    required this.accent,
+    required this.pillBg,
+    required this.pillText,
+    required this.storeTitle,
+    required this.shortName,
+    required this.priorityCategories,
+  });
+
+  final Color headerBg;
+  final Color headerBorder;
+  final Color accent;
+  final Color pillBg;
+  final Color pillText;
+  final String storeTitle;
+  final String shortName;
+  final List<String> priorityCategories;
+}
+
+const kDefaultHomeAnimalTheme = HomeAnimalTheme(
+  headerBg: Color(0xFFFAF7F0),
+  headerBorder: Color(0xFFECE8DF),
+  accent: Color(0xFF07583F),
+  pillBg: Color(0xFFE5F0EA),
+  pillText: Color(0xFF07583F),
+  storeTitle: '',
+  shortName: '',
+  priorityCategories: [],
+);
+
+HomeAnimalTheme homeAnimalThemeFor(String? animal) {
+  if (animal == null || animal.trim().isEmpty) return kDefaultHomeAnimalTheme;
+  final key = animal.trim().toLowerCase();
+  if (key.contains('dog')) {
+    return const HomeAnimalTheme(
+      headerBg: Color(0xFFEAF2FF),
+      headerBorder: Color(0xFFD7E4FB),
+      accent: Color(0xFF1E40AF),
+      pillBg: Color(0xFFDCE8FE),
+      pillText: Color(0xFF1E3A8A),
+      storeTitle: 'Dog Care Store',
+      shortName: 'Dog',
+      priorityCategories: ['Feed', 'Supplement & Nutrition', 'Grooming', 'Deworming', 'Medicine', 'Spray', 'Home Care', 'Device'],
+    );
+  }
+  if (key.contains('cat')) {
+    return const HomeAnimalTheme(
+      headerBg: Color(0xFFF3ECFF),
+      headerBorder: Color(0xFFE4D7FB),
+      accent: Color(0xFF6D28D9),
+      pillBg: Color(0xFFE8DCFE),
+      pillText: Color(0xFF5B21B6),
+      storeTitle: 'Cat Care Store',
+      shortName: 'Cat',
+      priorityCategories: ['Supplement & Nutrition', 'Grooming', 'Deworming', 'Feed', 'Medicine', 'Spray', 'Home Care', 'Device'],
+    );
+  }
+  if (key.contains('cattle') || key.contains('cow') || key.contains('dairy')) {
+    return const HomeAnimalTheme(
+      headerBg: Color(0xFFFDF2DC),
+      headerBorder: Color(0xFFF2E1BE),
+      accent: Color(0xFF9A5B13),
+      pillBg: Color(0xFFF9E7C0),
+      pillText: Color(0xFF7C470D),
+      storeTitle: 'Cattle & Dairy Store',
+      shortName: 'Cattle',
+      priorityCategories: ['Supplement & Nutrition', 'Feed', 'Medicine', 'Deworming', 'Spray', 'Home Care', 'Device', 'Grooming'],
+    );
+  }
+  if (key.contains('goat') || key.contains('sheep')) {
+    return const HomeAnimalTheme(
+      headerBg: Color(0xFFE6F5EC),
+      headerBorder: Color(0xFFCBE6D6),
+      accent: Color(0xFF07583F),
+      pillBg: Color(0xFFD4ECDD),
+      pillText: Color(0xFF064E3B),
+      storeTitle: 'Goat & Sheep Store',
+      shortName: 'Goat & Sheep',
+      priorityCategories: ['Deworming', 'Supplement & Nutrition', 'Medicine', 'Feed', 'Spray', 'Home Care', 'Device', 'Grooming'],
+    );
+  }
+  if (key.contains('poultry') || key.contains('bird')) {
+    return const HomeAnimalTheme(
+      headerBg: Color(0xFFFCEEE6),
+      headerBorder: Color(0xFFF2D9CB),
+      accent: Color(0xFFB45309),
+      pillBg: Color(0xFFF8DEC9),
+      pillText: Color(0xFF92400E),
+      storeTitle: 'Poultry Care Store',
+      shortName: 'Poultry',
+      priorityCategories: ['Supplement & Nutrition', 'Medicine', 'Feed', 'Deworming', 'Home Care', 'Spray', 'Device', 'Grooming'],
+    );
+  }
+  if (key.contains('small') || key.contains('exotic')) {
+    return const HomeAnimalTheme(
+      headerBg: Color(0xFFE6F4F4),
+      headerBorder: Color(0xFFCCE4E4),
+      accent: Color(0xFF0F766E),
+      pillBg: Color(0xFFD1EBEB),
+      pillText: Color(0xFF115E59),
+      storeTitle: 'Small Pets Store',
+      shortName: 'Small Pet',
+      priorityCategories: ['Feed', 'Supplement & Nutrition', 'Grooming', 'Medicine', 'Home Care', 'Deworming', 'Spray', 'Device'],
+    );
+  }
+  return kDefaultHomeAnimalTheme;
 }

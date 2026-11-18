@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +11,8 @@ import 'core/device/device_info_service.dart';
 import 'core/notifications/push_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_toast.dart';
+import 'core/widgets/offline_banner.dart';
 import 'providers/app_providers.dart';
 
 /// True once the shared Firebase project initializes. False when the
@@ -18,10 +20,9 @@ import 'providers/app_providers.dart';
 /// with a "not configured" message instead of crashing.
 final firebaseAvailableProvider = StateProvider<bool>((ref) => false);
 
-final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (details) => AppErrorFallbackCard(details: details);
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -86,27 +87,21 @@ class _KkNutrivetAppState extends ConsumerState<KkNutrivetApp> {
         }
       },
       onForeground: (title, body, route) {
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text(
-              body.isNotEmpty ? '$title\n$body' : title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'View',
-              onPressed: () {
-                try {
-                  ref.read(routerProvider).push(route);
-                } catch (_) {
-                  try {
-                    ref.read(routerProvider).go(route);
-                  } catch (_) {}
-                }
-              },
-            ),
-          ),
+        showToast(
+          body.isNotEmpty ? body : title,
+          type: AppToastType.info,
+          title: body.isNotEmpty ? title : null,
+          duration: const Duration(seconds: 4),
+          actionLabel: 'View',
+          onAction: () {
+            try {
+              ref.read(routerProvider).push(route);
+            } catch (_) {
+              try {
+                ref.read(routerProvider).go(route);
+              } catch (_) {}
+            }
+          },
         );
       },
     );
@@ -128,7 +123,9 @@ class _KkNutrivetAppState extends ConsumerState<KkNutrivetApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: router,
-      scaffoldMessengerKey: _scaffoldMessengerKey,
+      scaffoldMessengerKey: appScaffoldMessengerKey,
+      builder: (context, child) =>
+          OfflineBannerWrapper(child: child ?? const SizedBox.shrink()),
     );
   }
 }

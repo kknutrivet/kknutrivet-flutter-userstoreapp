@@ -1,14 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nvit_app/features/home/screens/main_shell.dart';
 import 'package:nvit_app/features/home/widgets/dr_paw_floating_button.dart';
 import 'package:nvit_app/features/home/widgets/home_animal_selector.dart';
 import 'package:nvit_app/features/home/widgets/home_top_bar.dart';
 import 'package:nvit_app/models/store_settings.dart';
-import 'package:nvit_app/features/products/widgets/catalogue_controls.dart';
 import 'package:nvit_app/providers/app_providers.dart';
 
 void main() {
@@ -169,36 +167,19 @@ void main() {
       expect(find.byType(DrPawFloatingButton), findsOneWidget);
     });
 
-    testWidgets('HomeAnimalSelector tapping an animal navigates to /products?animalType=... and updates filters', (tester) async {
-      String? navigatedRoute;
-      final router = GoRouter(
-        initialLocation: '/home',
-        routes: [
-          GoRoute(
-            path: '/home',
-            builder: (context, state) => const Scaffold(
-              body: SingleChildScrollView(
-                child: HomeAnimalSelector(),
-              ),
-            ),
-          ),
-          GoRoute(
-            path: '/products',
-            builder: (context, state) {
-              navigatedRoute = state.uri.toString();
-              return const Scaffold(body: Text('Product List'));
-            },
-          ),
-        ],
-      );
-
+    testWidgets('HomeAnimalSelector tapping an animal filters homepage via selectedHomeAnimalProvider', (tester) async {
       final container = ProviderContainer();
+      addTearDown(container.dispose);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp.router(
-            routerConfig: router,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: HomeAnimalSelector(),
+              ),
+            ),
           ),
         ),
       );
@@ -210,60 +191,36 @@ void main() {
       await tester.tap(dogFinder);
       await tester.pumpAndSettle();
 
-      // Verify navigation to /products?animalType=Dog
-      expect(navigatedRoute, '/products?animalType=Dog');
+      // Verify selectedHomeAnimalProvider updates to 'Dog'
       expect(container.read(selectedHomeAnimalProvider), 'Dog');
-      expect(container.read(productFilterProvider).animalType, 'Dog');
     });
 
-    testWidgets('HomeAnimalSelector tapping All animals navigates to /products and resets filters', (tester) async {
-      String? navigatedRoute;
-      final router = GoRouter(
-        initialLocation: '/home',
-        routes: [
-          GoRoute(
-            path: '/home',
-            builder: (context, state) => const Scaffold(
+    testWidgets('HomeAnimalSelector tapping All resets homepage animal filter', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(selectedHomeAnimalProvider.notifier).state = 'Dog';
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
               body: SingleChildScrollView(
                 child: HomeAnimalSelector(),
               ),
             ),
           ),
-          GoRoute(
-            path: '/products',
-            builder: (context, state) {
-              navigatedRoute = state.uri.toString();
-              return const Scaffold(body: Text('Product List'));
-            },
-          ),
-        ],
-      );
-
-      final container = ProviderContainer();
-      container.read(selectedHomeAnimalProvider.notifier).state = 'Dog';
-      container.read(productFilterProvider.notifier).state =
-          ProductFilter(animalType: 'Dog');
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: router,
-          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Tap "All animals"
-      final allAnimalsFinder = find.text('All animals');
-      expect(allAnimalsFinder, findsOneWidget);
-      await tester.tap(allAnimalsFinder);
+      // Tap "All"
+      final allFinder = find.text('All');
+      expect(allFinder, findsOneWidget);
+      await tester.tap(allFinder);
       await tester.pumpAndSettle();
 
-      // Verify navigation to /products and filter reset
-      expect(navigatedRoute, '/products');
       expect(container.read(selectedHomeAnimalProvider), isNull);
-      expect(container.read(productFilterProvider).animalType, isNull);
     });
   });
 }

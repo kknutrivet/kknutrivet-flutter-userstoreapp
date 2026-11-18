@@ -1,5 +1,5 @@
 import '../../../core/utils/customer_error.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,7 +11,6 @@ import '../../../models/address.dart';
 import '../../../models/user.dart';
 import '../../../providers/app_providers.dart';
 import '../widgets/location_search_bottom_sheet.dart';
-import 'addresses_screen.dart' show addressesProvider;
 
 class AddressFormScreen extends ConsumerStatefulWidget {
   const AddressFormScreen({super.key, this.address});

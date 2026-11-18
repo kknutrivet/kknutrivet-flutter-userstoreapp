@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/config/app_config.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/common.dart';
 
 /// Wraps Cashfree's hosted checkout page (powered by @cashfreepayments/cashfree-js
 /// on /checkout/cashfree-session) in a WebView. The backend configures the return
@@ -72,7 +72,13 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
                   if (!opened) throw StateError('unavailable');
                 } else { throw StateError('unavailable'); }
               } catch (_) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open this payment app. Choose another payment method.')));
+                if (mounted) {
+                  showToast(
+                    'Could not open this payment app. Choose another payment method.',
+                    isError: true,
+                    context: context,
+                  );
+                }
               }
               return NavigationDecision.prevent;
             }
@@ -119,7 +125,7 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
               if (_error != null) Positioned.fill(child: ColoredBox(color: Colors.white, child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), TextButton(onPressed: () { setState(() { _error = null; _loading = true; }); _controller.reload(); }, child: const Text('Retry')), TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Return to order'))]))))),
               if (_loading)
                 const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                  child: AppLoader(size: 32, strokeWidth: 3),
                 ),
             ],
           ),

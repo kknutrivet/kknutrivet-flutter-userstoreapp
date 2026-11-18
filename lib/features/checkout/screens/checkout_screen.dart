@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,7 +49,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _addressSectionKey = GlobalKey();
   String? _selectedAddressId;
   bool _addressExpanded = false;
-  bool _orderReviewExpanded = false;
   String _paymentMethod = 'CASHFREE';
   bool _submitting = false;
   bool _checkingDelivery = false;
@@ -66,6 +65,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedAddressId = ref.read(selectedDeliveryAddressIdProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cart = ref.read(cartProvider).value;
       if (cart != null && cart.isNotEmpty) {
@@ -210,10 +210,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   cartCount: cartCount,
                   subtotal: subtotal,
                   deliveryFee: deliveryFee,
-                  expanded: _orderReviewExpanded,
-                  onToggleExpanded: () => setState(
-                    () => _orderReviewExpanded = !_orderReviewExpanded,
-                  ),
+                  expanded: false,
+                  onToggleExpanded: () {
+                    showOrderReviewBottomSheet(
+                      context: context,
+                      items: items,
+                      combos: combos,
+                      cartCount: cartCount,
+                      subtotal: subtotal,
+                      deliveryFee: deliveryFee,
+                    );
+                  },
                 ),
                 const SizedBox(height: 18),
                 const Text(
@@ -228,6 +235,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   addressExpanded: _addressExpanded,
                   onSelectAddress: (addr) {
                     setState(() => _selectedAddressId = addr.id);
+                    ref.read(selectedDeliveryAddressIdProvider.notifier).state =
+                        addr.id;
                     _scheduleDeliveryCheck(addr.zipCode);
                   },
                   onToggleExpanded: () =>
@@ -236,6 +245,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     if (!mounted) return;
                     if (_selectedAddressId == null) {
                       setState(() => _selectedAddressId = defaultAddr.id);
+                      ref
+                              .read(selectedDeliveryAddressIdProvider.notifier)
+                              .state =
+                          defaultAddr.id;
                     }
                     if (_delivery == null && !_checkingDelivery) {
                       _scheduleDeliveryCheck(defaultAddr.zipCode);

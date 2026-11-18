@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -322,7 +322,12 @@ class _HomeHeroCarouselState extends ConsumerState<HomeHeroCarousel> {
           pressedScale: 0.985,
           onTap: () {
             Haptics.tap();
-            context.push(slide.route);
+            if (slide.route.startsWith('/products') ||
+                slide.route.startsWith('/consultations')) {
+              context.go(slide.route);
+            } else {
+              context.push(slide.route);
+            }
           },
           child: Stack(
             fit: StackFit.expand,

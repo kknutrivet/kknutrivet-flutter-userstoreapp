@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../theme/app_theme.dart';
@@ -43,6 +43,7 @@ class ProductCardSkeleton extends StatelessWidget {
       child: Shimmer.fromColors(
         baseColor: AppColors.shimmerBase,
         highlightColor: AppColors.shimmerHighlight,
+        period: const Duration(milliseconds: 1250),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -151,6 +152,169 @@ class ProductRailSkeleton extends StatelessWidget {
       itemCount: itemCount,
       separatorBuilder: (_, _) => const SizedBox(width: 12),
       itemBuilder: (context, i) => const SizedBox(width: 155, child: ProductCardSkeleton()),
+    );
+  }
+}
+
+/// Layout-matched shimmer skeleton for the Product Detail screen.
+class ProductDetailSkeleton extends StatelessWidget {
+  const ProductDetailSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
+      period: const Duration(milliseconds: 1250),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AspectRatio(
+              aspectRatio: 4 / 3,
+              child: ColoredBox(color: Colors.white),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      ShimmerBox(width: 72, height: 24, radius: 999),
+                      SizedBox(width: 8),
+                      ShimmerBox(width: 96, height: 24, radius: 999),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const ShimmerBox(width: double.infinity, height: 22, radius: 6),
+                  const SizedBox(height: 8),
+                  const ShimmerBox(width: 210, height: 22, radius: 6),
+                  const SizedBox(height: 16),
+                  const ShimmerBox(width: double.infinity, height: 74, radius: 14),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: const [
+                      Expanded(child: ShimmerBox(height: 52, radius: 12)),
+                      SizedBox(width: 10),
+                      Expanded(child: ShimmerBox(height: 52, radius: 12)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const ShimmerBox(width: double.infinity, height: 110, radius: 14),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Layout-matched shimmer skeleton for the Combo Detail screen.
+class ComboDetailSkeleton extends StatelessWidget {
+  const ComboDetailSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
+      period: const Duration(milliseconds: 1250),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            AspectRatio(
+              aspectRatio: 16 / 10,
+              child: ShimmerBox(width: double.infinity, radius: 16),
+            ),
+            SizedBox(height: 16),
+            ShimmerBox(width: 120, height: 22, radius: 999),
+            SizedBox(height: 10),
+            ShimmerBox(width: double.infinity, height: 24, radius: 6),
+            SizedBox(height: 8),
+            ShimmerBox(width: 180, height: 16, radius: 6),
+            SizedBox(height: 20),
+            ShimmerBox(width: double.infinity, height: 84, radius: 14),
+            SizedBox(height: 12),
+            ShimmerBox(width: double.infinity, height: 84, radius: 14),
+            SizedBox(height: 12),
+            ShimmerBox(width: double.infinity, height: 84, radius: 14),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Layout-matched shimmer skeleton for the Orders list screen.
+class OrderListSkeleton extends StatelessWidget {
+  const OrderListSkeleton({super.key, this.itemCount = 3});
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
+      period: const Duration(milliseconds: 1250),
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: [
+          Row(
+            children: const [
+              ShimmerBox(width: 56, height: 32, radius: 999),
+              SizedBox(width: 8),
+              ShimmerBox(width: 84, height: 32, radius: 999),
+              SizedBox(width: 8),
+              ShimmerBox(width: 84, height: 32, radius: 999),
+            ],
+          ),
+          const SizedBox(height: 16),
+          for (var i = 0; i < itemCount; i++) ...[
+            const ShimmerBox(width: double.infinity, height: 152, radius: 14),
+            const SizedBox(height: 12),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Generic list of card skeletons for Pets, Addresses, Blog, and Health screens.
+class ListCardSkeleton extends StatelessWidget {
+  const ListCardSkeleton({
+    super.key,
+    this.itemCount = 4,
+    this.cardHeight = 104,
+  });
+
+  final int itemCount;
+  final double cardHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
+      period: const Duration(milliseconds: 1250),
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        itemCount: itemCount,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, _) => ShimmerBox(
+          width: double.infinity,
+          height: cardHeight,
+          radius: AppRadius.card,
+        ),
+      ),
     );
   }
 }

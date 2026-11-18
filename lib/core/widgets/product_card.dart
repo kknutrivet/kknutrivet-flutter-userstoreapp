@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,6 +61,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
     final quantity = ref.watch(cartQuantityProvider((product.id, v?.id)));
     final displayPrice = v?.price ?? product.effectivePrice;
     final displayMrp = v?.mrp ?? product.mrp;
+    final inStock = v != null ? v.stock > 0 : product.inStock;
     final hasDiscount = displayMrp != null && displayMrp > displayPrice;
     final discountPercent = hasDiscount
         ? (((displayMrp - displayPrice) / displayMrp) * 100).round()
@@ -112,9 +113,9 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                                 tag: widget.heroTag!,
                                 child: ProductImageCover(
                                   imageUrl: product.image,
-                                  enableBackdrop: false,
-                                  fit: BoxFit.cover,
-                                  innerPadding: EdgeInsets.zero,
+                                  enableBackdrop: true,
+                                  fit: BoxFit.contain,
+                                  innerPadding: const EdgeInsets.all(6),
                                   backgroundColor: const Color(0xFFFAFAFA),
                                   border: const Border(
                                     bottom: BorderSide(
@@ -130,9 +131,9 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                               )
                             : ProductImageCover(
                                 imageUrl: product.image,
-                                enableBackdrop: false,
-                                fit: BoxFit.cover,
-                                innerPadding: EdgeInsets.zero,
+                                enableBackdrop: true,
+                                fit: BoxFit.contain,
+                                innerPadding: const EdgeInsets.all(6),
                                 backgroundColor: const Color(0xFFFAFAFA),
                                 border: const Border(
                                   bottom: BorderSide(
@@ -146,25 +147,80 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                                 showPlaceholderOnLoading: false,
                               ),
                       ),
-                  if (hasDiscount)
+                  if (!inStock)
                     Positioned(
                       left: 8,
                       top: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
+                          horizontal: 8,
+                          vertical: 3.5,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.accentCoralDeep,
+                          color: const Color(0xFFFFF5F5),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFDC2626),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'Sold out',
+                              style: TextStyle(
+                                color: Color(0xFF991B1B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (hasDiscount)
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3.5,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              AppColors.accentCoralDeep,
+                              Color(0xFFFF7355),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accentCoralDeep.withValues(
+                                alpha: 0.28,
+                              ),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Text(
                           '-$discountPercent%',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
@@ -180,17 +236,35 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.rxBg,
+                          color: AppColors.rxBg.withValues(alpha: 0.96),
                           border: Border.all(color: AppColors.rxBorder),
                           borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'Rx',
-                          style: TextStyle(
-                            color: AppColors.rxText,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.medical_services_rounded,
+                              size: 10,
+                              color: AppColors.rxText,
+                            ),
+                            SizedBox(width: 3),
+                            Text(
+                              'Rx',
+                              style: TextStyle(
+                                color: AppColors.rxText,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -239,6 +313,83 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                               ),
                             ),
                           ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (product.ratingCount > 0)
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(0xFFDCEAE2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${product.ratingAverage.toStringAsFixed(1)} ★',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF166534),
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '(${product.ratingCount})',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xBF142D24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.visibility_outlined,
+                              size: 11,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              product.formattedViewsLabel,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -433,6 +584,30 @@ class _AddButton extends ConsumerStatefulWidget {
 
 class _AddButtonState extends ConsumerState<_AddButton> {
   bool _busy = false;
+  bool _notified = false;
+
+  Future<void> _handleNotifyMe() async {
+    if (_busy || _notified) return;
+    final user = ref.read(authProvider).valueOrNull;
+    if (user == null || user.isAnonymous) {
+      Haptics.tap();
+      context.push('/login');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref.read(catalogServiceProvider).saveStockAlert(widget.product.id);
+      AppHaptics.success();
+      if (mounted) {
+        setState(() => _notified = true);
+        showToast("We'll notify you when ${widget.product.name} is back in stock");
+      }
+    } catch (e) {
+      if (mounted) showToast(e.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _handleInitialAdd() async {
     if (widget.product.variants.length > 1) {
@@ -548,21 +723,65 @@ class _AddButtonState extends ConsumerState<_AddButton> {
     }
 
     if (!inStock) {
-      return Container(
-        width: double.infinity,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Center(
-          child: Text(
-            'Out of stock',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-              color: AppColors.textTertiary,
+      return Semantics(
+        button: true,
+        label: _notified
+            ? "We'll notify you when ${product.name} is back"
+            : 'Notify me when ${product.name} is back in stock',
+        child: AppBounce(
+          pressedScale: 0.95,
+          onTap: _busy || _notified ? null : _handleNotifyMe,
+          child: Container(
+            width: double.infinity,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _notified ? const Color(0xFFFFF8F6) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _notified
+                    ? const Color(0xFFF3D2C8)
+                    : const Color(0xFFD6E0DA),
+              ),
+            ),
+            child: Center(
+              child: _busy
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFA8553F),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _notified
+                              ? Icons.check_rounded
+                              : Icons.notifications_none_rounded,
+                          size: 14,
+                          color: _notified
+                              ? const Color(0xFFA8553F)
+                              : AppColors.primaryDeep,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            _notified ? "We'll notify you" : 'Notify Me',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                              color: _notified
+                                  ? const Color(0xFFA8553F)
+                                  : AppColors.primaryDeep,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),

@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoPageTransitionsBuilder;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
@@ -22,12 +22,14 @@ class AppTheme {
   static TextStyle serif({
     double fontSize = 20,
     FontWeight fontWeight = FontWeight.w800,
+    FontStyle fontStyle = FontStyle.normal,
     Color color = AppColors.textPrimary,
     double? height,
     double? letterSpacing,
   }) => AppTypography.serif(
     fontSize: fontSize,
     fontWeight: fontWeight,
+    fontStyle: fontStyle,
     color: color,
     height: height,
     letterSpacing: letterSpacing,
@@ -110,28 +112,33 @@ class AppTheme {
           ),
         ),
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF07583F),
+        foregroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.white),
+        actionsIconTheme: IconThemeData(color: Colors.white),
         elevation: 0,
         centerTitle: false,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
-        systemOverlayStyle: const SystemUiOverlayStyle(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
           systemNavigationBarColor: Colors.transparent,
           systemNavigationBarIconBrightness: Brightness.dark,
           systemNavigationBarContrastEnforced: false,
         ),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontFamily: 'PlusJakartaSans',
           fontFamilyFallback: ['Roboto', 'sans-serif'],
-          fontSize: 18,
+          fontSize: 16.5,
           fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
-          letterSpacing: -0.3,
+          color: Colors.white,
+          letterSpacing: -0.2,
         ),
       ),
       cardTheme: CardThemeData(
@@ -248,6 +255,19 @@ class AppTheme {
       dividerTheme: const DividerThemeData(
         color: AppColors.border,
         thickness: 1,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        titleTextStyle: serif(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }

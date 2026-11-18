@@ -1,17 +1,16 @@
 import '../../../core/utils/customer_error.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../models/address.dart';
 import '../../../providers/app_providers.dart';
 
-final addressesProvider = FutureProvider.autoDispose<List<Address>>((ref) {
-  return ref.read(addressServiceProvider).fetchAddresses();
-});
+export '../../../providers/app_providers.dart' show addressesProvider;
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
@@ -105,7 +104,7 @@ class AddressesScreen extends ConsumerWidget {
               ),
             );
           },
-          loading: () => const Center(child: AppLoader.large()),
+          loading: () => const ListCardSkeleton(cardHeight: 116),
           error: (e, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),

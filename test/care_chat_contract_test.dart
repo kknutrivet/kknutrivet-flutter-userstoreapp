@@ -64,4 +64,20 @@ void main() {
     expect((api.payload as Map)['requestId'], 'test-req-id');
     expect((api.payload as Map)['intake']['language'], 'English');
   });
+
+  test('fetchCareIntakeLanguages calls /consultations/chat/languages endpoint', () async {
+    final api = ContractApi()
+      ..response = {
+        'languages': ['English', 'Hindi', 'Odia'],
+      };
+    final languages = await ConsultationService(api).fetchCareIntakeLanguages();
+    expect(api.path, '/consultations/chat/languages');
+    expect(languages, ['English', 'Hindi', 'Odia']);
+  });
+
+  test('fetchCareIntakeLanguages falls back to default list on error', () async {
+    final api = ContractApi()..response = {'unexpected': true};
+    final languages = await ConsultationService(api).fetchCareIntakeLanguages();
+    expect(languages, ['English', 'Hindi', 'Odia']);
+  });
 }

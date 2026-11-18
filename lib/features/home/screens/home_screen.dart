@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/in_app_announcement_dialog.dart';
 import '../../../providers/app_providers.dart';
 import '../widgets/home_animal_selector.dart';
+import '../widgets/home_care_bento.dart';
 import '../widgets/home_combos_and_rx.dart';
 import '../widgets/home_community_and_footer.dart';
 import '../widgets/home_models_and_data.dart';
@@ -32,9 +33,9 @@ export '../widgets/home_models_and_data.dart'
         spotlightProductsProvider,
         trendingProductsProvider;
 
-/// Replica of the website's mobile homepage
-/// (`src/components/MobileHomeExperience.tsx` in kknutrivet-webapp)
-/// enhanced with dynamic delivery promise, quick pet switcher, and reorder rail.
+/// Modern Veterinary & Animal Care Commerce Homepage.
+/// Combines editorial curation (Lora serif + studio bento grids) with
+/// personalized species filtering, quick reorder, and video discovery.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -43,9 +44,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  bool _showBackToTop = false;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       InAppAnnouncementCoordinator.checkAndShow(
@@ -54,6 +59,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         currentRoute: '/home',
       );
     });
+  }
+
+  void _onScroll() {
+    final next = _scrollController.hasClients && _scrollController.offset > 380;
+    if (next != _showBackToTop && mounted) {
+      setState(() => _showBackToTop = next);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _onRefresh() async {
@@ -85,67 +103,167 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
-    final audience = homeAudienceFor(selectedAnimal);
+    final selectedEntry = findHomeAnimalEntry(selectedAnimal);
+    final pets = ref.watch(homePetsProvider).valueOrNull;
+    final preferredEntry = selectedEntry == null && pets != null && pets.isNotEmpty
+        ? findHomeAnimalEntry(pets.first.animalType)
+        : null;
+    final List<HomeAnimalEntry> activeAnimalEntries = selectedEntry != null
+        ? [selectedEntry]
+        : preferredEntry != null
+            ? [
+                preferredEntry,
+                ...kHomeAnimals.where((e) => e.value != preferredEntry.value),
+              ]
+            : kHomeAnimals;
 
     return Scaffold(
-      backgroundColor: AppColors.homeBackground,
-      body: RefreshIndicator(
-        color: AppColors.primaryDeep,
-        onRefresh: _onRefresh,
-        child: CustomScrollView(
-            slivers: [
-              const HomeBrandBar(),
-              const SliverToBoxAdapter(child: HomeTopBarCard()),
-              const HomePinnedSearchBar(),
-              const SliverToBoxAdapter(child: HomeMyPetsBar()),
-              const SliverToBoxAdapter(child: HomeAnimalSelector()),
-              SliverToBoxAdapter(
-                child: HomeCategorySelector(selectedAnimal: selectedAnimal),
-              ),
-              const SliverToBoxAdapter(child: HomeReorderRail()),
-              const SliverToBoxAdapter(child: HomeConcernsRail()),
-              SliverToBoxAdapter(
-                child: HomeFeaturedProductsRail(selectedAnimal: selectedAnimal),
-              ),
-              const SliverToBoxAdapter(child: HomeShotsRail()),
-              SliverToBoxAdapter(
-                child: HomeAnimalProductRail(entry: kHomeAnimals[0]),
-              ),
-              SliverToBoxAdapter(
-                child: HomeAnimalProductRail(entry: kHomeAnimals[1]),
-              ),
-              const SliverToBoxAdapter(child: HomePrescriptionCard()),
-              const SliverToBoxAdapter(child: HomeCareProductRail()),
-              SliverToBoxAdapter(
-                child: HomeAnimalProductRail(entry: kHomeAnimals[2]),
-              ),
-              SliverToBoxAdapter(
-                child: HomeAnimalProductRail(entry: kHomeAnimals[3]),
-              ),
-              SliverToBoxAdapter(
-                child: HomeCombosRail(selectedAnimal: selectedAnimal),
-              ),
-              SliverToBoxAdapter(
-                child: HomeAnimalProductRail(entry: kHomeAnimals[4]),
-              ),
-              const SliverToBoxAdapter(child: HomeTrustPanel()),
-              SliverToBoxAdapter(
-                child: HomeAnimalProductRail(entry: kHomeAnimals[5]),
-              ),
-              const SliverToBoxAdapter(child: HomeCareReachStoryCard()),
-              const SliverToBoxAdapter(child: HomeReviewsBand()),
-              const SliverToBoxAdapter(child: HomeMonsoonCareBanner()),
-              SliverToBoxAdapter(
-                child: HomeKnowledgeRail(selectedAnimal: selectedAnimal),
-              ),
-              if (audience != 'livestock')
-                const SliverToBoxAdapter(child: HomeCareSpaceCard()),
-              const SliverToBoxAdapter(child: HomeBrandsRail()),
-              const SliverToBoxAdapter(child: HomeHelpRail()),
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            ],
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            color: AppColors.primaryDeep,
+            onRefresh: _onRefresh,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                // 1. Cream Top Bar, Pinned Search & Pinned Species Tab Strip
+                const HomeBrandBar(),
+                const HomePinnedSearchBar(),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _PinnedSpeciesTabDelegate(),
+                ),
+
+                // 2. Care in spotlight (4-Column Pastel Tiles)
+                const SliverToBoxAdapter(child: HomeCareBentoSection()),
+
+                // When an animal tab is active, surface its products immediately above the fold
+                if (selectedEntry != null)
+                  SliverToBoxAdapter(
+                    child: HomeAnimalProductRail(entry: selectedEntry),
+                  ),
+
+                // 3. Shop by category (4×2 Pastel Tiles)
+                SliverToBoxAdapter(
+                  child: HomeCategorySelector(selectedAnimal: selectedAnimal),
+                ),
+
+                // 4. Customer Pulse (Active Order + 1-Tap Reorder) & Featured Products
+                const SliverToBoxAdapter(child: HomeActiveOrderBanner()),
+                const SliverToBoxAdapter(child: HomeReorderRail()),
+                SliverToBoxAdapter(
+                  child: HomeFeaturedProductsRail(selectedAnimal: selectedAnimal),
+                ),
+
+                // 5. Care by concern & Video Shots
+                const SliverToBoxAdapter(child: HomeConcernsRail()),
+                const SliverToBoxAdapter(child: HomeShotsRail()),
+
+                // 6. Dynamic Species Product Shelves & Value Combos
+                if (selectedEntry == null)
+                  for (var i = 0; i < activeAnimalEntries.length; i++) ...[
+                    SliverToBoxAdapter(
+                      child: HomeAnimalProductRail(entry: activeAnimalEntries[i]),
+                    ),
+                    if (i == 1)
+                      SliverToBoxAdapter(
+                        child: HomeCombosRail(selectedAnimal: selectedAnimal),
+                      ),
+                    if (i == 3) const SliverToBoxAdapter(child: HomeCareProductRail()),
+                  ],
+                if (selectedEntry != null) ...[
+                  SliverToBoxAdapter(
+                    child: HomeCombosRail(selectedAnimal: selectedAnimal),
+                  ),
+                  const SliverToBoxAdapter(child: HomeCareProductRail()),
+                ],
+
+                // 7. Social Proof, Vet Knowledge & Atmospheric Brand Sign-Off
+                const SliverToBoxAdapter(child: HomeReviewsBand()),
+                SliverToBoxAdapter(
+                  child: HomeKnowledgeRail(selectedAnimal: selectedAnimal),
+                ),
+                const SliverToBoxAdapter(child: HomeBrandSignatureFooter()),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+            ),
           ),
-        ),
-      );
+          if (_showBackToTop)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 54 + 60 + 58 + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Material(
+                  color: const Color(0xE61C1C1C),
+                  borderRadius: BorderRadius.circular(999),
+                  elevation: 6,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOutCubic,
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_upward_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 5),
+                          Text(
+                            'Back to top',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
+}
+
+class _PinnedSpeciesTabDelegate extends SliverPersistentHeaderDelegate {
+  static const double _height = 62;
+
+  @override
+  double get minExtent => _height;
+
+  @override
+  double get maxExtent => _height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return const SizedBox(
+      height: _height,
+      child: HomeAnimalSelector(),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedSpeciesTabDelegate oldDelegate) => false;
 }

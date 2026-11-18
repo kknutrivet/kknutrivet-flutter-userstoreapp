@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -226,6 +226,552 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
         break;
     }
     return sorted;
+  }
+
+  int get _activeFilterCount =>
+      (_selectedAnimal != 'All' ? 1 : 0) +
+      (_inStockOnly ? 1 : 0) +
+      (_under500 ? 1 : 0) +
+      (_noRxOnly ? 1 : 0);
+
+  void _showFilterSheet(BuildContext context, List<Product> allProducts) {
+    String filterTab = 'animal';
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final filteredCount = _applyFilters(allProducts).length;
+            final bottomInset = MediaQuery.paddingOf(ctx).bottom;
+            const animals = [
+              ('All', 'All Animals'),
+              ('Dog', 'Dogs'),
+              ('Cat', 'Cats'),
+              ('Cattle', 'Cattle & Dairy'),
+              ('Poultry', 'Poultry'),
+              ('Goat/Sheep', 'Goats & Sheep'),
+              ('Exotic & Small Pets', 'Exotic & Small Pets'),
+            ];
+
+            Widget optionTile({
+              required String label,
+              String? subtitle,
+              required bool selected,
+              required VoidCallback onTap,
+            }) {
+              return InkWell(
+                onTap: () {
+                  AppHaptics.selection();
+                  onTap();
+                  setState(() {});
+                  setSheetState(() {});
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primaryWashFaint
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primaryDeep
+                          : const Color(0xFFE2EBE5),
+                      width: selected ? 1.3 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.primaryDeep
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: selected
+                                ? AppColors.primaryDeep
+                                : const Color(0xFF94A3B8),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: selected
+                            ? const Icon(
+                                Icons.check_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: selected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            if (subtitle != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Container(
+              height: MediaQuery.sizeOf(ctx).height * 0.68,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'REFINE REMEDIES',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Filters',
+                                style: AppTheme.serif(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: Color(0xFFE2EBE5)),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Left rail
+                        Container(
+                          width: 132,
+                          color: const Color(0xFFF6FAF7),
+                          child: ListView(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            children: [
+                              for (final tab in [
+                                ('animal', 'Animal type', _selectedAnimal != 'All' ? 1 : 0),
+                                ('price', 'Price & Stock', (_inStockOnly ? 1 : 0) + (_under500 ? 1 : 0)),
+                                ('rx', 'Prescription', _noRxOnly ? 1 : 0),
+                              ])
+                                InkWell(
+                                  onTap: () =>
+                                      setSheetState(() => filterTab = tab.$1),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: filterTab == tab.$1
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: filterTab == tab.$1
+                                              ? AppColors.primaryDeep
+                                              : Colors.transparent,
+                                          width: 3.5,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            tab.$2,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: filterTab == tab.$1
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w600,
+                                              color: filterTab == tab.$1
+                                                  ? AppColors.primaryDeep
+                                                  : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                        if (tab.$3 > 0)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primaryDeep,
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              '${tab.$3}',
+                                              style: const TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        // Right options pane
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.all(14),
+                            children: [
+                              if (filterTab == 'animal')
+                                for (final a in animals)
+                                  optionTile(
+                                    label: a.$2,
+                                    selected: _selectedAnimal == a.$1,
+                                    onTap: () => _selectedAnimal = a.$1,
+                                  )
+                              else if (filterTab == 'price') ...[
+                                optionTile(
+                                  label: 'In stock only',
+                                  subtitle:
+                                      'Hide remedies that are currently sold out',
+                                  selected: _inStockOnly,
+                                  onTap: () => _inStockOnly = !_inStockOnly,
+                                ),
+                                optionTile(
+                                  label: 'Under ₹500',
+                                  subtitle:
+                                      'Everyday care & affordable packs under ₹500',
+                                  selected: _under500,
+                                  onTap: () => _under500 = !_under500,
+                                ),
+                              ] else ...[
+                                optionTile(
+                                  label: 'All remedies (Rx & Non-Rx)',
+                                  subtitle:
+                                      'Show both OTC supplements and prescription medicines',
+                                  selected: !_noRxOnly,
+                                  onTap: () => _noRxOnly = false,
+                                ),
+                                optionTile(
+                                  label: 'Non-Rx only (No prescription needed)',
+                                  subtitle:
+                                      'Instant checkout without uploading a vet slip',
+                                  selected: _noRxOnly,
+                                  onTap: () => _noRxOnly = true,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      12,
+                      16,
+                      12 + bottomInset,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFE2EBE5)),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              _clearAllFilters();
+                              setSheetState(() {});
+                            },
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(46),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'Clear filters',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryDeep,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size.fromHeight(46),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: Text(
+                              'Apply ($filteredCount ${filteredCount == 1 ? 'product' : 'products'})',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showSwitchConcernSheet(BuildContext context, String currentSlug) {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Consumer(
+          builder: (ctx, ref, _) {
+            final concernsAsync = ref.watch(
+              FutureProvider.autoDispose((r) => r.read(catalogServiceProvider).fetchHealthConcerns()),
+            );
+            final bottomInset = MediaQuery.paddingOf(ctx).bottom;
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(ctx).height * 0.72,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+              ),
+              padding: EdgeInsets.only(bottom: bottomInset + 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 12, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'HEALTH CONCERNS',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Switch health concern',
+                                style: AppTheme.serif(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: Color(0xFFE2EBE5)),
+                  Flexible(
+                    child: concernsAsync.when(
+                      data: (concerns) => ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(14),
+                        itemCount: concerns.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (ctx, i) {
+                          final item = concerns[i];
+                          final active = item.slug == currentSlug;
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              if (!active) {
+                                context.pushReplacement('/diseases/${item.slug}');
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? AppColors.primaryWashFaint
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: active
+                                      ? AppColors.primaryDeep
+                                      : const Color(0xFFE2EBE5),
+                                  width: active ? 1.3 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.name,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: active
+                                                ? FontWeight.w800
+                                                : FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        if (item.description != null &&
+                                            item.description!
+                                                .trim()
+                                                .isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            item.description!.trim(),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 11.5,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    active
+                                        ? Icons.check_circle_rounded
+                                        : Icons.chevron_right_rounded,
+                                    size: 18,
+                                    color: active
+                                        ? AppColors.primaryDeep
+                                        : AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (_, _) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -501,6 +1047,82 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
+                          // Filter Button Pill (opens 2-pane split Filter bottom sheet)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => _showFilterSheet(context, allProducts),
+                            child: Container(
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _activeFilterCount > 0
+                                    ? AppColors.primaryWash
+                                    : Colors.white,
+                                border: Border.all(
+                                  color: _activeFilterCount > 0
+                                      ? AppColors.primaryDeep
+                                      : const Color(0xFFD9E2DC),
+                                  width: _activeFilterCount > 0 ? 1.2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x0A000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.tune_rounded,
+                                    size: 14,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Filters',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: _activeFilterCount > 0
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                      color: _activeFilterCount > 0
+                                          ? AppColors.primaryDeep
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if (_activeFilterCount > 0) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryDeep,
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        '$_activeFilterCount',
+                                        style: const TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+
                           // Sort Button Pill
                           InkWell(
                             borderRadius: BorderRadius.circular(20),
@@ -597,33 +1219,77 @@ class _DiseaseDetailScreenState extends ConsumerState<DiseaseDetailScreen> {
                 // Prescription upload banner
                 const SliverToBoxAdapter(child: PrescriptionBanner()),
 
-                // Products count row
+                // Products count + Switch concern row
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '${filteredProducts.length} ${filteredProducts.length == 1 ? 'remedy' : 'remedies'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        if (_hasActiveFilters)
-                          GestureDetector(
-                            onTap: _clearAllFilters,
-                            child: const Text(
-                              'Reset filters',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${filteredProducts.length} ${filteredProducts.length == 1 ? 'remedy' : 'remedies'}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
                               ),
                             ),
+                            if (_hasActiveFilters) ...[
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: _clearAllFilters,
+                                child: const Text(
+                                  'Reset filters',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(999),
+                          onTap: () =>
+                              _showSwitchConcernSheet(context, concern.slug),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: const Color(0xFFD9E2DC),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Switch concern',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                ),
+                                SizedBox(width: 3),
+                                Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 15,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ],
+                            ),
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -884,12 +1550,12 @@ class _VetAdviceBanner extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'For severe symptoms, contact a veterinarian. Care team chat offers support; a booked vet consultation is a separate service. Dr. Paw AI provides general information, not a diagnosis.',
+              'For severe symptoms, contact a veterinarian immediately. Start a Vet Care Chat to speak with our veterinary team; Dr. Paw AI provides general information, not a diagnosis.',
               style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
             ),
             TextButton(
-              onPressed: () => context.push('/consultations/book'),
-              child: const Text('Book a vet consultation'),
+              onPressed: () => context.push('/consultations'),
+              child: const Text('Chat with a veterinarian'),
             ),
             const SizedBox(height: 12),
             Row(

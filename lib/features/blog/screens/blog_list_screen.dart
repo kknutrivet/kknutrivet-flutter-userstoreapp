@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/blog_card.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../models/content.dart';
 import '../../../providers/app_providers.dart';
 
@@ -131,7 +132,7 @@ class BlogListScreen extends ConsumerWidget {
                   ),
                 );
               },
-              loading: () => const Center(child: AppLoader.large()),
+              loading: () => const ListCardSkeleton(cardHeight: 132),
               error: (e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),

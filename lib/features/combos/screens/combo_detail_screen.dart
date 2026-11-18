@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,6 +10,7 @@ import '../../../core/utils/haptics.dart';
 import '../../../core/utils/share_helper.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
 
@@ -340,9 +341,12 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
               ),
             );
           }
-          return _buildComboContent(context, combo);
+          return AppFadeSlide(
+            offsetY: 10,
+            child: _buildComboContent(context, combo),
+          );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ComboDetailSkeleton(),
         error: (e, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

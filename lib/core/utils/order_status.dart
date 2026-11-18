@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../theme/app_theme.dart';
 
 /// Mirrors nvit-frontend's STATUS_STYLES/STATUS_ICONS/STATUS_DETAILS maps

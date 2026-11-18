@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -147,20 +147,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         widget.initialSort != null) {
       Future.microtask(() {
         if (!mounted) return;
-        final current = ref.read(productFilterProvider);
-        if (current.animalType != widget.initialAnimalType ||
-            current.category != widget.initialCategory ||
-            current.search != widget.initialSearch ||
-            current.disease != widget.initialDisease ||
-            current.sort != (widget.initialSort ?? 'relevance')) {
-          ref.read(productFilterProvider.notifier).state = ProductFilter(
-            animalType: widget.initialAnimalType,
-            category: widget.initialCategory,
-            search: widget.initialSearch,
-            disease: widget.initialDisease,
-            sort: widget.initialSort ?? 'relevance',
-          );
-        }
+        ref.read(productFilterProvider.notifier).state = ProductFilter(
+          animalType: widget.initialAnimalType,
+          category: widget.initialCategory,
+          search: widget.initialSearch,
+          disease: widget.initialDisease,
+          sort: widget.initialSort ?? 'relevance',
+        );
       });
     }
   }
@@ -170,15 +163,16 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        toolbarHeight: 54,
-        backgroundColor: Colors.white,
+        toolbarHeight: 56,
+        backgroundColor: const Color(0xFF07583F),
+        foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 18,
-            color: AppColors.textPrimary,
+            color: Colors.white,
           ),
           onPressed: () {
             if (context.canPop()) {
@@ -215,10 +209,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             return Text(
               title,
               style: const TextStyle(
-                fontSize: 17,
+                fontSize: 16.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                color: AppColors.textPrimary,
+                color: Colors.white,
               ),
             );
           },
@@ -227,8 +220,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           IconButton(
             icon: const Icon(
               Icons.search_rounded,
-              size: 22,
-              color: AppColors.textPrimary,
+              size: 20,
+              color: Colors.white,
             ),
             onPressed: () => context.push('/search'),
           ),
@@ -241,8 +234,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   IconButton(
                     icon: const Icon(
                       Icons.shopping_cart_outlined,
-                      size: 22,
-                      color: AppColors.textPrimary,
+                      size: 20,
+                      color: Colors.white,
                     ),
                     onPressed: () => context.push('/cart'),
                   ),
@@ -256,15 +249,15 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           vertical: 2,
                         ),
                         decoration: const BoxDecoration(
-                          color: AppColors.primary,
+                          color: Color(0xFFC9FF67),
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '$count',
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF053526),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
@@ -595,38 +588,45 @@ class _EmptyState extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(14),
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 32),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: AppColors.borderStrong),
-            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.borderWarm),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A07271F),
+                blurRadius: 18,
+                offset: Offset(0, 6),
+              ),
+            ],
           ),
           child: Column(
             children: [
               Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.successBg,
-                  borderRadius: BorderRadius.circular(8),
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryWash,
+                  shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.search_off_rounded,
                   size: 24,
-                  color: AppColors.primary,
+                  color: AppColors.primaryDeep,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'No products match',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
+                style: AppTheme.serif(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -634,7 +634,7 @@ class _EmptyState extends ConsumerWidget {
                 'Try a different search term, remove a filter, or browse by health concern.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.5,
                   height: 1.5,
                   color: AppColors.textSecondary,
                 ),
@@ -647,15 +647,13 @@ class _EmptyState extends ConsumerWidget {
                       ref.read(productFilterProvider.notifier).state =
                           ProductFilter(),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size.fromHeight(44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    backgroundColor: AppColors.primaryDeep,
+                    minimumSize: const Size.fromHeight(46),
+                    shape: const StadiumBorder(),
                   ),
                   child: const Text(
                     'Clear filters →',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -665,16 +663,14 @@ class _EmptyState extends ConsumerWidget {
                 child: OutlinedButton(
                   onPressed: () => context.push('/vet'),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
+                    minimumSize: const Size.fromHeight(46),
                     side: const BorderSide(color: AppColors.borderStrong),
                     foregroundColor: AppColors.textPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   child: const Text(
                     '✦ Ask Dr. Paw for help',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -684,16 +680,14 @@ class _EmptyState extends ConsumerWidget {
                 child: OutlinedButton(
                   onPressed: () => context.push('/diseases'),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
+                    minimumSize: const Size.fromHeight(46),
                     side: const BorderSide(color: AppColors.borderStrong),
                     foregroundColor: AppColors.textPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   child: const Text(
                     'Browse health concerns',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,11 +31,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return Scaffold(
         backgroundColor: AppColors.homeCanvas,
         appBar: AppBar(
-          title: Text(
+          title: const Text(
             'My Account',
-            style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFF07583F),
+          foregroundColor: Colors.white,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
         ),
@@ -83,11 +88,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.homeCanvas,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'My Account',
-          style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: 16.5,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF07583F),
+        foregroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -391,11 +401,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await AppConfig.setEnvironment(selected);
       if (mounted) {
         setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Switched to ${selected.name} (${selected.baseUrl})'),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showToast(
+          'Switched to ${selected.name} (${selected.baseUrl})',
+          type: AppToastType.info,
         );
       }
     }
@@ -515,24 +523,50 @@ class _UserHeaderCard extends StatelessWidget {
         : 'Pet Parent';
     final initial = displayName.substring(0, 1).toUpperCase();
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryDark, AppColors.primaryDeep],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.cardShadowLifted,
-            blurRadius: 14,
-            offset: Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF06231B),
+              AppColors.primaryDark,
+              AppColors.primaryDeep,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Row(
+          boxShadow: AppShadows.lifted,
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -24,
+              top: -28,
+              child: Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 28,
+              bottom: -36,
+              child: Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.04),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
         children: [
           Stack(
             children: [
@@ -624,6 +658,10 @@ class _UserHeaderCard extends StatelessWidget {
           ),
         ],
       ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -637,16 +675,14 @@ class _GuestWelcomeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          colors: [Colors.white, AppColors.primaryWashFaint],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.borderWarm),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.cardShadowLifted,
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.primaryWashDeep),
+        boxShadow: AppShadows.lifted,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -654,9 +690,20 @@ class _GuestWelcomeCard extends StatelessWidget {
           Container(
             width: 72,
             height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryWash,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primaryWash, AppColors.primaryWashDeep],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryDeep.withValues(alpha: 0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: const Center(
               child: Icon(

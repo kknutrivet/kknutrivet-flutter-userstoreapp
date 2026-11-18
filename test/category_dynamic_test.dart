@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nvit_app/core/network/api_client.dart';
@@ -203,17 +203,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 'Feed' has category: 'Feed', which is active -> visible
-      expect(find.text('Feed'), findsOneWidget);
+      // 'Feed' has category: 'Feed', which is active -> visible as 'Animal\nFeed'
+      expect(find.text('Animal\nFeed'), findsOneWidget);
 
-      // 'Deworming' has category: 'Deworming', which is disabled -> omitted!
-      expect(find.text('Deworming'), findsNothing);
-
-      // 'Medicines' has category: 'Medicine', which is disabled -> omitted!
-      expect(find.text('Medicines'), findsNothing);
-
-      // 'Grooming & Care' has category: 'Grooming', which is disabled -> omitted!
-      expect(find.text('Grooming & Care'), findsNothing);
+      // 'Deworming', 'Medicine', and 'Grooming' are disabled -> omitted!
+      expect(find.text('Gut &\nDeworming'), findsNothing);
+      expect(find.text('Health &\nMedicine'), findsNothing);
+      expect(find.text('Coat &\nGrooming'), findsNothing);
     });
 
     testWidgets('HomeShopByNeedChips dynamically appends new active category from backend', (tester) async {

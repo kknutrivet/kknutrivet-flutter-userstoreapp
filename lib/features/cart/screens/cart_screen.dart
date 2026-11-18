@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,19 +37,16 @@ class CartScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8F6),
       appBar: AppBar(
-        toolbarHeight: 54,
-        backgroundColor: Colors.white,
+        toolbarHeight: 56,
+        backgroundColor: const Color(0xFF07583F),
+        foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: Color(0xFFE6EFEA)),
-        ),
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 18,
-            color: AppColors.textPrimary,
+            color: Colors.white,
           ),
           onPressed: () {
             if (context.canPop()) {
@@ -59,19 +56,12 @@ class CartScreen extends ConsumerWidget {
             }
           },
         ),
-        title: Image.asset(
-          'assets/images/logo.png',
-          height: 32,
-          fit: BoxFit.contain,
-          alignment: Alignment.centerLeft,
-          errorBuilder: (_, _, _) => const Text(
-            'KK NUTRIVET',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.6,
-              color: AppColors.primaryDeep,
-            ),
+        title: const Text(
+          'Cart',
+          style: TextStyle(
+            fontSize: 16.5,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
           ),
         ),
       ),

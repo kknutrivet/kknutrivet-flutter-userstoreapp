@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -25,7 +25,7 @@ class CareChatWaitingRuleBanner extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'You can send up to 5 text messages while waiting for our care team to reply.',
+              'Our care team is reviewing your case. We will notify you as soon as a doctor joins.',
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
@@ -33,6 +33,366 @@ class CareChatWaitingRuleBanner extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class CareChatCoinsBar extends StatelessWidget {
+  const CareChatCoinsBar({
+    super.key,
+    required this.coinStatus,
+    required this.packsExpanded,
+    required this.confirmingRecharge,
+    required this.rechargingPackAmount,
+    required this.onTogglePacks,
+    required this.onSelectPack,
+  });
+
+  final CareChatCoinStatus coinStatus;
+  final bool packsExpanded;
+  final bool confirmingRecharge;
+  final int? rechargingPackAmount;
+  final VoidCallback onTogglePacks;
+  final ValueChanged<CareCoinRechargePack> onSelectPack;
+
+  String _phaseDescription() {
+    if (coinStatus.intakeFree) {
+      return 'Initial intake free · Then ${coinStatus.freeMessagesTotal} free msgs (${coinStatus.coinsPerMessage} coins/msg)';
+    }
+    final rem = coinStatus.isFollowUp || !coinStatus.waitingForDoctor
+        ? coinStatus.freeMessagesRemaining
+        : coinStatus.waitingMessagesRemaining;
+    final plural = rem == 1 ? '' : 's';
+    if (coinStatus.isFollowUp) {
+      if (rem > 0) {
+        return 'Follow-up · $rem free msg$plural left (then ${coinStatus.coinsPerMessage} coins/msg)';
+      }
+      return 'Follow-up · ${coinStatus.coinsPerMessage} KK Coins / message';
+    }
+    if (coinStatus.waitingForDoctor) {
+      return 'Waiting for doctor · $rem free msg$plural left (0 coins while waiting)';
+    }
+    if (rem > 0) {
+      return 'Doctor joined · $rem free msg$plural left (then ${coinStatus.coinsPerMessage} coins/msg)';
+    }
+    return '${coinStatus.coinsPerMessage} KK Coins / message';
+  }
+
+  Widget _rechargeToggleButton() {
+    return InkWell(
+      onTap: onTogglePacks,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: AppColors.primaryDeep.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Text(
+          packsExpanded ? 'Hide packs' : '+ Recharge',
+          style: const TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryDeep,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPackGrid({
+    required Color cardBorderColor,
+    required Color cardBackground,
+  }) {
+    final packs = coinStatus.effectivePacks;
+    final isBusy = rechargingPackAmount != null;
+    return Row(
+      children: [
+        for (int i = 0; i < packs.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          Expanded(
+            child: InkWell(
+              onTap: isBusy ? null : () => onSelectPack(packs[i]),
+              borderRadius: BorderRadius.circular(12),
+              child: Opacity(
+                opacity: isBusy && rechargingPackAmount != packs[i].amount
+                    ? 0.55
+                    : 1.0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cardBorderColor),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      rechargingPackAmount == packs[i].amount
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primaryDeep,
+                              ),
+                            )
+                          : Text(
+                              '₹${packs[i].amount}',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${packs[i].coins} Coins',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDeep,
+                        ),
+                      ),
+                      if (packs[i].label.isNotEmpty) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          packs[i].label,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 9.2,
+                            height: 1.15,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (confirmingRecharge) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF065F46),
+              ),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Confirming your KK Coins recharge…',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF065F46),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (coinStatus.waitingLockActive) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.medical_services_outlined,
+                  size: 15,
+                  color: Color(0xFF065F46),
+                ),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'Waiting for a doctor to accept your consultation',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF064E3B),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Balance: ${coinStatus.userCoinsBalance}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                _rechargeToggleButton(),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'You have shared ${coinStatus.waitingMessagesUsed}/${coinStatus.waitingMessagesLimit} initial messages. Messaging is paused so your KK Coins are not spent while waiting — chat unlocks automatically at ${coinStatus.coinsPerMessage} KK Coins / message once a doctor accepts.',
+              style: const TextStyle(
+                fontSize: 10.5,
+                height: 1.35,
+                color: Color(0xFF065F46),
+              ),
+            ),
+            if (packsExpanded) ...[
+              const SizedBox(height: 8),
+              _buildPackGrid(
+                cardBorderColor: AppColors.borderWarm,
+                cardBackground: Colors.white,
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (coinStatus.outOfCoins) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFCD34D)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.monetization_on_outlined,
+                  size: 15,
+                  color: Color(0xFFB45309),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Out of KK Coins · Need ${coinStatus.coinsPerMessage} coins (Balance: ${coinStatus.userCoinsBalance})',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF78350F),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Recharge KK Coins to continue chatting with the care team. Your message draft is preserved below.',
+              style: TextStyle(
+                fontSize: 10.5,
+                height: 1.35,
+                color: Color(0xFF92400E),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildPackGrid(
+              cardBorderColor: const Color(0xFFFCD34D),
+              cardBackground: Colors.white,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.borderWarm),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.monetization_on_outlined,
+                  size: 14,
+                  color: Color(0xFFD97706),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _phaseDescription(),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Balance: ${coinStatus.userCoinsBalance}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                _rechargeToggleButton(),
+              ],
+            ),
+          ),
+          if (packsExpanded) ...[
+            const SizedBox(height: 8),
+            _buildPackGrid(
+              cardBorderColor: AppColors.borderWarm,
+              cardBackground: Colors.white,
+            ),
+          ],
         ],
       ),
     );
@@ -102,6 +462,7 @@ class CareChatBubble extends StatelessWidget {
     this.canReact = true,
     this.onReact,
     this.busyAction = false,
+    this.freeRxUnlocked = false,
   });
 
   final CareChatMessage message;
@@ -111,6 +472,7 @@ class CareChatBubble extends StatelessWidget {
   final bool canReact;
   final void Function(CareChatMessage message, String emoji)? onReact;
   final bool busyAction;
+  final bool freeRxUnlocked;
 
   void _showReactionSheet(BuildContext context) {
     AppHaptics.selection();
@@ -159,26 +521,37 @@ class CareChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (message.isSystem) {
+      final isNoVetWait = message.isNoVetWaitNotice;
       return Center(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          padding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: isNoVetWait ? 10 : 7,
+          ),
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.88,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFFEEF4F1),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFDCE8E1), width: 0.8),
+            color: isNoVetWait
+                ? const Color(0xFFF5F9F7)
+                : const Color(0xFFEEF4F1),
+            borderRadius: BorderRadius.circular(isNoVetWait ? 14 : 18),
+            border: Border.all(
+              color: const Color(0xFFDCE8E1),
+              width: isNoVetWait ? 1 : 0.8,
+            ),
           ),
           child: Text(
             message.body.isEmpty ? 'System update' : message.body,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              height: 1.35,
-              color: Color(0xFF566B60),
+            style: TextStyle(
+              fontSize: isNoVetWait ? 12 : 11.5,
+              fontWeight: isNoVetWait ? FontWeight.w600 : FontWeight.w500,
+              height: 1.38,
+              color: isNoVetWait
+                  ? const Color(0xFF466155)
+                  : const Color(0xFF566B60),
             ),
           ),
         ),
@@ -248,6 +621,7 @@ class CareChatBubble extends StatelessWidget {
                         message: message,
                         booking: booking,
                         busyAction: busyAction,
+                        freeRxUnlocked: freeRxUnlocked,
                         onUnlock: () => onUnlockPrescription(message),
                         onOpenUrl: onOpenMedia,
                       )
@@ -524,6 +898,7 @@ class InlinePrescriptionBubble extends StatelessWidget {
     required this.onUnlock,
     required this.onOpenUrl,
     this.busyAction = false,
+    this.freeRxUnlocked = false,
   });
 
   final CareChatMessage message;
@@ -531,10 +906,14 @@ class InlinePrescriptionBubble extends StatelessWidget {
   final VoidCallback onUnlock;
   final ValueChanged<String> onOpenUrl;
   final bool busyAction;
+  final bool freeRxUnlocked;
 
   @override
   Widget build(BuildContext context) {
     final hasUrl = message.mediaUrl != null && message.mediaUrl!.isNotEmpty;
+    final unlocked =
+        freeRxUnlocked ||
+        (message.prescriptionUnlocked ?? !booking.prescriptionLocked);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -575,8 +954,7 @@ class InlinePrescriptionBubble extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
-          if (hasUrl &&
-              (message.prescriptionUnlocked ?? !booking.prescriptionLocked))
+          if (hasUrl && unlocked)
             ElevatedButton.icon(
               onPressed: () => onOpenUrl(message.mediaUrl!),
               icon: const Icon(
@@ -598,8 +976,7 @@ class InlinePrescriptionBubble extends StatelessWidget {
                 ),
               ),
             )
-          else if (!(message.prescriptionUnlocked ??
-              !booking.prescriptionLocked))
+          else if (!unlocked)
             ElevatedButton.icon(
               onPressed: busyAction ? null : onUnlock,
               icon: busyAction
@@ -843,6 +1220,9 @@ class CareChatComposer extends StatelessWidget {
     required this.uploadingMedia,
     required this.onPickAndSendPhoto,
     required this.onSendTextMessage,
+    this.locked = false,
+    this.hintText,
+    this.topBanner,
   });
 
   final TextEditingController messageController;
@@ -850,9 +1230,16 @@ class CareChatComposer extends StatelessWidget {
   final bool uploadingMedia;
   final VoidCallback onPickAndSendPhoto;
   final VoidCallback onSendTextMessage;
+  final bool locked;
+  final String? hintText;
+  final Widget? topBanner;
 
   @override
   Widget build(BuildContext context) {
+    final controlsDisabled = locked || uploadingMedia || sending;
+    final resolvedHint =
+        hintText ??
+        (locked ? 'Waiting for a doctor to accept…' : 'Type your message…');
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -870,6 +1257,7 @@ class CareChatComposer extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ?topBanner,
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -877,19 +1265,21 @@ class CareChatComposer extends StatelessWidget {
                     width: 48,
                     height: 48,
                     child: IconButton(
-                      onPressed: uploadingMedia || sending
-                          ? null
-                          : onPickAndSendPhoto,
-                      tooltip: 'Attach photo or video',
+                      onPressed: controlsDisabled ? null : onPickAndSendPhoto,
+                      tooltip: locked
+                          ? 'Waiting for a doctor to accept'
+                          : 'Attach photo or video',
                       icon: uploadingMedia
                           ? const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.add_photo_alternate_outlined,
-                              color: AppColors.primaryDeep,
+                              color: locked
+                                  ? AppColors.textTertiary
+                                  : AppColors.primaryDeep,
                             ),
                     ),
                   ),
@@ -897,14 +1287,19 @@ class CareChatComposer extends StatelessWidget {
                   Expanded(
                     child: TextField(
                       controller: messageController,
+                      enabled: !locked,
                       minLines: 1,
                       maxLines: 4,
                       textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => onSendTextMessage(),
+                      onSubmitted: (_) {
+                        if (!locked) onSendTextMessage();
+                      },
                       decoration: InputDecoration(
-                        hintText: 'Type your message…',
+                        hintText: resolvedHint,
                         filled: true,
-                        fillColor: AppColors.surfaceAlt,
+                        fillColor: locked
+                            ? AppColors.surfaceAlt.withValues(alpha: 0.6)
+                            : AppColors.surfaceAlt,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 11,
@@ -921,6 +1316,12 @@ class CareChatComposer extends StatelessWidget {
                             color: AppColors.borderWarm,
                           ),
                         ),
+                        disabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: AppColors.borderWarm,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -929,11 +1330,13 @@ class CareChatComposer extends StatelessWidget {
                     width: 48,
                     height: 48,
                     child: Material(
-                      color: AppColors.primaryDeep,
+                      color: locked
+                          ? const Color(0xFFB8C7BF)
+                          : AppColors.primaryDeep,
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14),
-                        onTap: sending ? null : onSendTextMessage,
+                        onTap: (sending || locked) ? null : onSendTextMessage,
                         child: Center(
                           child: sending
                               ? const SizedBox(
@@ -981,6 +1384,7 @@ class CareChatMessagesSection extends StatelessWidget {
     this.onReact,
     this.busyAction = false,
     this.busyMessageId,
+    this.freeRxUnlocked = false,
   });
 
   final bool isLoading;
@@ -992,6 +1396,7 @@ class CareChatMessagesSection extends StatelessWidget {
   final void Function(CareChatMessage message, String emoji)? onReact;
   final bool busyAction;
   final String? busyMessageId;
+  final bool freeRxUnlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -1023,6 +1428,7 @@ class CareChatMessagesSection extends StatelessWidget {
                 booking: booking,
                 canReact: canReact,
                 onReact: onReact,
+                freeRxUnlocked: freeRxUnlocked,
                 busyAction:
                     busyAction &&
                     (busyMessageId == null || busyMessageId == msg.id),

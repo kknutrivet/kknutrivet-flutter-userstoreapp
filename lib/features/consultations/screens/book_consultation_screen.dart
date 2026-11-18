@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,9 +79,6 @@ class _BookConsultationScreenState
   static const _languages = [
     'English',
     'हिन्दी',
-    'বাংলা',
-    'తెలుగు',
-    'தமிழ்',
     'ଓଡ଼ିଆ',
   ];
 
@@ -106,6 +103,90 @@ class _BookConsultationScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (widget.followUpOfId == null) {
+      return Scaffold(
+        backgroundColor: AppColors.homeCanvas,
+        appBar: AppBar(
+          title: Text(
+            'Vet Care Chat',
+            style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 460),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.borderWarm),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryWash,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: AppColors.primaryDeep,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'All consultations start on Care Chat',
+                    style: AppTheme.serif(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Scheduled slot bookings have moved into Vet Care Chat. Start with free intake and initial messages while waiting for a doctor — KK Coins only apply after a doctor accepts, and digital prescriptions unlock free.',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      height: 1.45,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  ElevatedButton.icon(
+                    onPressed: () => context.go('/consultations'),
+                    icon: const Icon(Icons.medical_services_outlined, size: 18),
+                    label: const Text('Start Vet Care Chat'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/home');
+                      }
+                    },
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final petsAsync = ref.watch(myPetsProvider);
     final slotsAsync = ref.watch(slotsProvider(_date));
     final animalType = _pet?.animalType ?? _manualAnimalType;

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -57,40 +57,36 @@ class HomeCombosRail extends ConsumerWidget {
         final shown = activeCombos.take(6).toList();
         if (shown.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          margin: const EdgeInsets.only(top: 20),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF8F1E7),
-            border: Border(
-              top: BorderSide(color: Color(0xFFE9DCCB)),
-              bottom: BorderSide(color: Color(0xFFE9DCCB)),
-            ),
-          ),
+        return Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEE0C8),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white, width: 2),
+                        color: const Color(0xFFF8F1E7),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFE9DCCB),
+                          width: 1.2,
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: const Icon(
                         Icons.inventory_2_outlined,
-                        size: 23,
+                        size: 19,
                         color: Color(0xFF796038),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    const SizedBox(width: 11),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -98,43 +94,58 @@ class HomeCombosRail extends ConsumerWidget {
                             'Care bundles, better value',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: AppTheme.serif(
+                              fontSize: 17.5,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
-                              color: Color(0xFF413C29),
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
+                          const SizedBox(height: 1),
+                          const Text(
                             'Essentials together. A little more saved.',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF637367),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Material(
-                      color: const Color(0xFF796038),
-                      shape: const CircleBorder(),
+                      color: Colors.transparent,
                       child: InkWell(
-                        customBorder: const CircleBorder(),
+                        borderRadius: BorderRadius.circular(20),
                         onTap: () {
                           Haptics.tap();
-                          context.push('/products?category=Combos');
+                          context.go('/products?category=Combos');
                         },
-                        child: const SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 17,
-                            color: Colors.white,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 6,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'See all',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -147,7 +158,7 @@ class HomeCombosRail extends ConsumerWidget {
                 height: 294,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: shown.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, i) => SizedBox(

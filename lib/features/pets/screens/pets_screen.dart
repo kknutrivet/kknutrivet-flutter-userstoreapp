@@ -1,6 +1,6 @@
 import '../../../core/utils/customer_error.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/skeletons.dart';
 import '../../../models/pet.dart';
 import '../../../providers/app_providers.dart';
 
@@ -130,7 +131,7 @@ class PetsScreen extends ConsumerWidget {
               ),
             );
           },
-          loading: () => const Center(child: AppLoader.large()),
+          loading: () => const ListCardSkeleton(cardHeight: 112),
           error: (e, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),

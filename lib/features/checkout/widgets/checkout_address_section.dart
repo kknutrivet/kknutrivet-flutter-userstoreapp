@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,9 +9,158 @@ import '../../../models/address.dart';
 import '../../../models/delivery.dart';
 import '../../../providers/app_providers.dart';
 
-final addressesProvider = FutureProvider.autoDispose<List<Address>>((ref) {
-  return ref.read(addressServiceProvider).fetchAddresses();
-});
+export '../../../providers/app_providers.dart' show addressesProvider;
+
+/// Modal bottom sheet showing saved delivery addresses with tap-to-select and "Add new".
+void showCheckoutAddressPickerSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required List<Address> addresses,
+  required String? selectedAddressId,
+  required ValueChanged<Address> onSelectAddress,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      final maxHeight = MediaQuery.sizeOf(ctx).height * 0.78;
+      return Container(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryWash,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.location_on_outlined,
+                        size: 20,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Select delivery address',
+                            style: AppTheme.serif(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Choose a saved address (${addresses.length} saved)',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close address picker',
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  children: [
+                    for (final a in addresses) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: CheckoutAddressCard(
+                          address: a,
+                          isSelected: a.id == selectedAddressId,
+                          onTap: () {
+                            AppHaptics.selection();
+                            onSelectAddress(a);
+                            Navigator.of(ctx).pop();
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryDeep,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      AppHaptics.light();
+                      final newAddr =
+                          await context.push<Address?>('/addresses/new');
+                      ref.invalidate(addressesProvider);
+                      if (newAddr != null) {
+                        onSelectAddress(newAddr);
+                      }
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text(
+                      'Add new address',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 
 /// Saved addresses list with collapsed/expanded selection and "Add new" button.
 class CheckoutAddressSection extends ConsumerWidget {
@@ -57,8 +206,22 @@ class CheckoutAddressSection extends ConsumerWidget {
             ),
           );
         }
+        final activePincode =
+            ref.watch(deliveryPincodeProvider).valueOrNull?.trim();
+        final matchingPinAddr =
+            (activePincode != null && activePincode.isNotEmpty)
+                ? (addresses
+                        .where(
+                          (a) =>
+                              a.isDefault && a.zipCode.trim() == activePincode,
+                        )
+                        .firstOrNull ??
+                    addresses
+                        .where((a) => a.zipCode.trim() == activePincode)
+                        .firstOrNull)
+                : null;
         if (selectedAddressId == null) {
-          final defaultAddr =
+          final defaultAddr = matchingPinAddr ??
               addresses.where((a) => a.isDefault).firstOrNull ??
               addresses.first;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -68,6 +231,7 @@ class CheckoutAddressSection extends ConsumerWidget {
         final selected = addresses
                 .where((a) => a.id == selectedAddressId)
                 .firstOrNull ??
+            matchingPinAddr ??
             addresses.where((a) => a.isDefault).firstOrNull ??
             addresses.first;
 
@@ -76,7 +240,20 @@ class CheckoutAddressSection extends ConsumerWidget {
             CheckoutAddressCard(
               address: selected,
               isSelected: true,
-              onTap: () => onSelectAddress(selected),
+              onTap: () {
+                if (addresses.length > 1) {
+                  AppHaptics.tap();
+                  showCheckoutAddressPickerSheet(
+                    context: context,
+                    ref: ref,
+                    addresses: addresses,
+                    selectedAddressId: selected.id,
+                    onSelectAddress: onSelectAddress,
+                  );
+                } else {
+                  onSelectAddress(selected);
+                }
+              },
             ),
             if (addressExpanded) ...[
               const SizedBox(height: 8),
@@ -95,20 +272,27 @@ class CheckoutAddressSection extends ConsumerWidget {
               child: Wrap(
                 spacing: 8,
                 children: [
-                  TextButton.icon(
-                    onPressed: onToggleExpanded,
-                    icon: Icon(
-                      addressExpanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      size: 18,
+                  if (addresses.length > 1)
+                    TextButton.icon(
+                      onPressed: () {
+                        AppHaptics.tap();
+                        onToggleExpanded();
+                        showCheckoutAddressPickerSheet(
+                          context: context,
+                          ref: ref,
+                          addresses: addresses,
+                          selectedAddressId: selected.id,
+                          onSelectAddress: onSelectAddress,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 20,
+                      ),
+                      label: Text(
+                        'Change (${addresses.length - 1} more)',
+                      ),
                     ),
-                    label: Text(
-                      addressExpanded
-                          ? 'Hide'
-                          : 'Change (${addresses.length - 1} more)',
-                    ),
-                  ),
                   TextButton.icon(
                     onPressed: () async {
                       AppHaptics.light();

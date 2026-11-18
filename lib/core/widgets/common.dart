@@ -1,25 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
+import 'app_loader.dart';
 
 export 'app_button.dart';
 export 'app_card.dart';
 export 'app_loader.dart';
-
-void showToast(String message, {bool isError = false}) {
-  Fluttertoast.showToast(
-    msg: message,
-    backgroundColor: isError ? AppColors.error : AppColors.primaryDark,
-    textColor: Colors.white,
-  );
-}
+export 'app_toast.dart';
+export 'offline_banner.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: AppColors.primary));
+  Widget build(BuildContext context) => const Center(child: AppLoader.large());
 }
 
 class ErrorView extends StatelessWidget {

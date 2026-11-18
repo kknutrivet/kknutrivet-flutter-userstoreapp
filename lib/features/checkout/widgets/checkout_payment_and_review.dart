@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,6 +92,397 @@ class CheckoutStepHeader extends StatelessWidget {
   }
 }
 
+/// Helper to resolve a ComboBundle from cart items.
+ComboBundle resolveComboFromCart(
+  String comboId,
+  List<CartItem> bundleItems,
+  List<ComboBundle> allCombos,
+) {
+  final matched = allCombos.where((c) => c.id == comboId).firstOrNull;
+  if (matched != null) return matched;
+  final first = bundleItems.first;
+  final bundleQty = (first.comboQuantity ?? first.quantity).clamp(1, 999);
+  final totalLine = bundleItems.fold<double>(0, (s, i) => s + i.lineTotal);
+  final totalMrp = bundleItems.fold<double>(
+    0,
+    (s, i) =>
+        s + ((i.variant?.mrp ?? i.product?.mrp ?? i.unitPrice) * i.quantity),
+  );
+  return ComboBundle(
+    id: comboId,
+    name: first.comboName ?? 'Care Combo Bundle',
+    description: first.comboDescription,
+    image: first.comboImage ?? first.product?.image,
+    originalPrice: totalMrp > 0
+        ? totalMrp / bundleQty
+        : totalLine / bundleQty,
+    comboPrice: totalLine / bundleQty,
+    items: bundleItems
+        .map(
+          (i) => ComboItem(
+            id: i.id,
+            productId: i.productId,
+            quantity: (i.quantity / bundleQty).round().clamp(1, 999),
+            variantId: i.variantId,
+            product: i.product,
+          ),
+        )
+        .toList(),
+  );
+}
+
+/// Builds review tiles for both standalone products and combo bundles.
+List<Widget> buildOrderReviewTiles({
+  required BuildContext context,
+  required List<CartItem> items,
+  required List<ComboBundle> combos,
+}) {
+  final seenCombos = <String>{};
+  final groupedTiles = <Widget>[];
+
+  for (final item in items) {
+    final cid = item.comboId;
+    if (cid != null && cid.isNotEmpty) {
+      if (seenCombos.add(cid)) {
+        final bundleRows = items.where((i) => i.comboId == cid).toList();
+        final resolved = resolveComboFromCart(cid, bundleRows, combos);
+        final first = bundleRows.first;
+        final cover =
+            first.comboImage ?? resolved.image ?? first.product?.image;
+        final name = first.comboName ?? resolved.name;
+        final qty = (first.comboQuantity ?? first.quantity).clamp(1, 999);
+        final totalLine = bundleRows.fold<double>(
+          0,
+          (sum, i) => sum + i.lineTotal,
+        );
+
+        groupedTiles.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Material(
+              color: AppColors.primaryWashFaint,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => showComboDetailsSheet(context, resolved),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryWashDeep),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: cover != null && cover.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: cover,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  color: AppColors.primaryWash,
+                                  child: const Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 20,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Bundle · ${bundleRows.length} items · Qty $qty',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '₹${formatInr(totalLine)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          const Text(
+                            'View items →',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    } else {
+      final image = item.product?.image;
+      groupedTiles.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: image != null && image.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: image,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            color: AppColors.background,
+                            child: const Icon(Icons.pets, size: 20),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.product?.name ?? 'Item',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${item.variant != null ? '${item.variant!.name} · ' : ''}Qty ${item.quantity}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '₹${formatInr(item.lineTotal)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+  }
+  return groupedTiles;
+}
+
+/// Modal bottom sheet showing order review items, quantities, and pricing breakdown.
+void showOrderReviewBottomSheet({
+  required BuildContext context,
+  required List<CartItem> items,
+  required List<ComboBundle> combos,
+  required int cartCount,
+  required double subtotal,
+  double deliveryFee = 0.0,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      final maxHeight = MediaQuery.sizeOf(ctx).height * 0.78;
+      final tiles = buildOrderReviewTiles(
+        context: ctx,
+        items: items,
+        combos: combos,
+      );
+
+      return Container(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryWash,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 20,
+                        color: AppColors.primaryDeep,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Order review · $cartCount ${cartCount == 1 ? 'item' : 'items'}',
+                            style: AppTheme.serif(
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Subtotal ₹${formatInr(subtotal)} · Delivery ${deliveryFee <= 0 ? 'FREE' : '₹${formatInr(deliveryFee)}'}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close order review',
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  children: tiles,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Total Amount',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            '₹${formatInr(subtotal + (deliveryFee > 0 ? deliveryFee : 0))}',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDeep,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryDeep,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 /// Expandable Order Review section with combo bundle grouping.
 class CheckoutOrderReviewSection extends StatelessWidget {
   const CheckoutOrderReviewSection({
@@ -101,8 +492,8 @@ class CheckoutOrderReviewSection extends StatelessWidget {
     required this.cartCount,
     required this.subtotal,
     this.deliveryFee = 0.0,
-    required this.expanded,
-    required this.onToggleExpanded,
+    this.expanded = false,
+    this.onToggleExpanded,
   });
 
   final List<CartItem> items;
@@ -111,230 +502,25 @@ class CheckoutOrderReviewSection extends StatelessWidget {
   final double subtotal;
   final double deliveryFee;
   final bool expanded;
-  final VoidCallback onToggleExpanded;
+  final VoidCallback? onToggleExpanded;
 
-  ComboBundle _resolveComboFromCart(
-    String comboId,
-    List<CartItem> bundleItems,
-    List<ComboBundle> allCombos,
-  ) {
-    final matched = allCombos.where((c) => c.id == comboId).firstOrNull;
-    if (matched != null) return matched;
-    final first = bundleItems.first;
-    final bundleQty = (first.comboQuantity ?? first.quantity).clamp(1, 999);
-    final totalLine = bundleItems.fold<double>(0, (s, i) => s + i.lineTotal);
-    final totalMrp = bundleItems.fold<double>(
-      0,
-      (s, i) =>
-          s + ((i.variant?.mrp ?? i.product?.mrp ?? i.unitPrice) * i.quantity),
-    );
-    return ComboBundle(
-      id: comboId,
-      name: first.comboName ?? 'Care Combo Bundle',
-      description: first.comboDescription,
-      image: first.comboImage ?? first.product?.image,
-      originalPrice: totalMrp > 0
-          ? totalMrp / bundleQty
-          : totalLine / bundleQty,
-      comboPrice: totalLine / bundleQty,
-      items: bundleItems
-          .map(
-            (i) => ComboItem(
-              id: i.id,
-              productId: i.productId,
-              quantity: (i.quantity / bundleQty).round().clamp(1, 999),
-              variantId: i.variantId,
-              product: i.product,
-            ),
-          )
-          .toList(),
-    );
+  void _handleTap(BuildContext context) {
+    if (onToggleExpanded != null) {
+      onToggleExpanded!();
+    } else {
+      showOrderReviewBottomSheet(
+        context: context,
+        items: items,
+        combos: combos,
+        cartCount: cartCount,
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final seenCombos = <String>{};
-    final groupedTiles = <Widget>[];
-
-    for (final item in items) {
-      final cid = item.comboId;
-      if (cid != null && cid.isNotEmpty) {
-        if (seenCombos.add(cid)) {
-          final bundleRows = items.where((i) => i.comboId == cid).toList();
-          final resolved = _resolveComboFromCart(cid, bundleRows, combos);
-          final first = bundleRows.first;
-          final cover =
-              first.comboImage ?? resolved.image ?? first.product?.image;
-          final name = first.comboName ?? resolved.name;
-          final qty = (first.comboQuantity ?? first.quantity).clamp(1, 999);
-          final totalLine = bundleRows.fold<double>(
-            0,
-            (sum, i) => sum + i.lineTotal,
-          );
-
-          groupedTiles.add(
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Material(
-                color: AppColors.primaryWashFaint,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => showComboDetailsSheet(context, resolved),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primaryWashDeep),
-                    ),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: cover != null && cover.isNotEmpty
-                                ? CachedNetworkImage(
-                                    imageUrl: cover,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    color: AppColors.primaryWash,
-                                    child: const Icon(
-                                      Icons.inventory_2_outlined,
-                                      size: 20,
-                                      color: AppColors.primaryDeep,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Bundle · ${bundleRows.length} items · Qty $qty',
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '₹${formatInr(totalLine)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                            const Text(
-                              'View items →',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      } else {
-        final image = item.product?.image;
-        groupedTiles.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: image != null && image.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: image,
-                              fit: BoxFit.cover,
-                            )
-                          : Container(
-                              color: AppColors.background,
-                              child: const Icon(Icons.pets, size: 20),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.product?.name ?? 'Item',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${item.variant != null ? '${item.variant!.name} · ' : ''}Qty ${item.quantity}',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '₹${formatInr(item.lineTotal)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -348,9 +534,12 @@ class CheckoutOrderReviewSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
-              onTap: onToggleExpanded,
+              onTap: () => _handleTap(context),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -370,6 +559,7 @@ class CheckoutOrderReviewSection extends StatelessWidget {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             'Order review · $cartCount items · View items ›',
@@ -379,6 +569,7 @@ class CheckoutOrderReviewSection extends StatelessWidget {
                               color: AppColors.textPrimary,
                             ),
                           ),
+                          const SizedBox(height: 3),
                           Text(
                             'Subtotal ₹${formatInr(subtotal)} · Delivery ${deliveryFee <= 0 ? 'FREE' : '₹${formatInr(deliveryFee)}'}',
                             style: const TextStyle(
@@ -389,11 +580,10 @@ class CheckoutOrderReviewSection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Icon(
-                      expanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
                       color: AppColors.primaryDeep,
+                      size: 24,
                     ),
                   ],
                 ),
@@ -403,7 +593,13 @@ class CheckoutOrderReviewSection extends StatelessWidget {
           if (expanded)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Column(children: groupedTiles),
+              child: Column(
+                children: buildOrderReviewTiles(
+                  context: context,
+                  items: items,
+                  combos: combos,
+                ),
+              ),
             ),
         ],
       ),
