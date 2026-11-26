@@ -70,6 +70,28 @@ class ProductVariant {
       };
 }
 
+class ProductTranslation {
+  const ProductTranslation({this.name, this.description});
+
+  final String? name;
+  final String? description;
+
+  factory ProductTranslation.fromJson(Map<String, dynamic> json) =>
+      ProductTranslation(
+        name: json['name']?.toString().trim().isNotEmpty == true
+            ? json['name'].toString().trim()
+            : null,
+        description: json['description']?.toString().trim().isNotEmpty == true
+            ? json['description'].toString().trim()
+            : null,
+      );
+
+  Map<String, dynamic> toJson() => {
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+      };
+}
+
 class Product {
   Product({
     required this.id,
@@ -99,6 +121,7 @@ class Product {
     this.viewCount = 0,
     this.variants = const [],
     this.quantityDiscounts = const [],
+    this.translations = const {},
   });
 
   final String id;
@@ -128,6 +151,20 @@ class Product {
   final int viewCount;
   final List<ProductVariant> variants;
   final List<QuantityDiscountTier> quantityDiscounts;
+  final Map<String, ProductTranslation> translations;
+
+  /// Returns the localized product name for [localeCode] (e.g. `'hi'`, `'or'`, `'te'`, `'ta'`),
+  /// falling back to the canonical English [name].
+  String localizedName(String localeCode) {
+    if (localeCode == 'en') return name;
+    return translations[localeCode]?.name ?? name;
+  }
+
+  /// Returns the localized product description for [localeCode], falling back to [description].
+  String? localizedDescription(String localeCode) {
+    if (localeCode == 'en') return description;
+    return translations[localeCode]?.description ?? description;
+  }
 
   String get formattedViewsLabel => viewCount >= 10
       ? NumberFormat.decimalPattern('en_IN').format(viewCount)
@@ -182,7 +219,20 @@ class Product {
                 ?.map((e) => QuantityDiscountTier.fromJson(Map<String, dynamic>.from(e as Map)))
                 .toList() ??
             const [],
+        translations: _parseTranslations(json['translations']),
       );
+
+  static Map<String, ProductTranslation> _parseTranslations(dynamic raw) {
+    if (raw is! Map) return const {};
+    final result = <String, ProductTranslation>{};
+    raw.forEach((key, value) {
+      if (value is Map) {
+        result[key.toString()] =
+            ProductTranslation.fromJson(Map<String, dynamic>.from(value));
+      }
+    });
+    return result;
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -212,6 +262,9 @@ class Product {
         'viewCount': viewCount,
         'variants': variants.map((v) => v.toJson()).toList(),
         'quantityDiscounts': quantityDiscounts.map((q) => q.toJson()).toList(),
+        if (translations.isNotEmpty)
+          'translations':
+              translations.map((k, v) => MapEntry(k, v.toJson())),
       };
 }
 

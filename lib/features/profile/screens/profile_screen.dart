@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/language_switcher.dart';
 import '../../../models/user.dart';
 import '../../../providers/app_providers.dart';
 
@@ -22,6 +24,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.value;
+    final locale = ref.watch(languageProvider);
+    final strings = ref.watch(appStringsProvider);
 
     if (authState.isLoading) {
       return const Scaffold(body: LoadingView());
@@ -31,14 +35,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return Scaffold(
         backgroundColor: AppColors.homeCanvas,
         appBar: AppBar(
-          title: const Text(
-            'My Account',
-            style: TextStyle(
+          title: Text(
+            strings.myAccount,
+            style: const TextStyle(
               fontSize: 16.5,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
           ),
+          actions: const [
+            Center(
+              child: Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: LanguageSwitcher(compact: true),
+              ),
+            ),
+          ],
           backgroundColor: const Color(0xFF07583F),
           foregroundColor: Colors.white,
           elevation: 0,
@@ -88,14 +100,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.homeCanvas,
       appBar: AppBar(
-        title: const Text(
-          'My Account',
-          style: TextStyle(
+        title: Text(
+          strings.myAccount,
+          style: const TextStyle(
             fontSize: 16.5,
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
         ),
+        actions: const [
+          Center(
+            child: Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: LanguageSwitcher(compact: true),
+            ),
+          ),
+        ],
         backgroundColor: const Color(0xFF07583F),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -113,7 +133,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onEdit: () => _editProfile(user.name, user.phone, user.email),
             ),
             const SizedBox(height: 14),
-            _sectionLabel('SHOPPING & ORDERS'),
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: AppTile(
+                icon: Icons.language_rounded,
+                iconBg: AppColors.primaryWash,
+                iconColor: AppColors.primaryDeep,
+                title: '${strings.language} · ${locale.nativeLabel}',
+                subtitle: 'English · हिंदी · ଓଡ଼ିଆ · తెలుగు · தமிழ்',
+                onTap: () => showLanguagePickerSheet(context, ref),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionLabel(strings.shoppingAndOrders),
             AppCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -122,16 +154,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     icon: Icons.local_shipping_outlined,
                     iconBg: AppColors.primaryWash,
                     iconColor: AppColors.primaryDeep,
-                    title: 'My Orders',
-                    subtitle: 'Track packages, view invoices & order history',
+                    title: strings.myOrders,
+                    subtitle: strings.myOrdersSubtitle,
                     onTap: () => context.push('/orders'),
                   ),
                   AppTile(
                     icon: Icons.location_on_outlined,
                     iconBg: AppColors.dogRailBg,
                     iconColor: AppColors.dogRailHeading,
-                    title: 'Saved Addresses',
-                    subtitle: 'Manage delivery addresses & pincodes',
+                    title: strings.savedAddresses,
+                    subtitle: strings.savedAddressesSubtitle,
                     onTap: () => context.push('/addresses'),
                   ),
                   AppTile(

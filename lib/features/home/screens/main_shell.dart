@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/app_loader.dart';
@@ -93,7 +94,7 @@ class MainShell extends ConsumerWidget {
   }
 }
 
-class WebsiteBottomNav extends StatelessWidget {
+class WebsiteBottomNav extends ConsumerWidget {
   const WebsiteBottomNav({
     super.key,
     required this.currentIndex,
@@ -105,7 +106,8 @@ class WebsiteBottomNav extends StatelessWidget {
   final String? userFirstName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final dark = currentIndex == 3;
     final selectedColor = dark ? const Color(0xFFC9FF67) : Colors.white;
     final idleColor = dark ? Colors.white70 : AppColors.textSecondary;
@@ -170,20 +172,24 @@ class WebsiteBottomNav extends StatelessWidget {
               );
             }),
             destinations: [
-              for (final entry in const [
-                (Icons.home_outlined, Icons.home_rounded, 'Home'),
-                (Icons.storefront_outlined, Icons.storefront_rounded, 'Shop'),
+              for (final entry in [
+                (Icons.home_outlined, Icons.home_rounded, strings.navHome),
+                (Icons.storefront_outlined, Icons.storefront_rounded, strings.navShop),
                 (
                   Icons.medical_services_outlined,
                   Icons.medical_services_rounded,
-                  'Care',
+                  strings.navCare,
                 ),
                 (
                   Icons.smart_display_outlined,
                   Icons.smart_display_rounded,
-                  'Shots',
+                  strings.navShots,
                 ),
-                (Icons.person_outline_rounded, Icons.person_rounded, 'Account'),
+                (
+                  Icons.person_outline_rounded,
+                  Icons.person_rounded,
+                  strings.navAccount,
+                ),
               ])
                 NavigationDestination(
                   icon: Icon(entry.$1, size: 22, color: idleColor),

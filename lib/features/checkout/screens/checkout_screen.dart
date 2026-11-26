@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/analytics/analytics_service.dart';
+import '../../../core/i18n/app_language.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
@@ -94,6 +95,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
     final cartAsync = ref.watch(cartProvider);
     ref.watch(prescriptionsProvider);
     ref.watch(paymentAvailabilityStatusProvider);
@@ -235,9 +237,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   },
                 ),
                 const SizedBox(height: 18),
-                const Text(
-                  'Delivery address',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                Text(
+                  strings.deliveryAddress,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
                 const SizedBox(height: 8),
                 CheckoutAddressSection(
@@ -276,9 +278,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const Divider(height: 32),
                 CheckoutRxHoldCard(items: items),
-                const Text(
-                  'Coupon code',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                Text(
+                  strings.couponCode,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
                 const SizedBox(height: 8),
                 CheckoutCouponSection(
@@ -289,16 +291,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   onValidate: () => _validateCoupon(subtotal),
                 ),
                 const Divider(height: 32),
-                const Text(
-                  'KK Coins',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                Text(
+                  strings.kkCoins,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
                 const SizedBox(height: 8),
                 CartPointsRow(subtotal: subtotal, loginRedirect: '/checkout'),
                 const Divider(height: 32),
-                const Text(
-                  'Payment method',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                Text(
+                  strings.paymentMethod,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
                 const SizedBox(height: 8),
                 CheckoutPaymentSection(

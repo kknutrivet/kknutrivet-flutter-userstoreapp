@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/analytics/analytics_service.dart';
+import '../../../core/i18n/app_language.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/language_switcher.dart';
 import '../../../models/address.dart';
 import '../../../providers/app_providers.dart';
 import 'home_models_and_data.dart';
@@ -17,19 +19,13 @@ import 'home_models_and_data.dart';
 /// while ensuring a fresh app launch in a new city (e.g. Hyderabad) updates the PIN.
 final _sessionGpsCheckedProvider = StateProvider<bool>((ref) => false);
 
-String _greetingForHour(int hour) {
-  if (hour >= 4 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 17) return 'Good afternoon';
-  if (hour >= 17 && hour < 22) return 'Good evening';
-  return 'Hey';
-}
-
 // ── 1. Mobile brand bar (Matches webview mobile HomeTopBar.tsx Row 1) ────────
 class HomeBrandBar extends ConsumerWidget {
   const HomeBrandBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
     final animalTheme = homeAnimalThemeFor(selectedAnimal);
     final cartCount = ref.watch(cartCountProvider);
@@ -40,8 +36,8 @@ class HomeBrandBar extends ConsumerWidget {
             : null;
     final firstName = customerName != null
         ? customerName.split(RegExp(r'\s+')).first
-        : 'there';
-    final greetingWord = _greetingForHour(DateTime.now().hour);
+        : strings.there;
+    final greetingWord = strings.greetingForHour(DateTime.now().hour);
 
     final pin = ref.watch(deliveryPincodeProvider).value;
     final addresses = user != null
@@ -80,7 +76,7 @@ class HomeBrandBar extends ConsumerWidget {
                 !cityLabel.contains(effectivePin)
             ? '$cityLabel, $effectivePin'
             : cityLabel)
-        : 'Set delivery location';
+        : strings.setDeliveryLocation;
 
     return SliverAppBar(
       pinned: true,
@@ -214,6 +210,12 @@ class HomeBrandBar extends ConsumerWidget {
         ],
       ),
       actions: [
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.only(right: 6),
+            child: LanguageSwitcher(compact: true),
+          ),
+        ),
         // Dr. Paw AI Companion Action
         Semantics(
           button: true,

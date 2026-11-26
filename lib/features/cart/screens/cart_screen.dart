@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/checkout_breadcrumb.dart';
 import '../../../core/widgets/common.dart';
@@ -30,6 +31,7 @@ class CartScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final cartAsync = ref.watch(cartProvider);
     final settingsAsync = ref.watch(storeSettingsProvider);
     final combosAsync = ref.watch(homeCombosProvider);
@@ -57,9 +59,9 @@ class CartScreen extends ConsumerWidget {
             }
           },
         ),
-        title: const Text(
-          'Cart',
-          style: TextStyle(
+        title: Text(
+          strings.cart,
+          style: const TextStyle(
             fontSize: 16.5,
             fontWeight: FontWeight.w800,
             color: Colors.white,
@@ -118,7 +120,7 @@ class CartScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Your Cart',
+                      strings.yourCart,
                       style: AppTheme.serif(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,

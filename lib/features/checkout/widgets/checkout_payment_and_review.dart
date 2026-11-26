@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/checkout_breadcrumb.dart';
@@ -832,6 +833,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final availabilityAsync = ref.watch(paymentAvailabilityStatusProvider);
+    final strings = ref.watch(appStringsProvider);
     final availability =
         availabilityAsync.value ?? const PaymentAvailabilityStatus();
     final settings =
@@ -889,7 +891,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
       children: [
         _payOption(
           value: 'CASHFREE',
-          title: 'Pay online (UPI / Card / Netbanking)',
+          title: strings.payOnlineTitle,
           enabled: onlineEnabled,
           showNetworkPills: true,
           note: onlineEnabled
@@ -900,10 +902,11 @@ class CheckoutPaymentSection extends ConsumerWidget {
           const SizedBox(height: 8),
           _payOption(
             value: 'PARTIAL_COD',
-            title: 'Pay ₹${formatInr(quote.advance)} advance now',
+            title:
+                '${strings.partialCodTitlePrefix} ₹${formatInr(quote.advance)} ${strings.partialCodAdvanceSuffix}',
             enabled: partialCodAvailable,
             badge: '₹0 COD Fee',
-            subtitle: '₹${formatInr(quote.balance)} on delivery',
+            subtitle: '₹${formatInr(quote.balance)} ${strings.onDelivery}',
             note: partialCodAvailable
                 ? 'A small advance confirms your order · No extra COD fee'
                 : 'Partial payment is currently unavailable for this PIN or account',
@@ -913,24 +916,24 @@ class CheckoutPaymentSection extends ConsumerWidget {
           const SizedBox(height: 8),
           _payOption(
             value: 'PAY_LATER',
-            title: 'Pay Later (Buy Now, Pay Later)',
+            title: strings.payLaterTitle,
             enabled: true,
             badge: '₹0 COD Fee',
-            note: 'Buy now and pay later via Cashfree Pay Later partners',
+            note: strings.payLaterDesc,
           ),
           const SizedBox(height: 8),
           _payOption(
             value: 'EMI',
-            title: 'EMI (Easy Installments)',
+            title: strings.emiTitle,
             enabled: true,
             badge: '₹0 COD Fee',
-            note: 'Credit Card EMI, Debit Card EMI & Cardless EMI via Cashfree',
+            note: strings.emiDesc,
           ),
         ],
         const SizedBox(height: 8),
         _payOption(
           value: 'COD',
-          title: 'Cash on Delivery (COD)',
+          title: strings.codTitle,
           enabled: codAvailable,
           note: codNote,
         ),

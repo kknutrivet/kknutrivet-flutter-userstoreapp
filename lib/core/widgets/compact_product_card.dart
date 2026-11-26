@@ -6,6 +6,7 @@ import '../../features/home/widgets/home_combos_and_rx.dart'
     show homeComboLookupProvider;
 import '../../models/product.dart';
 import '../../providers/app_providers.dart';
+import '../i18n/app_language.dart';
 import '../theme/app_theme.dart';
 import '../utils/haptics.dart';
 import 'common.dart';
@@ -73,6 +74,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(languageProvider);
     final product = widget.product;
     final v = _resolveVariant(product);
     final quantity = ref.watch(cartQuantityProvider((product.id, v?.id)));
@@ -364,7 +366,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                           ),
                         ],
                         Text(
-                          product.name,
+                          product.localizedName(locale.code),
                           maxLines: widget.singleLineTitle ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
