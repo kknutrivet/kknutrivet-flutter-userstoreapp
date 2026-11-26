@@ -109,6 +109,7 @@ class Product {
     this.diseases = const [],
     this.brand,
     this.size,
+    this.weight,
     this.flavor,
     this.requiresPrescription = false,
     this.onlyForCombo = false,
@@ -139,7 +140,18 @@ class Product {
   final List<String> diseases;
   final String? brand;
   final String? size;
+  final String? weight;
   final String? flavor;
+
+  /// Base pack label combining `size` and `weight` (exact parity with
+  /// `VariantPickerDialog.tsx` on web, e.g. `"5 L"`).
+  String get basePackLabel {
+    final parts = [
+      if (size != null && size!.trim().isNotEmpty) size!.trim(),
+      if (weight != null && weight!.trim().isNotEmpty) weight!.trim(),
+    ];
+    return parts.join(' / ');
+  }
   final bool requiresPrescription;
   final bool onlyForCombo;
   final int minimumQuantity;
@@ -198,6 +210,7 @@ class Product {
         diseases: (json['diseases'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         brand: json['brand']?.toString(),
         size: json['size']?.toString(),
+        weight: json['weight']?.toString(),
         flavor: json['flavor']?.toString(),
         requiresPrescription: json['requiresPrescription'] == true,
         onlyForCombo: json['onlyForCombo'] == true,
@@ -250,6 +263,7 @@ class Product {
         'diseases': diseases,
         if (brand != null) 'brand': brand,
         if (size != null) 'size': size,
+        if (weight != null) 'weight': weight,
         if (flavor != null) 'flavor': flavor,
         'requiresPrescription': requiresPrescription,
         'onlyForCombo': onlyForCombo,

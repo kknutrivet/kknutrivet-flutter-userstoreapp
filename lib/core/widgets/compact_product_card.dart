@@ -398,7 +398,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      'Pack: ${v?.name ?? 'Choose pack'} · ${product.variants.length} sizes ▾',
+                                      'Pack: ${v?.name ?? (product.basePackLabel.isNotEmpty ? product.basePackLabel : 'Choose pack')} · ${buildPackOptions(product).length} sizes ▾',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(

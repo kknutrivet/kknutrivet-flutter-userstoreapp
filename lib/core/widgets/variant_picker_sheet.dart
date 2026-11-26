@@ -50,18 +50,45 @@ class VariantPickerSheet extends ConsumerStatefulWidget {
   ConsumerState<VariantPickerSheet> createState() => _VariantPickerSheetState();
 }
 
+const String kBasePackVariantId = '__base__';
+
+/// Builds the full list of purchasable pack options for [product], including the
+/// base product pack (`product.basePackLabel`, e.g. `"5 L"`) first — exact parity
+/// with `VariantPickerDialog.tsx` on web.
+List<ProductVariant> buildPackOptions(Product product) {
+  final baseLabel = product.basePackLabel;
+  final hasDuplicate = baseLabel.isNotEmpty &&
+      product.variants.any(
+        (v) => v.name.trim().toLowerCase() == baseLabel.toLowerCase(),
+      );
+  return [
+    if (baseLabel.isNotEmpty && !hasDuplicate)
+      ProductVariant(
+        id: kBasePackVariantId,
+        name: baseLabel,
+        price: product.effectivePrice,
+        mrp: product.mrp,
+        stock: product.stock,
+        minimumQuantity: product.minimumQuantity,
+      ),
+    ...product.variants,
+  ];
+}
+
 class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
+  late final List<ProductVariant> _options;
   late ProductVariant? _selected;
   bool _adding = false;
 
   @override
   void initState() {
     super.initState();
+    _options = buildPackOptions(widget.product);
     _selected = widget.selectedVariant ??
-        (widget.product.variants.isNotEmpty
-            ? widget.product.variants.firstWhere(
+        (_options.isNotEmpty
+            ? _options.firstWhere(
                 (v) => v.stock > 0,
-                orElse: () => widget.product.variants.first,
+                orElse: () => _options.first,
               )
             : null);
   }
@@ -74,20 +101,23 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
       return;
     }
 
-    final minQty = widget.product.minQtyFor(v);
+    final isBase = v.id == kBasePackVariantId;
+    final minQty = isBase
+        ? widget.product.minimumQuantity
+        : widget.product.minQtyFor(v);
     setState(() => _adding = true);
     try {
       await ref.read(cartProvider.notifier).addItem(
             productId: widget.product.id,
-            variantId: v.id,
+            variantId: isBase ? null : v.id,
             quantity: minQty,
             product: widget.product,
-            variant: v,
+            variant: isBase ? null : v,
           );
       AppHaptics.cart();
       if (mounted) {
         showToast('Added ${widget.product.name} · ${v.name} to cart');
-        Navigator.of(context).pop(v);
+        Navigator.of(context).pop(isBase ? null : v);
       }
     } catch (e) {
       if (mounted) showToast(e.toString(), isError: true);
@@ -207,7 +237,7 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
                     ),
                   ),
                   Text(
-                    '${product.variants.length} options',
+                    '${_options.length} ${_options.length == 1 ? 'option' : 'options'}',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -226,10 +256,10 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (int index = 0; index < product.variants.length; index++) ...[
+                    for (int index = 0; index < _options.length; index++) ...[
                       if (index > 0) const SizedBox(height: 8),
                       _buildVariantOption(
-                        v: product.variants[index],
+                        v: _options[index],
                         selectedVariant: selectedVariant,
                         product: product,
                       ),
@@ -325,9 +355,10 @@ class _VariantPickerSheetState extends ConsumerState<VariantPickerSheet> {
     final hasDisc = v.mrp != null && v.mrp! > v.price;
     final discPct =
         hasDisc ? (((v.mrp! - v.price) / v.mrp!) * 100).round() : 0;
-    final minQty = product.minQtyFor(v);
+    final isBase = v.id == kBasePackVariantId;
+    final minQty = isBase ? product.minimumQuantity : product.minQtyFor(v);
     final inCartQty = ref.watch(
-      cartQuantityProvider((product.id, v.id)),
+      cartQuantityProvider((product.id, isBase ? null : v.id)),
     );
 
     return Material(
