@@ -222,7 +222,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           if (_showBackToTop)
             Positioned(
-              top: MediaQuery.paddingOf(context).top + 54 + 60 + 58 + 8,
+              top: 60 + 62 + 8,
               left: 0,
               right: 0,
               child: Center(
