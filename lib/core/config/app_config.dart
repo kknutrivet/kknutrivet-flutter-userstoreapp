@@ -35,10 +35,13 @@ class AppConfig {
   // Override at build time with: --dart-define=API_BASE_URL=https://your-domain.com
   static const String _buildTimeApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://test.kknutrivet.in',
+    defaultValue: 'https://kknutrivet.in',
   );
 
-  static AppEnvironment _currentEnv = AppEnvironment.test;
+  static const bool _allowDevOverride =
+      kDebugMode && bool.fromEnvironment('SHOW_DEVELOPER_SETTINGS');
+
+  static AppEnvironment _currentEnv = AppEnvironment.prod;
   static String _activeBaseUrl = _buildTimeApiBaseUrl;
 
   /// Currently active server environment
@@ -54,7 +57,10 @@ class AppConfig {
   static Future<void> init() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedEnv = prefs.getString(_envKey);
+      final savedEnv = _allowDevOverride ? prefs.getString(_envKey) : null;
+      if (!_allowDevOverride && prefs.containsKey(_envKey)) {
+        await prefs.remove(_envKey);
+      }
       if (savedEnv != null) {
         if (savedEnv == AppEnvironment.test.name || savedEnv == 'test') {
           _currentEnv = AppEnvironment.test;
