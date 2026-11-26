@@ -85,15 +85,62 @@ class AppUpdateConfig {
   }
 }
 
+class FeedPairingConfig {
+  const FeedPairingConfig({
+    this.enabled = true,
+    this.discountPercent = 10.0,
+    this.maxDiscount = 100.0,
+  });
+
+  final bool enabled;
+  final double discountPercent;
+  final double maxDiscount;
+
+  factory FeedPairingConfig.fromJson(Map<String, dynamic> json) {
+    return FeedPairingConfig(
+      enabled: json['enabled'] != false,
+      discountPercent: (json['discountPercent'] as num?)?.toDouble() ?? 10.0,
+      maxDiscount: (json['maxDiscount'] as num?)?.toDouble() ?? 100.0,
+    );
+  }
+}
+
+class LoyaltyRulesConfig {
+  const LoyaltyRulesConfig({
+    this.spendPerCoin = 20.0,
+    this.coinValue = 1.0,
+    this.maxRedemptionPercent = 20.0,
+    this.maxRedemptionCoins = 50,
+  });
+
+  final double spendPerCoin;
+  final double coinValue;
+  final double maxRedemptionPercent;
+  final int maxRedemptionCoins;
+
+  factory LoyaltyRulesConfig.fromJson(Map<String, dynamic> json) {
+    return LoyaltyRulesConfig(
+      spendPerCoin: (json['spendPerCoin'] as num?)?.toDouble() ?? 20.0,
+      coinValue: (json['coinValue'] as num?)?.toDouble() ?? 1.0,
+      maxRedemptionPercent:
+          (json['maxRedemptionPercent'] as num?)?.toDouble() ?? 20.0,
+      maxRedemptionCoins:
+          (json['maxRedemptionCoins'] as num?)?.toInt() ?? 50,
+    );
+  }
+}
+
 class StoreSettings {
   StoreSettings({
     required this.freeDeliveryThreshold,
     required this.deliveryCharge,
     this.localFreeDeliveryThreshold,
+    this.prepaidFreeDeliveryThreshold = 0.0,
     this.courierDeliveryCharge,
     this.courierCodFlatFee = 0.0,
     this.codEnabled = true,
     this.onlinePaymentsEnabled = true,
+    this.payLaterEnabled = false,
     this.partialCodEnabled = false,
     this.partialCodPercent,
     this.partialCodMinimum,
@@ -102,23 +149,31 @@ class StoreSettings {
     this.prescriptionDiscountPercent = 5,
     this.hiddenCategories = const [],
     this.appUpdate = const AppUpdateConfig(),
+    this.feedPairing = const FeedPairingConfig(),
+    this.loyaltyRules = const LoyaltyRulesConfig(),
   });
 
   final double freeDeliveryThreshold;
   final double? localFreeDeliveryThreshold;
+  final double prepaidFreeDeliveryThreshold;
   final double deliveryCharge;
   final double? courierDeliveryCharge;
   final double courierCodFlatFee;
   final bool codEnabled;
   final bool onlinePaymentsEnabled;
+  final bool payLaterEnabled;
   final bool partialCodEnabled;
   final double? partialCodPercent;
+  /// Maximum Partial COD advance cap in rupees (0 = uncapped).
+  /// Kept as `partialCodMinimum` for zero-migration backend parity.
   final double? partialCodMinimum;
   final bool discountEnabled;
   final bool codConfirmationEnabled;
   final int prescriptionDiscountPercent;
   final List<String> hiddenCategories;
   final AppUpdateConfig appUpdate;
+  final FeedPairingConfig feedPairing;
+  final LoyaltyRulesConfig loyaltyRules;
 
   static final RegExp _odishaPinRegex = RegExp(r'^(75|76|77)\d{4}$');
 
@@ -129,10 +184,27 @@ class StoreSettings {
     return _odishaPinRegex.hasMatch(trimmed);
   }
 
-  double effectiveFreeDeliveryThreshold({String? pincode, String? source}) =>
-      isOdishaOrLocal(pincode: pincode, source: source)
-          ? (localFreeDeliveryThreshold ?? freeDeliveryThreshold)
-          : freeDeliveryThreshold;
+  /// Mirrors `calculateDeliveryPricing` in `src/lib/delivery-pricing.ts`:
+  /// Non-COD payments (Online, Partial COD, Pay Later, EMI) unlock the lower
+  /// `prepaidFreeDeliveryThreshold` (e.g. ₹299) when configured.
+  double effectiveFreeDeliveryThreshold({
+    String? pincode,
+    String? source,
+    String? paymentMethod,
+  }) {
+    final standardThreshold = isOdishaOrLocal(pincode: pincode, source: source)
+        ? (localFreeDeliveryThreshold ?? freeDeliveryThreshold)
+        : freeDeliveryThreshold;
+    final isFullCod = paymentMethod == 'COD';
+    if (!isFullCod && prepaidFreeDeliveryThreshold > 0) {
+      return standardThreshold > 0
+          ? (prepaidFreeDeliveryThreshold < standardThreshold
+              ? prepaidFreeDeliveryThreshold
+              : standardThreshold)
+          : prepaidFreeDeliveryThreshold;
+    }
+    return standardThreshold;
+  }
 
   double effectiveDeliveryCharge({String? pincode, String? source}) =>
       isOdishaOrLocal(pincode: pincode, source: source)
@@ -143,9 +215,13 @@ class StoreSettings {
     double merchandiseAfterDiscount, {
     String? pincode,
     String? source,
+    String? paymentMethod,
   }) {
-    final threshold =
-        effectiveFreeDeliveryThreshold(pincode: pincode, source: source);
+    final threshold = effectiveFreeDeliveryThreshold(
+      pincode: pincode,
+      source: source,
+      paymentMethod: paymentMethod,
+    );
     final charge = effectiveDeliveryCharge(pincode: pincode, source: source);
     final clampedMerchandise =
         merchandiseAfterDiscount < 0 ? 0.0 : merchandiseAfterDiscount;
@@ -155,22 +231,46 @@ class StoreSettings {
     return charge;
   }
 
-  /// Calculates the Partial COD / Partial Payment quote (advance + balance on delivery).
+  /// Full COD pays the saved flat COD fee; Online / Partial COD / Pay Later / EMI pay ₹0.
+  double codCollectionFeeFor(String paymentMethod) {
+    if (paymentMethod != 'COD' || courierCodFlatFee <= 0) return 0.0;
+    return (courierCodFlatFee * 100).round() / 100.0;
+  }
+
+  /// Mirrors `partialCodQuote` in `src/lib/order-payment.ts`:
+  /// Integer rupee advance = min(max(1, round(total * percent%)), cap), capped at total.
   ({double advance, double balance}) partialCodQuote(double total) {
-    final percent = partialCodPercent ?? 20.0;
-    final minimum = partialCodMinimum ?? 50.0;
+    final percent = partialCodPercent ?? 15.0;
+    final cap = partialCodMinimum ?? 0.0;
     if (total <= 0) {
       return (advance: 0.0, balance: 0.0);
     }
-    final calculatedAdvance = (total * percent / 100).roundToDouble();
-    final minAdvance = minimum.roundToDouble();
-    final advance = (total.roundToDouble() < minAdvance)
-        ? total.roundToDouble()
-        : (calculatedAdvance < minAdvance ? minAdvance : calculatedAdvance);
-    final finalAdvance =
-        advance > total.roundToDouble() ? total.roundToDouble() : advance;
-    final balance = (total - finalAdvance).clamp(0.0, double.infinity);
+    final calculated = (total * percent / 100.0).roundToDouble();
+    final calculatedAdvance = calculated < 1.0 ? 1.0 : calculated;
+    final capAdvance = cap.roundToDouble();
+    final capped = (capAdvance > 0 && calculatedAdvance > capAdvance)
+        ? capAdvance
+        : calculatedAdvance;
+    final roundedTotal = total.roundToDouble();
+    final finalAdvance = capped > roundedTotal ? roundedTotal : capped;
+    final rawBalance = ((total - finalAdvance) * 100).round() / 100.0;
+    final balance = rawBalance < 0 ? 0.0 : rawBalance;
     return (advance: finalAdvance, balance: balance);
+  }
+
+  static Map<String, dynamic>? _parseBusinessRules(dynamic br) {
+    if (br is Map) {
+      return Map<String, dynamic>.from(br);
+    }
+    if (br is String && br.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(br);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
+    return null;
   }
 
   factory StoreSettings.fromJson(Map<String, dynamic> json) {
@@ -178,11 +278,23 @@ class StoreSettings {
         (json['freeDeliveryThreshold'] as num?)?.toDouble() ?? 500.0;
     final deliveryCharge =
         (json['deliveryCharge'] as num?)?.toDouble() ?? 49.0;
+    final brMap = _parseBusinessRules(json['businessRules']);
+    final deliveryRules = brMap?['delivery'] is Map
+        ? Map<String, dynamic>.from(brMap!['delivery'] as Map)
+        : null;
+    final prepaidThreshold =
+        (json['prepaidFreeDeliveryThreshold'] as num?)?.toDouble() ??
+            (deliveryRules?['prepaidFreeDeliveryThreshold'] as num?)
+                ?.toDouble() ??
+            0.0;
+
     return StoreSettings(
       freeDeliveryThreshold: freeDeliveryThreshold,
       localFreeDeliveryThreshold:
           (json['localFreeDeliveryThreshold'] as num?)?.toDouble() ??
               freeDeliveryThreshold,
+      prepaidFreeDeliveryThreshold:
+          prepaidThreshold > 0 ? prepaidThreshold : 0.0,
       deliveryCharge: deliveryCharge,
       courierDeliveryCharge:
           (json['courierDeliveryCharge'] as num?)?.toDouble() ??
@@ -191,6 +303,7 @@ class StoreSettings {
           (json['courierCodFlatFee'] as num?)?.toDouble() ?? 0.0,
       codEnabled: json['codEnabled'] != false,
       onlinePaymentsEnabled: json['onlinePaymentsEnabled'] != false,
+      payLaterEnabled: json['payLaterEnabled'] == true,
       partialCodEnabled: json['partialCodEnabled'] == true,
       partialCodPercent:
           (json['partialCodPercent'] as num?)?.toDouble(),
@@ -207,25 +320,18 @@ class StoreSettings {
       appUpdate: json['appUpdate'] is Map
           ? AppUpdateConfig.fromJson(
               Map<String, dynamic>.from(json['appUpdate'] as Map))
-          : () {
-              final br = json['businessRules'];
-              Map<String, dynamic>? brMap;
-              if (br is Map) {
-                brMap = Map<String, dynamic>.from(br);
-              } else if (br is String) {
-                try {
-                  final decoded = jsonDecode(br);
-                  if (decoded is Map) {
-                    brMap = Map<String, dynamic>.from(decoded);
-                  }
-                } catch (_) {}
-              }
-              if (brMap != null && brMap['appUpdate'] is Map) {
-                return AppUpdateConfig.fromJson(
-                    Map<String, dynamic>.from(brMap['appUpdate'] as Map));
-              }
-              return const AppUpdateConfig();
-            }(),
+          : (brMap != null && brMap['appUpdate'] is Map
+              ? AppUpdateConfig.fromJson(
+                  Map<String, dynamic>.from(brMap['appUpdate'] as Map))
+              : const AppUpdateConfig()),
+      feedPairing: brMap != null && brMap['feedPairing'] is Map
+          ? FeedPairingConfig.fromJson(
+              Map<String, dynamic>.from(brMap['feedPairing'] as Map))
+          : const FeedPairingConfig(),
+      loyaltyRules: brMap != null && brMap['loyalty'] is Map
+          ? LoyaltyRulesConfig.fromJson(
+              Map<String, dynamic>.from(brMap['loyalty'] as Map))
+          : const LoyaltyRulesConfig(),
     );
   }
 
@@ -234,12 +340,14 @@ class StoreSettings {
         freeDeliveryThreshold: 500.0,
         deliveryCharge: 49.0,
         localFreeDeliveryThreshold: 500.0,
+        prepaidFreeDeliveryThreshold: 299.0,
         courierDeliveryCharge: 49.0,
         courierCodFlatFee: 0.0,
         codEnabled: true,
         onlinePaymentsEnabled: true,
+        payLaterEnabled: false,
         partialCodEnabled: true,
         partialCodPercent: 15.0,
-        partialCodMinimum: 50.0,
+        partialCodMinimum: 150.0,
       );
 }

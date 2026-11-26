@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/home/widgets/home_combos_and_rx.dart'
+    show homeComboLookupProvider;
 import '../../models/product.dart';
 import '../../providers/app_providers.dart';
 import '../theme/app_theme.dart';
@@ -74,6 +76,7 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
     final product = widget.product;
     final v = _resolveVariant(product);
     final quantity = ref.watch(cartQuantityProvider((product.id, v?.id)));
+    final comboHint = ref.watch(homeComboLookupProvider)[product.id];
     final image =
         product.image ??
         (product.images.isNotEmpty ? product.images.first : null);
@@ -317,6 +320,49 @@ class _CompactProductCardState extends ConsumerState<CompactProductCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (comboHint != null) ...[
+                          GestureDetector(
+                            onTap: () {
+                              Haptics.tap();
+                              context.push('/combos/${comboHint.id}');
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDF8F2),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: const Color(0xFFCBE6D6),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.card_giftcard_rounded,
+                                    size: 10,
+                                    color: Color(0xFF07583F),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    comboHint.savings > 0
+                                        ? 'Combo · Save ₹${comboHint.savings}'
+                                        : 'Combo available',
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF07583F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                         Text(
                           product.name,
                           maxLines: widget.singleLineTitle ? 1 : 2,

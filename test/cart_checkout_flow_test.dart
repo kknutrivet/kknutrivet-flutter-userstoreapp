@@ -160,7 +160,7 @@ void main() {
       await tester.drag(find.byType(ListView).first, const Offset(0, -400));
       await tester.pumpAndSettle();
 
-      // Verify KK Coins redemption card is visible (200 available, max 30% of 450 = 135)
+      // Verify KK Coins redemption card is visible (200 available, max 20% of 450 = 90, capped at 50)
       expect(find.text('KK Coins · 200 available'), findsOneWidget);
       expect(find.text('Use max'), findsOneWidget);
 
@@ -169,14 +169,14 @@ void main() {
       expect(find.text('₹49'), findsOneWidget);
       expect(find.text('₹499'), findsWidgets);
 
-      // Tap 'Use max' to redeem 135 KK Coins
+      // Tap 'Use max' to redeem 50 KK Coins
       await tester.tap(find.text('Use max'));
       await tester.pumpAndSettle();
 
-      // Verify 135 coins applied -> Merchandise = 315, Delivery = 49, Total = ₹364
-      expect(find.text('135 Coins applied'), findsOneWidget);
-      expect(find.text('KK Coins (135)'), findsOneWidget);
-      expect(find.text('₹364'), findsWidgets);
+      // Verify 50 coins applied -> Merchandise = 400, Delivery = 49, Total = ₹449
+      expect(find.text('50 Coins applied'), findsOneWidget);
+      expect(find.text('KK Coins (50)'), findsOneWidget);
+      expect(find.text('₹449'), findsWidgets);
     },
   );
 

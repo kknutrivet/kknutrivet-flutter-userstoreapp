@@ -135,7 +135,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   delegate: _PinnedSpeciesTabDelegate(),
                 ),
 
-                // 2. Care in spotlight (4-Column Pastel Tiles)
+                // 2. Active Order Alert at very top when user has an ongoing order
+                const SliverToBoxAdapter(child: HomeActiveOrderBanner()),
+
+                // 3. Care in spotlight (Horizontal Pastel Tiles)
                 const SliverToBoxAdapter(child: HomeCareBentoSection()),
 
                 // When an animal tab is active, surface its products immediately above the fold
@@ -144,40 +147,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: HomeAnimalProductRail(entry: selectedEntry),
                   ),
 
-                // 3. Shop by category (4×2 Pastel Tiles)
+                // 4. Value Combos in top 3rd slot
+                SliverToBoxAdapter(
+                  child: HomeCombosRail(selectedAnimal: selectedAnimal),
+                ),
+
+                // 5. Shop by category (Horizontal Full-Bleed Tiles) & Category Product Shelves
                 SliverToBoxAdapter(
                   child: HomeCategorySelector(selectedAnimal: selectedAnimal),
                 ),
+                SliverToBoxAdapter(
+                  child: HomeCategoryProductShelves(selectedAnimal: selectedAnimal),
+                ),
 
-                // 4. Customer Pulse (Active Order + 1-Tap Reorder) & Featured Products
-                const SliverToBoxAdapter(child: HomeActiveOrderBanner()),
+                // 6. 1-Tap Reorder & Featured Products
                 const SliverToBoxAdapter(child: HomeReorderRail()),
                 SliverToBoxAdapter(
                   child: HomeFeaturedProductsRail(selectedAnimal: selectedAnimal),
                 ),
 
-                // 5. Care by concern & Video Shots
+                // 7. Care by concern & Video Shots
                 const SliverToBoxAdapter(child: HomeConcernsRail()),
                 const SliverToBoxAdapter(child: HomeShotsRail()),
 
-                // 6. Dynamic Species Product Shelves & Value Combos
+                // 8. Dynamic Species Product Shelves & Home Care
                 if (selectedEntry == null)
                   for (var i = 0; i < activeAnimalEntries.length; i++) ...[
                     SliverToBoxAdapter(
                       child: HomeAnimalProductRail(entry: activeAnimalEntries[i]),
                     ),
-                    if (i == 1)
-                      SliverToBoxAdapter(
-                        child: HomeCombosRail(selectedAnimal: selectedAnimal),
-                      ),
                     if (i == 3) const SliverToBoxAdapter(child: HomeCareProductRail()),
                   ],
-                if (selectedEntry != null) ...[
-                  SliverToBoxAdapter(
-                    child: HomeCombosRail(selectedAnimal: selectedAnimal),
-                  ),
+                if (selectedEntry != null)
                   const SliverToBoxAdapter(child: HomeCareProductRail()),
-                ],
 
                 // 7. Social Proof, Vet Knowledge & Atmospheric Brand Sign-Off
                 const SliverToBoxAdapter(child: HomeReviewsBand()),

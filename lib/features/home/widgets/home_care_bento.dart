@@ -223,56 +223,241 @@ class HomeEditorialHeroBanner extends ConsumerWidget {
   }
 }
 
-// ── 2. Curated "Care in spotlight" 4-Column Borderless Pastel Tiles ──────────
+// ── 2. Curated "Care in spotlight" Horizontal Pastel Tiles ──────────────────
 class _SpotlightCardData {
   const _SpotlightCardData({
     required this.title,
     required this.background,
     required this.cutoutAsset,
     required this.route,
-    required this.relevantAnimals,
+    this.framedPhoto = false,
   });
 
   final String title;
   final Color background;
   final String cutoutAsset;
   final String route;
-  final List<String> relevantAnimals;
+  final bool framedPhoto;
 }
 
-const _kSpotlightCards = [
+const _kDefaultSpotlightCards = [
   _SpotlightCardData(
     title: 'Ask\nDr. Paw',
     background: Color(0xFFF1EAFF),
     cutoutAsset: 'assets/images/dr-paw-genz.webp',
     route: '/vet',
-    relevantAnimals: ['Dog', 'Cat', 'Cattle', 'Goat/Sheep', 'Poultry'],
   ),
   _SpotlightCardData(
     title: 'Order\nwith Rx',
     background: Color(0xFFE5F6EC),
     cutoutAsset: 'assets/images/rx-order-3d.webp',
     route: '/prescriptions',
-    relevantAnimals: ['Dog', 'Cat', 'Cattle', 'Goat/Sheep', 'Poultry'],
   ),
   _SpotlightCardData(
     title: 'Peak Milk\nStore',
     background: Color(0xFFFDF2DC),
     cutoutAsset: 'assets/images/peak-milk-3d.webp',
     route: '/products?animalType=Cattle',
-    relevantAnimals: ['Cattle', 'Goat/Sheep', 'Poultry'],
   ),
   _SpotlightCardData(
     title: 'Tick & Worm\nShield',
     background: Color(0xFFE6F3FF),
     cutoutAsset: 'assets/images/seasonal-shield-3d.webp',
     route: '/products?category=Deworming',
-    relevantAnimals: ['Dog', 'Cat', 'Cattle', 'Goat/Sheep'],
   ),
 ];
 
-/// Clean Blinkit-style 4-column pastel spotlight row (`Care in spotlight`)
-/// with zero borders, zero shadows, and bottom-right transparent 3D cutouts.
+const _kDogSpotlightCards = [
+  _SpotlightCardData(
+    title: 'Ask Dr. Paw\nfor Dogs',
+    background: Color(0xFFEAF2FF),
+    cutoutAsset: 'assets/images/dr-paw-genz.webp',
+    route: '/vet',
+  ),
+  _SpotlightCardData(
+    title: 'Tick & Worm\nShield',
+    background: Color(0xFFE6F3FF),
+    cutoutAsset: 'assets/images/seasonal-shield-3d.webp',
+    route: '/products?animalType=Dog&category=Deworming',
+  ),
+  _SpotlightCardData(
+    title: 'Coat, Joint\n& Immunity',
+    background: Color(0xFFFDF2DC),
+    cutoutAsset: 'assets/images/category/supplements-v1.webp',
+    route: '/products?animalType=Dog&category=Supplement+%26+Nutrition',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Kibble &\nPuppy Meals',
+    background: Color(0xFFE5F6EC),
+    cutoutAsset: 'assets/images/category/feed-v1.webp',
+    route: '/products?animalType=Dog&category=Feed',
+    framedPhoto: true,
+  ),
+];
+
+const _kCatSpotlightCards = [
+  _SpotlightCardData(
+    title: 'Ask Dr. Paw\nfor Cats',
+    background: Color(0xFFF3ECFF),
+    cutoutAsset: 'assets/images/dr-paw-genz.webp',
+    route: '/vet',
+  ),
+  _SpotlightCardData(
+    title: 'Hairball &\nCoat Care',
+    background: Color(0xFFF5ECF8),
+    cutoutAsset: 'assets/images/category/grooming-v1.webp',
+    route: '/products?animalType=Cat&category=Grooming',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Flea & Gut\nDeworming',
+    background: Color(0xFFE6F3FF),
+    cutoutAsset: 'assets/images/seasonal-shield-3d.webp',
+    route: '/products?animalType=Cat&category=Deworming',
+  ),
+  _SpotlightCardData(
+    title: 'Cat Daily\nSupplements',
+    background: Color(0xFFFDF2DC),
+    cutoutAsset: 'assets/images/category/supplements-v1.webp',
+    route: '/products?animalType=Cat&category=Supplement+%26+Nutrition',
+    framedPhoto: true,
+  ),
+];
+
+const _kCattleSpotlightCards = [
+  _SpotlightCardData(
+    title: 'Peak Milk\nStore',
+    background: Color(0xFFFDF2DC),
+    cutoutAsset: 'assets/images/peak-milk-3d.webp',
+    route: '/products?animalType=Cattle&category=Supplement+%26+Nutrition',
+  ),
+  _SpotlightCardData(
+    title: 'Udder &\nMilking Care',
+    background: Color(0xFFE8F4F2),
+    cutoutAsset: 'assets/images/category/medicine-v1.webp',
+    route: '/products?animalType=Cattle&category=Medicine',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Herd\nDeworming',
+    background: Color(0xFFFCEEE8),
+    cutoutAsset: 'assets/images/category/deworming-v1.webp',
+    route: '/products?animalType=Cattle&category=Deworming',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Order Farm\nwith Rx',
+    background: Color(0xFFE5F6EC),
+    cutoutAsset: 'assets/images/rx-order-3d.webp',
+    route: '/prescriptions',
+  ),
+];
+
+const _kGoatSpotlightCards = [
+  _SpotlightCardData(
+    title: 'Grower\nNutrition Store',
+    background: Color(0xFFE6F5EC),
+    cutoutAsset: 'assets/images/category/supplements-v1.webp',
+    route: '/products?animalType=Goat%2FSheep&category=Supplement+%26+Nutrition',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Flock\nDeworming',
+    background: Color(0xFFFCEEE8),
+    cutoutAsset: 'assets/images/category/deworming-v1.webp',
+    route: '/products?animalType=Goat%2FSheep&category=Deworming',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Hoof, Skin\n& Spray Care',
+    background: Color(0xFFE8F2FA),
+    cutoutAsset: 'assets/images/category/spray-v1.webp',
+    route: '/products?animalType=Goat%2FSheep&category=Spray',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Order\nwith Rx',
+    background: Color(0xFFFDF2DC),
+    cutoutAsset: 'assets/images/rx-order-3d.webp',
+    route: '/prescriptions',
+  ),
+];
+
+const _kPoultrySpotlightCards = [
+  _SpotlightCardData(
+    title: 'Broiler\nNutrition Store',
+    background: Color(0xFFFCEEE6),
+    cutoutAsset: 'assets/images/category/supplements-v1.webp',
+    route: '/products?animalType=Poultry&category=Supplement+%26+Nutrition',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Layer Shell\n& Egg Yield',
+    background: Color(0xFFFDF2DC),
+    cutoutAsset: 'assets/images/category/feed-v1.webp',
+    route: '/products?animalType=Poultry&category=Feed',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Flock\nImmunity',
+    background: Color(0xFFE8F4F2),
+    cutoutAsset: 'assets/images/category/medicine-v1.webp',
+    route: '/products?animalType=Poultry&category=Medicine',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Coop & Litter\nHygiene',
+    background: Color(0xFFE5F6EC),
+    cutoutAsset: 'assets/images/category/homecare-v1.webp',
+    route: '/products?animalType=Poultry&category=Home+Care',
+    framedPhoto: true,
+  ),
+];
+
+const _kExoticSpotlightCards = [
+  _SpotlightCardData(
+    title: 'Ask Dr. Paw\nSmall Pets',
+    background: Color(0xFFE6F4F4),
+    cutoutAsset: 'assets/images/dr-paw-genz.webp',
+    route: '/vet',
+  ),
+  _SpotlightCardData(
+    title: 'Hay, Seed\n& Pellet Mix',
+    background: Color(0xFFEEF4E4),
+    cutoutAsset: 'assets/images/category/feed-v1.webp',
+    route: '/products?animalType=Exotic+%26+Small+Pets&category=Feed',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Vitamin C &\nElectrolytes',
+    background: Color(0xFFFDF2DC),
+    cutoutAsset: 'assets/images/category/supplements-v1.webp',
+    route: '/products?animalType=Exotic+%26+Small+Pets&category=Supplement+%26+Nutrition',
+    framedPhoto: true,
+  ),
+  _SpotlightCardData(
+    title: 'Gentle\nHealth Care',
+    background: Color(0xFFE8F4F2),
+    cutoutAsset: 'assets/images/category/medicine-v1.webp',
+    route: '/products?animalType=Exotic+%26+Small+Pets&category=Medicine',
+    framedPhoto: true,
+  ),
+];
+
+List<_SpotlightCardData> _spotlightCardsForAnimal(String? animal) {
+  if (animal == null || animal.trim().isEmpty) return _kDefaultSpotlightCards;
+  final key = animal.trim().toLowerCase();
+  if (key.contains('dog')) return _kDogSpotlightCards;
+  if (key.contains('cat')) return _kCatSpotlightCards;
+  if (key.contains('cattle') || key.contains('cow')) return _kCattleSpotlightCards;
+  if (key.contains('goat') || key.contains('sheep')) return _kGoatSpotlightCards;
+  if (key.contains('poultry') || key.contains('bird')) return _kPoultrySpotlightCards;
+  if (key.contains('small') || key.contains('exotic')) return _kExoticSpotlightCards;
+  return _kDefaultSpotlightCards;
+}
+
+/// Clean Blinkit-style horizontal pastel spotlight row (`Care in spotlight`).
 class HomeCareBentoSection extends ConsumerWidget {
   const HomeCareBentoSection({super.key});
 
@@ -280,99 +465,48 @@ class HomeCareBentoSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
     final animalTheme = homeAnimalThemeFor(selectedAnimal);
-    final isSelected = selectedAnimal != null && selectedAnimal.isNotEmpty;
-    final isLivestock =
-        selectedAnimal == 'Cattle' ||
-        selectedAnimal == 'Goat/Sheep' ||
-        selectedAnimal == 'Poultry';
-
-    final cards = [
-      for (final card in _kSpotlightCards)
-        if (!isSelected)
-          card
-        else if (card.route == '/products?category=Deworming')
-          _SpotlightCardData(
-            title: card.title,
-            background: card.background,
-            cutoutAsset: card.cutoutAsset,
-            route: '/products?animalType=${Uri.encodeComponent(selectedAnimal)}&category=Deworming',
-            relevantAnimals: card.relevantAnimals,
-          )
-        else if (card.route == '/products?animalType=Cattle' && !isLivestock)
-          _SpotlightCardData(
-            title: '${animalTheme.shortName}\nEssentials',
-            background: card.background,
-            cutoutAsset: 'assets/images/category/supplements-v1.webp',
-            route: '/products?animalType=${Uri.encodeComponent(selectedAnimal)}',
-            relevantAnimals: card.relevantAnimals,
-          )
-        else if (card.route == '/products?animalType=Cattle')
-          _SpotlightCardData(
-            title: card.title,
-            background: card.background,
-            cutoutAsset: card.cutoutAsset,
-            route: '/products?animalType=${Uri.encodeComponent(selectedAnimal)}',
-            relevantAnimals: card.relevantAnimals,
-          )
-        else
-          card,
-    ];
+    final cards = _spotlightCardsForAnimal(selectedAnimal);
 
     final textScale =
         (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0);
-    final tileHeight = 116.0 + (textScale - 1.0) * 24.0;
+    final tileHeight = 106.0 + (textScale - 1.0) * 24.0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.only(top: 16, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                animalTheme.shortName.isNotEmpty
-                    ? '${animalTheme.shortName} care in spotlight'
-                    : 'Care in spotlight',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.35,
-                  color: Color(0xFF1C1C1C),
-                ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              animalTheme.shortName.isNotEmpty
+                  ? '${animalTheme.shortName} care in spotlight'
+                  : 'Care in spotlight',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.35,
+                color: Color(0xFF1C1C1C),
               ),
-              if (animalTheme.storeTitle.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: animalTheme.pillBg,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    animalTheme.storeTitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: animalTheme.pillText,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              for (var i = 0; i < cards.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _SpotlightPastelTile(
-                    item: cards[i],
-                    height: tileHeight,
-                  ),
+          SizedBox(
+            height: tileHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: cards.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, i) => SizedBox(
+                width: 112,
+                child: _SpotlightPastelTile(
+                  item: cards[i],
+                  height: tileHeight,
                 ),
-              ],
-            ],
+              ),
+            ),
           ),
         ],
       ),
@@ -408,27 +542,36 @@ class _SpotlightPastelTile extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              right: 2,
-              bottom: 2,
-              width: 58,
-              height: 58,
+              right: item.framedPhoto ? 6 : 2,
+              bottom: item.framedPhoto ? 6 : 2,
+              width: item.framedPhoto ? 48 : 56,
+              height: item.framedPhoto ? 48 : 56,
               child: IgnorePointer(
-                child: Image.asset(
-                  item.cutoutAsset,
-                  fit: BoxFit.contain,
-                  alignment: Alignment.bottomRight,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
+                child: item.framedPhoto
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          item.cutoutAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                        ),
+                      )
+                    : Image.asset(
+                        item.cutoutAsset,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.bottomRight,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 6, 8),
+              padding: const EdgeInsets.fromLTRB(9, 9, 7, 8),
               child: Text(
                 item.title,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 11.0,
+                  fontSize: 11.2,
                   fontWeight: FontWeight.w800,
                   height: 1.15,
                   color: Color(0xFF1C1C1C),

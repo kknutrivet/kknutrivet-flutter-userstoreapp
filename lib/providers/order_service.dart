@@ -16,8 +16,17 @@ class OrderService {
     return Order.fromJson(data);
   }
 
-  Future<Map<String, dynamic>> fetchTracking(String orderId) async {
-    final data = await _client.get('/orders/tracking', query: {'orderId': orderId});
+  Future<Map<String, dynamic>> fetchTracking(
+    String orderId, {
+    String? parcelId,
+  }) async {
+    final data = await _client.get(
+      '/orders/tracking',
+      query: {
+        'orderId': orderId,
+        if (parcelId != null && parcelId.isNotEmpty) 'parcelId': parcelId,
+      },
+    );
     return Map<String, dynamic>.from(data);
   }
 
@@ -76,9 +85,23 @@ class OrderService {
     return Map<String, dynamic>.from(data);
   }
 
-  Future<Map<String, dynamic>> createCashfreeOrder(String orderId) async {
-    final data = await _client.post('/payments/cashfree/create', data: {'orderId': orderId});
+  Future<Map<String, dynamic>> createCashfreeOrder(
+    String orderId, {
+    String? paymentPreference,
+  }) async {
+    final data = await _client.post('/payments/cashfree/create', data: {
+      'orderId': orderId,
+      if (paymentPreference != null && paymentPreference.isNotEmpty)
+        'paymentPreference': paymentPreference,
+    });
     return Map<String, dynamic>.from(data);
+  }
+
+  /// Silently releases an unpaid PENDING online order when the customer exits
+  /// Cashfree without paying, restoring stock and any redeemed KK Coins.
+  Future<Map<String, dynamic>> abandonPendingOrder(String orderId) async {
+    final data = await _client.post('/orders/$orderId/abandon-pending');
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
   }
 
   Future<Map<String, dynamic>> verifyCashfreePayment(String orderIdOrNumber) async {

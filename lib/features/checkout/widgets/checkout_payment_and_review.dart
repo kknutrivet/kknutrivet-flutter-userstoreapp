@@ -856,6 +856,8 @@ class CheckoutPaymentSection extends ConsumerWidget {
         pincodePrepaid &&
         pincodeCod &&
         availability.userCodAllowed;
+    final payLaterAvailable =
+        settings.payLaterEnabled && onlineEnabled && pincodePrepaid;
     final quote = settings.partialCodQuote(total);
 
     String codNote;
@@ -905,6 +907,24 @@ class CheckoutPaymentSection extends ConsumerWidget {
             note: partialCodAvailable
                 ? 'A small advance confirms your order · No extra COD fee'
                 : 'Partial payment is currently unavailable for this PIN or account',
+          ),
+        ],
+        if (payLaterAvailable) ...[
+          const SizedBox(height: 8),
+          _payOption(
+            value: 'PAY_LATER',
+            title: 'Pay Later (Buy Now, Pay Later)',
+            enabled: true,
+            badge: '₹0 COD Fee',
+            note: 'Buy now and pay later via Cashfree Pay Later partners',
+          ),
+          const SizedBox(height: 8),
+          _payOption(
+            value: 'EMI',
+            title: 'EMI (Easy Installments)',
+            enabled: true,
+            badge: '₹0 COD Fee',
+            note: 'Credit Card EMI, Debit Card EMI & Cardless EMI via Cashfree',
           ),
         ],
         const SizedBox(height: 8),
@@ -1112,6 +1132,7 @@ Future<bool?> showCheckoutConfirmOrderDialog({
   required BuildContext context,
   required bool isCod,
   bool isPartialCod = false,
+  String paymentMethod = 'CASHFREE',
   double partialAdvance = 0.0,
   double partialBalance = 0.0,
   required int cartCount,
@@ -1119,6 +1140,8 @@ Future<bool?> showCheckoutConfirmOrderDialog({
   required Address address,
   required VoidCallback onChangeAddress,
 }) {
+  final isPayLater = paymentMethod == 'PAY_LATER';
+  final isEmi = paymentMethod == 'EMI';
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -1128,6 +1151,10 @@ Future<bool?> showCheckoutConfirmOrderDialog({
             ? 'Pay advance and the balance on delivery?'
             : isCod
             ? 'Place Cash on Delivery order?'
+            : isPayLater
+            ? 'Continue with Pay Later?'
+            : isEmi
+            ? 'Continue with EMI payment?'
             : 'Proceed to online payment?',
         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
       ),
@@ -1140,6 +1167,10 @@ Future<bool?> showCheckoutConfirmOrderDialog({
                 ? 'Pay ₹${formatInr(partialAdvance)} now and ₹${formatInr(partialBalance)} on delivery. No COD fee.'
                 : isCod
                 ? 'Pay ₹${formatInr(total)} when your order arrives — nothing is charged now.'
+                : isPayLater
+                ? "You'll continue to Cashfree Pay Later options."
+                : isEmi
+                ? "You'll continue to Cashfree EMI plans."
                 : "You'll continue to the secure Cashfree payment page.",
             style: const TextStyle(
               fontSize: 12.5,
@@ -1244,8 +1275,11 @@ class CheckoutSummaryCard extends StatelessWidget {
     required this.subtotal,
     required this.couponCode,
     required this.couponDiscount,
+    this.feedPairingDiscount = 0.0,
+    this.feedPairingPercent = 10.0,
     required this.points,
     required this.deliveryFee,
+    this.codFee = 0.0,
     this.freeDeliveryThreshold = 500.0,
     this.isNotServiceable = false,
     required this.total,
@@ -1254,8 +1288,11 @@ class CheckoutSummaryCard extends StatelessWidget {
   final double subtotal;
   final String? couponCode;
   final double couponDiscount;
+  final double feedPairingDiscount;
+  final double feedPairingPercent;
   final int points;
   final double? deliveryFee;
+  final double codFee;
   final double freeDeliveryThreshold;
   final bool isNotServiceable;
   final double total;
@@ -1263,7 +1300,9 @@ class CheckoutSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fee = deliveryFee ?? 0.0;
-    final merchandise = (subtotal - couponDiscount - points).clamp(
+    final merchandiseDiscount =
+        couponDiscount > feedPairingDiscount ? couponDiscount : feedPairingDiscount;
+    final merchandise = (subtotal - merchandiseDiscount - points).clamp(
       0.0,
       double.infinity,
     );
@@ -1281,11 +1320,19 @@ class CheckoutSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _row('Subtotal', '₹${formatInr(subtotal)}', null),
-          if (couponCode != null) ...[
+          if (couponCode != null && couponDiscount > 0) ...[
             const SizedBox(height: 6),
             _row(
               'Coupon ($couponCode)',
               '− ₹${formatInr(couponDiscount)}',
+              AppColors.success,
+            ),
+          ],
+          if (feedPairingDiscount > 0) ...[
+            const SizedBox(height: 6),
+            _row(
+              'Feed + Care (${feedPairingPercent.toStringAsFixed(0)}% off)',
+              '− ₹${formatInr(feedPairingDiscount)}',
               AppColors.success,
             ),
           ],
@@ -1311,6 +1358,10 @@ class CheckoutSummaryCard extends StatelessWidget {
                 ? AppColors.success
                 : null,
           ),
+          if (codFee > 0) ...[
+            const SizedBox(height: 6),
+            _row('COD Handling Fee', '₹${formatInr(codFee)}', null),
+          ],
           if (!isNotServiceable && fee > 0 && remainingForFreeDelivery > 0) ...[
             const SizedBox(height: 3),
             Text(
@@ -1468,6 +1519,10 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
                               ? 'Place Order · ₹${formatInr(total)}'
                               : paymentMethod == 'PARTIAL_COD'
                               ? 'Pay ₹${formatInr(advanceAmount > 0 ? advanceAmount : total)} advance →'
+                              : paymentMethod == 'PAY_LATER'
+                              ? 'Pay Later · ₹${formatInr(total)} →'
+                              : paymentMethod == 'EMI'
+                              ? 'Pay via EMI · ₹${formatInr(total)} →'
                               : 'Pay ₹${formatInr(total)}',
                           style: const TextStyle(
                             fontSize: 15,

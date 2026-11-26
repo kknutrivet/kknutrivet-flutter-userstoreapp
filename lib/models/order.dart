@@ -38,6 +38,33 @@ class OrderItem {
       );
 }
 
+class OrderShipment {
+  OrderShipment({
+    required this.id,
+    required this.parcelIndex,
+    required this.status,
+    this.awbNumber,
+    this.courierName,
+    this.trackingStatus,
+  });
+
+  final String id;
+  final int parcelIndex;
+  final String status;
+  final String? awbNumber;
+  final String? courierName;
+  final String? trackingStatus;
+
+  factory OrderShipment.fromJson(Map<String, dynamic> json) => OrderShipment(
+        id: json['id'].toString(),
+        parcelIndex: (json['parcelIndex'] as num?)?.toInt() ?? 1,
+        status: json['status']?.toString() ?? 'PENDING',
+        awbNumber: json['awbNumber']?.toString(),
+        courierName: json['courierName']?.toString(),
+        trackingStatus: json['trackingStatus']?.toString(),
+      );
+}
+
 class Order {
   Order({
     required this.id,
@@ -63,6 +90,7 @@ class Order {
     this.cashfreeMerchantOrderId,
     required this.createdAt,
     this.items = const [],
+    this.shipments = const [],
   });
 
   final String id;
@@ -88,6 +116,7 @@ class Order {
   final String? cashfreeMerchantOrderId;
   final DateTime createdAt;
   final List<OrderItem> items;
+  final List<OrderShipment> shipments;
 
   bool get isCancelled => status == 'CANCELLED';
   bool get isPaidOnline =>
@@ -125,6 +154,14 @@ class Order {
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
         items: (json['items'] as List?)
                 ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
+        shipments: (json['shipments'] as List?)
+                ?.map(
+                  (e) => OrderShipment.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
                 .toList() ??
             const [],
       );

@@ -40,129 +40,108 @@ class HomePrescriptionCard extends ConsumerWidget {
   }
 }
 
+class HomeComboHint {
+  const HomeComboHint({required this.id, required this.savings});
+  final String id;
+  final int savings;
+}
+
+final homeLoadedCombosProvider = StateProvider<List<ComboBundle>>((ref) => const []);
+
+final homeComboLookupProvider = Provider<Map<String, HomeComboHint>>((ref) {
+  final combos = ref.watch(homeLoadedCombosProvider);
+  final map = <String, HomeComboHint>{};
+  for (final combo in combos) {
+    final savings = combo.originalPrice > combo.comboPrice
+        ? (combo.originalPrice - combo.comboPrice).round()
+        : 0;
+    final hint = HomeComboHint(id: combo.id, savings: savings);
+    for (final item in combo.items) {
+      if (item.productId.isNotEmpty && !map.containsKey(item.productId)) {
+        map[item.productId] = hint;
+      }
+    }
+  }
+  return map;
+});
+
 class HomeCombosRail extends ConsumerWidget {
   const HomeCombosRail({super.key, this.selectedAnimal});
   final String? selectedAnimal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AsyncValue<List<ComboBundle>>>(homeCombosProvider, (_, next) {
+      next.whenData((list) {
+        if (ref.read(homeLoadedCombosProvider) != list) {
+          ref.read(homeLoadedCombosProvider.notifier).state = list;
+        }
+      });
+    });
     final combosAsync = ref.watch(homeCombosProvider);
     return combosAsync.maybeWhen(
       data: (combos) {
         if (combos.isEmpty) return const SizedBox.shrink();
-        final filtered = selectedAnimal != null && selectedAnimal!.isNotEmpty
+        final activeCombos = selectedAnimal != null && selectedAnimal!.isNotEmpty
             ? combos.where((c) => c.matchesAnimal(selectedAnimal)).toList()
             : combos;
-        final activeCombos = filtered.isNotEmpty ? filtered : combos;
         final shown = activeCombos.take(6).toList();
         if (shown.isEmpty) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(top: 20, bottom: 4),
+          padding: const EdgeInsets.only(top: 18, bottom: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8F1E7),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFE9DCCB),
-                          width: 1.2,
+                    const Expanded(
+                      child: Text(
+                        'Care bundles, better value',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.35,
+                          color: Color(0xFF1C1C1C),
                         ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.inventory_2_outlined,
-                        size: 19,
-                        color: Color(0xFF796038),
-                      ),
-                    ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Care bundles, better value',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTheme.serif(
-                              fontSize: 17.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          const Text(
-                            'Essentials together. A little more saved.',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () {
-                          Haptics.tap();
-                          context.go('/products?category=Combos');
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'See all',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                              SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
-                                color: AppColors.primaryDeep,
-                              ),
-                            ],
-                          ),
+                    GestureDetector(
+                      onTap: () {
+                        Haptics.tap();
+                        context.go('/products?category=Combos');
+                      },
+                      child: const Text(
+                        'See all →',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF07583F),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               SizedBox(
-                height: 294,
+                height: 244,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: shown.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
                   itemBuilder: (context, i) => SizedBox(
-                    width: 210,
+                    width: 188,
                     child: HomeComboCard(combo: shown[i]),
                   ),
                 ),
@@ -246,25 +225,19 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Clean white image area matching webapp HomeComboCard
+              // Full-bleed white image area matching webapp HomeComboCard
               SizedBox(
-                height: 156,
+                height: 112,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     const ColoredBox(color: Colors.white),
                     if (combo.image != null && combo.image!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        child: AppNetworkImage(
-                          imageUrl: combo.image,
-                          fit: BoxFit.contain,
-                          memCacheWidth: 600,
-                          errorWidget: (_, _, _) => _comboItemsCollage(combo),
-                        ),
+                      AppNetworkImage(
+                        imageUrl: combo.image,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 600,
+                        errorWidget: (_, _, _) => _comboItemsCollage(combo),
                       )
                     else
                       _comboItemsCollage(combo),

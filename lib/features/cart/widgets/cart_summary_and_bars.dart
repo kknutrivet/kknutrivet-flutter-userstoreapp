@@ -7,8 +7,115 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/product_card.dart' show formatInr;
 import '../../../models/cart_item.dart';
+import '../../../models/pricing.dart';
 import '../../../providers/app_providers.dart';
 import '../../prescriptions/widgets/rx_checkout_gate.dart';
+
+/// Feed + Care pairing banner shown on Cart when a Feed item is present.
+class FeedPairingBanner extends StatelessWidget {
+  const FeedPairingBanner({
+    super.key,
+    required this.breakdown,
+    required this.promo,
+  });
+
+  final FeedPairingBreakdown breakdown;
+  final BestPromoResolution promo;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!breakdown.enabled || !breakdown.hasFeed) {
+      return const SizedBox.shrink();
+    }
+
+    final pct = breakdown.discountPercent.toStringAsFixed(0);
+    final maxCap = formatInr(breakdown.maxDiscount);
+    final applied = promo.effectiveFeedPairingDiscount > 0;
+    final beatenByCoupon = promo.feedPairingSupersededByCoupon;
+
+    String title;
+    String subtitle;
+    if (applied) {
+      title =
+          'Feed + Care offer applied · Save ₹${formatInr(promo.effectiveFeedPairingDiscount)}';
+      subtitle = breakdown.remainingSavingsCap > 0
+          ? '$pct% off medicines & supplements · Add more care items to save up to ₹$maxCap'
+          : 'Maximum ₹$maxCap Feed + Care savings unlocked on this order';
+    } else if (beatenByCoupon) {
+      title = 'Your coupon saves more than Feed + Care ($pct% off)';
+      subtitle =
+          'Best single promo applies automatically — your higher coupon discount is active.';
+    } else {
+      title = 'Unlock $pct% off medicines & supplements (up to ₹$maxCap)';
+      subtitle =
+          'Since you have Feed in your cart, add any Medicine or Supplement to save automatically.';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: applied ? AppColors.primaryWashFaint : const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: applied ? AppColors.primaryWashDeep : const Color(0xFFFDE68A),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            applied ? Icons.verified_rounded : Icons.local_offer_outlined,
+            size: 18,
+            color: applied ? AppColors.primaryDeep : const Color(0xFFB45309),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: applied
+                        ? AppColors.primaryDeepest
+                        : const Color(0xFF92400E),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!applied && !beatenByCoupon) ...[
+            const SizedBox(width: 6),
+            TextButton(
+              onPressed: () => context.push('/products'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryDeep,
+                minimumSize: const Size(44, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text(
+                'Add ›',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 /// Free delivery progress bar in the cart screen.
 class CartFreeDeliveryBar extends StatelessWidget {
@@ -97,39 +204,45 @@ class CartSummaryCard extends StatelessWidget {
     required this.subtotal,
     required this.couponCode,
     required this.couponDiscount,
+    this.feedPairingDiscount = 0,
+    this.feedPairingPercent = 10,
     required this.points,
     required this.total,
     this.deliveryFee = 0,
     this.baseDeliveryCharge = 49,
     this.freeDeliveryThreshold = 500,
+    this.isPrepaidFreeDelivery = false,
     this.showInlinePincodeChecker = false,
   });
 
   final double subtotal;
   final String? couponCode;
   final double couponDiscount;
+  final double feedPairingDiscount;
+  final double feedPairingPercent;
   final int points;
   final double total;
   final double deliveryFee;
   final double baseDeliveryCharge;
   final double freeDeliveryThreshold;
+  final bool isPrepaidFreeDelivery;
   final bool showInlinePincodeChecker;
 
   @override
   Widget build(BuildContext context) {
     final earnedCoins = (subtotal * 0.05).round();
     final qualifiesForFreeDelivery = deliveryFee <= 0;
-    final merchandiseAfterDiscount = (subtotal - couponDiscount - points).clamp(
-      0.0,
-      double.infinity,
-    );
+    final merchandiseDiscount =
+        couponDiscount > feedPairingDiscount ? couponDiscount : feedPairingDiscount;
+    final merchandiseAfterDiscount = (subtotal - merchandiseDiscount - points)
+        .clamp(0.0, double.infinity);
     final neededForFreeDelivery =
         (freeDeliveryThreshold - merchandiseAfterDiscount).clamp(
           0.0,
           double.infinity,
         );
     final totalSavings =
-        couponDiscount +
+        merchandiseDiscount +
         points +
         (qualifiesForFreeDelivery && baseDeliveryCharge > 0
             ? baseDeliveryCharge
@@ -157,11 +270,19 @@ class CartSummaryCard extends StatelessWidget {
           const Divider(height: 1, color: AppColors.primaryWashDeep),
           const SizedBox(height: 10),
           _row('Subtotal', '₹${formatInr(subtotal)}', null),
-          if (couponCode != null) ...[
+          if (couponCode != null && couponDiscount > 0) ...[
             const SizedBox(height: 6),
             _row(
               'Coupon ($couponCode)',
               '− ₹${formatInr(couponDiscount)}',
+              AppColors.success,
+            ),
+          ],
+          if (feedPairingDiscount > 0) ...[
+            const SizedBox(height: 6),
+            _row(
+              'Feed + Care (${feedPairingPercent.toStringAsFixed(0)}% off)',
+              '− ₹${formatInr(feedPairingDiscount)}',
               AppColors.success,
             ),
           ],
@@ -176,7 +297,9 @@ class CartSummaryCard extends StatelessWidget {
           if (!qualifiesForFreeDelivery && neededForFreeDelivery > 0) ...[
             const SizedBox(height: 3),
             Text(
-              'Add ₹${formatInr(neededForFreeDelivery)} more for FREE delivery',
+              isPrepaidFreeDelivery
+                  ? 'Add ₹${formatInr(neededForFreeDelivery)} more for FREE delivery on Online & Partial COD'
+                  : 'Add ₹${formatInr(neededForFreeDelivery)} more for FREE delivery',
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,

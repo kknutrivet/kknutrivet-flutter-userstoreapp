@@ -507,52 +507,51 @@ class HomeCategorySelector extends ConsumerWidget {
       });
     }
 
+    final textScale =
+        (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0);
+    final cardHeight = 126.0 + (textScale - 1.0) * 24.0;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
+      padding: const EdgeInsets.only(top: 18, bottom: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            animalTheme.shortName.isNotEmpty
-                ? 'Shop ${animalTheme.shortName.toLowerCase()} by category'
-                : 'Shop by category',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.35,
-              color: Color(0xFF1C1C1C),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              animalTheme.shortName.isNotEmpty
+                  ? 'Shop ${animalTheme.shortName.toLowerCase()} by category'
+                  : 'Shop by category',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.35,
+                color: Color(0xFF1C1C1C),
+              ),
             ),
           ),
           const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final textScale =
-                  (MediaQuery.textScalerOf(context).scale(12) / 12)
-                      .clamp(1.0, 2.0);
-              final cols = textScale > 1.35 ? 2 : 4;
-              const spacing = 10.0;
-              final cardWidth =
-                  (constraints.maxWidth - spacing * (cols - 1)) / cols;
-              final cardHeight = 114.0 + (textScale - 1.0) * 28.0;
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  for (final cat in visible)
-                    SizedBox(
-                      width: cardWidth,
-                      height: cardHeight,
-                      child: _PastelCategoryTile(
-                        cat: cat,
-                        meta: _pastelMetaFor(cat.name, cat.label),
-                        selectedAnimal: selectedAnimal,
-                      ),
-                    ),
-                ],
-              );
-            },
+          SizedBox(
+            height: cardHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: visible.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, i) {
+                final cat = visible[i];
+                return SizedBox(
+                  width: 108,
+                  child: _PastelCategoryTile(
+                    cat: cat,
+                    meta: _pastelMetaFor(cat.name, cat.label),
+                    selectedAnimal: selectedAnimal,
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -592,51 +591,56 @@ class _PastelCategoryTile extends StatelessWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              Positioned(
-                left: 4,
-                right: 4,
-                bottom: 0,
-                height: 74,
-                child: IgnorePointer(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: [0.0, 0.28, 1.0],
-                      colors: [Colors.transparent, Colors.white, Colors.white],
-                    ).createShader(bounds),
-                    blendMode: BlendMode.dstIn,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        cat.asset,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.bottomCenter,
-                        errorBuilder: (_, _, _) => Center(
-                          child: Icon(
-                            cat.fallbackIcon,
-                            size: 28,
-                            color: cat.color,
-                          ),
-                        ),
+              Image.asset(
+                cat.asset,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, _, _) => Center(
+                  child: Icon(
+                    cat.fallbackIcon,
+                    size: 28,
+                    color: cat.color,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: FractionallySizedBox(
+                  alignment: Alignment.bottomCenter,
+                  heightFactor: 0.58,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        stops: const [0.0, 0.48, 1.0],
+                        colors: [
+                          meta.$2.withValues(alpha: 0.97),
+                          meta.$2.withValues(alpha: 0.85),
+                          meta.$2.withValues(alpha: 0.0),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(7, 8, 6, 6),
-                child: Text(
-                  meta.$1,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                    height: 1.15,
-                    color: Color(0xFF1C1C1C),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 9, 9),
+                  child: Text(
+                    meta.$1,
+                    maxLines: 2,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11.2,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                      height: 1.15,
+                      color: Color(0xFF1C1C1C),
+                    ),
                   ),
                 ),
               ),
@@ -644,6 +648,101 @@ class _PastelCategoryTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class HomeCategoryProductShelves extends ConsumerWidget {
+  const HomeCategoryProductShelves({super.key, this.selectedAnimal});
+  final String? selectedAnimal;
+
+  static const Map<String, String> _categoryTitles = {
+    'Feed': 'Daily Food & Feed',
+    'Supplement & Nutrition': 'Daily Supplements & Tonics',
+    'Medicine': 'Health & Medicines',
+    'Grooming': 'Coat & Grooming',
+    'Deworming': 'Gut & Deworming Care',
+    'Spray': 'Wound & Skin Sprays',
+    'Device': 'Vet & Farm Equipment',
+  };
+
+  static const List<String> _allOrder = [
+    'Supplement & Nutrition',
+    'Feed',
+    'Deworming',
+    'Grooming',
+    'Medicine',
+    'Spray',
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scope = selectedAnimal ?? '';
+    final products = ref.watch(homeCategoryProductsProvider(scope)).valueOrNull ?? const <Product>[];
+    if (products.isEmpty) return const SizedBox.shrink();
+
+    final hiddenCategories =
+        ref.watch(storeSettingsProvider).valueOrNull?.hiddenCategories ?? const [];
+    final hiddenLower = hiddenCategories.map((h) => h.toLowerCase().trim()).toSet();
+    final animalTheme = homeAnimalThemeFor(selectedAnimal);
+
+    final grouped = <String, List<Product>>{};
+    for (final product in products) {
+      if (product.requiresPrescription) continue;
+      final rawCat = (product.category ?? '').trim();
+      final cat = rawCat.isEmpty ? 'Other' : rawCat;
+      final catLower = cat.toLowerCase();
+      if (catLower == 'combos' || catLower == 'home care' || hiddenLower.contains(catLower)) {
+        continue;
+      }
+      grouped.putIfAbsent(cat, () => <Product>[]).add(product);
+    }
+
+    final order = animalTheme.priorityCategories.isNotEmpty
+        ? animalTheme.priorityCategories
+        : _allOrder;
+
+    final entries = grouped.entries
+        .where((e) => e.value.length >= (scope.isNotEmpty ? 2 : 3))
+        .toList()
+      ..sort((a, b) {
+        final aIdx = order.indexWhere((o) => o.toLowerCase() == a.key.toLowerCase());
+        final bIdx = order.indexWhere((o) => o.toLowerCase() == b.key.toLowerCase());
+        return (aIdx == -1 ? 99 : aIdx) - (bIdx == -1 ? 99 : bIdx);
+      });
+
+    final capped = (entries.isNotEmpty
+            ? entries
+            : grouped.entries.where((e) => e.value.isNotEmpty).toList())
+        .take(scope.isNotEmpty ? 5 : 3)
+        .toList();
+
+    if (capped.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final entry in capped)
+          HomeScrollProductSection(
+            title: animalTheme.shortName.isNotEmpty
+                ? '${animalTheme.shortName} ${_categoryTitles[entry.key] ?? entry.key}'
+                : (_categoryTitles[entry.key] ?? entry.key),
+            description: '',
+            route: scope.isNotEmpty
+                ? '/products?animalType=${Uri.encodeComponent(scope)}&category=${Uri.encodeComponent(entry.key)}'
+                : '/products?category=${Uri.encodeComponent(entry.key)}',
+            products: entry.value,
+            surface: const HomeRailSurface(
+              Colors.white,
+              Color(0xFFE5E7EB),
+              Color(0xFF1C1C1C),
+              Color(0xFF525252),
+              Color(0xFF07583F),
+            ),
+            tone: AppColors.primaryDeep,
+            fallbackIcon: Icons.category_outlined,
+          ),
+      ],
     );
   }
 }
@@ -716,8 +815,9 @@ class HomeScrollProductSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (products.isEmpty) return const SizedBox.shrink();
-    final shown = products.take(8).toList();
+    final nonRx = products.where((p) => !p.requiresPrescription).toList();
+    if (nonRx.isEmpty) return const SizedBox.shrink();
+    final shown = nonRx.take(8).toList();
 
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 4),

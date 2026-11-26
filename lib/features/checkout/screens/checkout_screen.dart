@@ -13,6 +13,7 @@ import '../../../core/widgets/product_card.dart' show formatInr;
 import '../../../models/address.dart';
 import '../../../models/delivery.dart';
 import '../../../models/order.dart';
+import '../../../models/pricing.dart';
 import '../../../models/product.dart';
 import '../../../models/store_settings.dart';
 import '../../../providers/app_providers.dart';
@@ -61,6 +62,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _validatingCoupon = false;
   String? _couponError;
   String? _phoneError;
+  String? _pendingOnlineOrderId;
 
   @override
   void initState() {
@@ -169,30 +171,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               );
             }
-            final couponDiscount = draft.couponDiscount;
+            final activeSettings = settings ?? StoreSettings.defaults();
+            final feedPairing =
+                calculateFeedPairingDiscount(items, activeSettings);
+            final promo = resolveBestPromo(
+              subtotal: subtotal,
+              couponDiscount: draft.couponDiscount,
+              feedPairingDiscount: feedPairing.discount,
+            );
             final pointsDiscount = draft.pointsToRedeem.toDouble();
-            final merchandise = (subtotal - couponDiscount - pointsDiscount)
-                .clamp(0.0, double.infinity);
+            final merchandise =
+                (subtotal - promo.merchandiseDiscount - pointsDiscount)
+                    .clamp(0.0, double.infinity);
             final effectivePincode =
                 _selectedAddress?.zipCode ??
                 _delivery?.pincode ??
                 fallbackPincode;
             final effectiveSource =
                 _delivery?.source ?? fallbackDeliveryInfo?.source;
-            final activeSettings = settings ?? StoreSettings.defaults();
             final freeDeliveryThreshold = activeSettings
                 .effectiveFreeDeliveryThreshold(
                   pincode: effectivePincode,
                   source: effectiveSource,
+                  paymentMethod: _paymentMethod,
                 );
             final deliveryFee = activeSettings.calculateDeliveryFee(
               merchandise,
               pincode: effectivePincode,
               source: effectiveSource,
+              paymentMethod: _paymentMethod,
             );
+            final codFee = activeSettings.codCollectionFeeFor(_paymentMethod);
             final isNotServiceable =
                 _delivery != null && !_delivery!.serviceable;
-            final total = (merchandise + deliveryFee).clamp(
+            final total = (merchandise + deliveryFee + codFee).clamp(
               0.0,
               double.infinity,
             );
@@ -301,10 +313,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const Divider(height: 32),
                 CheckoutSummaryCard(
                   subtotal: subtotal,
-                  couponCode: draft.couponCode,
-                  couponDiscount: couponDiscount,
+                  couponCode: promo.effectiveCouponDiscount > 0
+                      ? draft.couponCode
+                      : null,
+                  couponDiscount: promo.effectiveCouponDiscount,
+                  feedPairingDiscount: promo.effectiveFeedPairingDiscount,
+                  feedPairingPercent: feedPairing.discountPercent,
                   points: draft.pointsToRedeem,
                   deliveryFee: deliveryFee,
+                  codFee: codFee,
                   freeDeliveryThreshold: freeDeliveryThreshold,
                   isNotServiceable: isNotServiceable,
                   total: total.toDouble(),
@@ -336,10 +353,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             final settings =
                 ref.watch(storeSettingsProvider).valueOrNull ??
                 StoreSettings.defaults();
-            final couponDiscount = draft.couponDiscount;
+            final feedPairing = calculateFeedPairingDiscount(items, settings);
+            final promo = resolveBestPromo(
+              subtotal: subtotal,
+              couponDiscount: draft.couponDiscount,
+              feedPairingDiscount: feedPairing.discount,
+            );
             final pointsDiscount = draft.pointsToRedeem.toDouble();
-            final merchandise = (subtotal - couponDiscount - pointsDiscount)
-                .clamp(0.0, double.infinity);
+            final merchandise =
+                (subtotal - promo.merchandiseDiscount - pointsDiscount)
+                    .clamp(0.0, double.infinity);
             final effectivePincode =
                 _selectedAddress?.zipCode ??
                 _delivery?.pincode ??
@@ -350,8 +373,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               merchandise,
               pincode: effectivePincode,
               source: effectiveSource,
+              paymentMethod: _paymentMethod,
             );
-            final total = (merchandise + deliveryFee).toDouble();
+            final codFee = settings.codCollectionFeeFor(_paymentMethod);
+            final total = (merchandise + deliveryFee + codFee).toDouble();
             final quote = settings.partialCodQuote(total);
 
             return CheckoutStickyPlaceOrderBar(
@@ -508,11 +533,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             info.prepaid &&
             info.cod &&
             availability.userCodAllowed;
+        final payLaterAvailable =
+            (settings?.payLaterEnabled ?? false) &&
+            onlineAllowed &&
+            info.prepaid;
 
         setState(() {
           _delivery = info;
           if (info.serviceable) {
-            if (_paymentMethod == 'PARTIAL_COD' && !partialCodAvailable) {
+            if ((_paymentMethod == 'PAY_LATER' || _paymentMethod == 'EMI') &&
+                !payLaterAvailable) {
+              _paymentMethod = onlineAllowed
+                  ? 'CASHFREE'
+                  : (codAllowed && info.cod ? 'COD' : 'CASHFREE');
+            } else if (_paymentMethod == 'PARTIAL_COD' &&
+                !partialCodAvailable) {
               _paymentMethod = onlineAllowed
                   ? 'CASHFREE'
                   : (codAllowed && info.cod ? 'COD' : 'CASHFREE');
@@ -625,8 +660,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         onlineEnabled &&
         (info.prepaid && info.cod) &&
         availability.userCodAllowed;
+    final payLaterAvailable =
+        settings.payLaterEnabled && onlineEnabled && info.prepaid;
 
     if (_paymentMethod == 'CASHFREE' && (!onlineEnabled || !info.prepaid)) {
+      return false;
+    }
+    if ((_paymentMethod == 'PAY_LATER' || _paymentMethod == 'EMI') &&
+        !payLaterAvailable) {
       return false;
     }
     if (_paymentMethod == 'PARTIAL_COD' && !partialCodAvailable) return false;
@@ -634,6 +675,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return false;
     }
     return true;
+  }
+
+  Future<void> _abandonPendingOrderIfAny() async {
+    final pendingId = _pendingOnlineOrderId;
+    if (pendingId == null) return;
+    _pendingOnlineOrderId = null;
+    try {
+      await ref.read(orderServiceProvider).abandonPendingOrder(pendingId);
+    } catch (_) {}
   }
 
   Future<void> _confirmAndPlaceOrder({
@@ -663,6 +713,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       context: context,
       isCod: _paymentMethod == 'COD',
       isPartialCod: _paymentMethod == 'PARTIAL_COD',
+      paymentMethod: _paymentMethod,
       partialAdvance: quote.advance,
       partialBalance: quote.balance,
       cartCount: cartCount,
@@ -721,6 +772,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             },
           )
           .toList();
+      await _abandonPendingOrderIfAny();
+      final isOnlinePayment = _paymentMethod != 'COD';
+      final apiPaymentMethod =
+          (_paymentMethod == 'PAY_LATER' || _paymentMethod == 'EMI')
+          ? 'CASHFREE'
+          : _paymentMethod;
+      final paymentPreference =
+          (_paymentMethod == 'PAY_LATER' || _paymentMethod == 'EMI')
+          ? _paymentMethod
+          : null;
+
       final order = await ref
           .read(orderServiceProvider)
           .placeOrder(
@@ -732,11 +794,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             couponCode: draft.couponCode,
             prescriptionId: prescriptionId,
             pointsToRedeem: draft.pointsToRedeem,
-            paymentMethod: _paymentMethod,
+            paymentMethod: apiPaymentMethod,
             items: itemsPayload,
           );
       createdOrderId = order.id;
-      if (_paymentMethod == 'COD') {
+
+      if (isOnlinePayment) {
+        _pendingOnlineOrderId = order.id;
+        await _payOnline(
+          order,
+          paymentPreference: paymentPreference,
+          pointsToRedeem: draft.pointsToRedeem,
+        );
+      } else {
         AnalyticsService.instance.logPurchase(
           paymentMethod: 'COD',
           orderId: order.id,
@@ -744,24 +814,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           shipping: order.deliveryCharge,
           coupon: draft.couponCode,
         );
-      }
-
-      if (draft.pointsToRedeem > 0) {
-        try {
-          await ref
-              .read(referralServiceProvider)
-              .redeemPoints(draft.pointsToRedeem);
-        } catch (_) {}
-      }
-      ref.read(checkoutDraftProvider.notifier).state = const CheckoutDraft();
-      ref.read(cartProvider.notifier).clearGuestCart();
-      await ref.read(cartProvider.notifier).refresh();
-
-      if (_paymentMethod == 'CASHFREE' || _paymentMethod == 'PARTIAL_COD') {
-        await _payOnline(order);
-      } else if (mounted) {
-        showToast('Order placed successfully!');
-        context.go('/order/${order.id}');
+        if (draft.pointsToRedeem > 0) {
+          try {
+            await ref
+                .read(referralServiceProvider)
+                .redeemPoints(draft.pointsToRedeem);
+          } catch (_) {}
+        }
+        ref.read(checkoutDraftProvider.notifier).state = const CheckoutDraft();
+        ref.read(cartProvider.notifier).clearGuestCart();
+        await ref.read(cartProvider.notifier).refresh();
+        if (mounted) {
+          showToast('Order placed successfully!');
+          context.go('/order/${order.id}');
+        }
       }
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -797,10 +863,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     context.go('/order/$orderId');
   }
 
-  Future<void> _payOnline(Order order) async {
+  Future<void> _payOnline(
+    Order order, {
+    String? paymentPreference,
+    int pointsToRedeem = 0,
+  }) async {
     final session = await ref
         .read(orderServiceProvider)
-        .createCashfreeOrder(order.id);
+        .createCashfreeOrder(order.id, paymentPreference: paymentPreference);
     if (!mounted) return;
 
     final returnedFromPayment = await Navigator.of(context).push<bool>(
@@ -815,8 +885,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
 
     if (returnedFromPayment != true) {
-      showToast('Payment not completed. You can retry from your order.');
-      context.go('/order/${order.id}');
+      // Customer closed payment screen without completing — silently release the
+      // pending order so stock & KK Coins are restored and they stay on checkout.
+      await _abandonPendingOrderIfAny();
+      if (!mounted) return;
+      showToast('Payment cancelled. Your cart is still ready to try again.');
       return;
     }
 
@@ -850,6 +923,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
 
     if (isPaymentConfirmed(result)) {
+      _pendingOnlineOrderId = null;
       AnalyticsService.instance.logPurchase(
         orderId: order.id,
         value: (order.paymentMethod == 'PARTIAL_COD')
@@ -859,11 +933,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ? 'advance'
             : 'prepaid',
       );
+      if (pointsToRedeem > 0) {
+        try {
+          await ref.read(referralServiceProvider).redeemPoints(pointsToRedeem);
+        } catch (_) {}
+      }
+      ref.read(checkoutDraftProvider.notifier).state = const CheckoutDraft();
+      ref.read(cartProvider.notifier).clearGuestCart();
       await ref.read(cartProvider.notifier).clear();
       if (!mounted) return;
       showToast('Payment successful! Order confirmed.');
       context.go('/order/${order.id}');
     } else {
+      _pendingOnlineOrderId = null;
       showToast(
         'We could not confirm your payment yet. Check your order for the latest status.',
         isError: true,

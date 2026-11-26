@@ -883,15 +883,38 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
                     ),
                   );
                 }
+                final ranked = offers.map((offer) {
+                  final savings = offer.estimateSavings(widget.subtotal);
+                  final needed = offer.amountNeeded(widget.subtotal);
+                  return (
+                    offer: offer,
+                    savings: savings,
+                    needed: needed,
+                    eligible: needed == 0,
+                  );
+                }).toList()
+                  ..sort((a, b) {
+                    if (a.eligible != b.eligible) return a.eligible ? -1 : 1;
+                    if (a.eligible) return b.savings.compareTo(a.savings);
+                    return a.needed.compareTo(b.needed);
+                  });
+
+                final bestOfferId = ranked.any((e) => e.eligible && e.savings > 0)
+                    ? ranked.firstWhere((e) => e.eligible && e.savings > 0).offer.id
+                    : null;
+
                 return ListView.separated(
                   shrinkWrap: true,
-                  itemCount: offers.length,
+                  itemCount: ranked.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, i) {
-                    final offer = offers[i];
+                    final entry = ranked[i];
                     return _OfferTile(
-                      offer: offer,
-                      onApply: () => _apply(offer.code),
+                      offer: entry.offer,
+                      savings: entry.savings,
+                      amountNeeded: entry.needed,
+                      isBest: entry.offer.id == bestOfferId,
+                      onApply: () => _apply(entry.offer.code),
                       validating: _validating,
                     );
                   },
@@ -938,94 +961,169 @@ class _CouponSheetState extends ConsumerState<CouponSheet> {
 class _OfferTile extends StatelessWidget {
   const _OfferTile({
     required this.offer,
+    required this.savings,
+    required this.amountNeeded,
+    required this.isBest,
     required this.onApply,
     required this.validating,
   });
   final CouponOffer offer;
+  final int savings;
+  final int amountNeeded;
+  final bool isBest;
   final VoidCallback onApply;
   final bool validating;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryWash,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              offer.code,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDeep,
+    final locked = amountNeeded > 0;
+    return Opacity(
+      opacity: locked ? 0.8 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isBest ? AppColors.primaryDeep : AppColors.border,
+            width: isBest ? 1.4 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: locked ? const Color(0xFFF1F5F9) : AppColors.primaryWash,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                offer.code,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: locked ? AppColors.textSecondary : AppColors.primaryDeep,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  offer.headline,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    offer.headline,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                Text(
-                  offer.subline,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                  Text(
+                    offer.subline,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-                if (offer.expiryBadge != null) ...[
                   const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
-                    ),
-                    child: Text(
-                      offer.expiryBadge!,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF92400E),
-                      ),
-                    ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      if (isBest && savings > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryDeep,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Best Offer · Save ₹$savings',
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      else if (savings > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryWash,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Save ₹$savings on this cart',
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDeep,
+                            ),
+                          ),
+                        )
+                      else if (locked)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Add ₹$amountNeeded more',
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                        ),
+                      if (offer.expiryBadge != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Text(
+                            offer.expiryBadge!,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          TextButton(
-            onPressed: validating ? null : onApply,
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            child: const Text('Apply'),
-          ),
-        ],
+            TextButton(
+              onPressed: (validating || locked) ? null : onApply,
+              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              child: Text(locked ? 'Add ₹$amountNeeded' : 'Apply'),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// KK Coins editor — balance, 30%-of-subtotal cap, Material 3 Slider,
+/// KK Coins editor — balance, 20%-of-subtotal cap (max 50 coins), Material 3 Slider,
 /// "Apply" / "Remove" / "Use max" quick actions, and "1 KK Coin = ₹1".
 /// Always visible on the Cart screen for signed-in users (with or without
 /// coins) as well as guests (with a Sign in CTA to unlock coin redemption).
@@ -1049,8 +1147,19 @@ class CartPointsRow extends ConsumerWidget {
     final balance = summaryBalance > 0
         ? summaryBalance
         : (user?.loyaltyPoints ?? 0);
+    final loyaltyRules =
+        ref.watch(storeSettingsProvider).valueOrNull?.loyaltyRules;
+    final maxPercent = loyaltyRules?.maxRedemptionPercent ?? 20.0;
+    final maxCoins = loyaltyRules?.maxRedemptionCoins ?? 50;
+    final coinValue = loyaltyRules?.coinValue ?? 1.0;
     final earnedCoins = (subtotal * 0.05).round();
-    final maxCapForOrder = (subtotal * 0.30).floor();
+    final maxCapForOrder = maxRedeemablePoints(
+      maxCoins,
+      subtotal,
+      maxPercent: maxPercent,
+      maxCoins: maxCoins,
+      coinValue: coinValue,
+    );
 
     if (!isSignedIn) {
       return Container(
@@ -1198,7 +1307,13 @@ class CartPointsRow extends ConsumerWidget {
     }
 
     final draft = ref.watch(checkoutDraftProvider);
-    final maxRedeemable = maxRedeemablePoints(balance, subtotal);
+    final maxRedeemable = maxRedeemablePoints(
+      balance,
+      subtotal,
+      maxPercent: maxPercent,
+      maxCoins: maxCoins,
+      coinValue: coinValue,
+    );
     final currentPoints = draft.pointsToRedeem.clamp(0, maxRedeemable);
 
     return Container(

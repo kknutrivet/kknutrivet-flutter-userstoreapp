@@ -790,32 +790,29 @@ class HomeConcernsRail extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              LayoutBuilder(
-                builder: (context, constraints) {
+              Builder(
+                builder: (context) {
                   final textScale =
                       (MediaQuery.textScalerOf(context).scale(12) / 12)
                           .clamp(1.0, 2.0);
-                  final cols = textScale > 1.35 ? 2 : 4;
-                  const spacing = 10.0;
-                  final tileWidth =
-                      (constraints.maxWidth - spacing * (cols - 1)) / cols;
-                  final tileHeight = 108.0 + (textScale - 1.0) * 26.0;
-
-                  return Wrap(
-                    spacing: spacing,
-                    runSpacing: spacing,
-                    children: [
-                      for (var i = 0; i < shown.length; i++)
-                        SizedBox(
-                          width: tileWidth,
-                          height: tileHeight,
-                          child: _buildPastelConcernTile(
-                            context,
-                            shown[i],
-                            _concernPastels[i % _concernPastels.length],
-                          ),
+                  final tileHeight = 112.0 + (textScale - 1.0) * 24.0;
+                  return SizedBox(
+                    height: tileHeight,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: shown.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      itemBuilder: (context, i) => SizedBox(
+                        width: 118,
+                        child: _buildPastelConcernTile(
+                          context,
+                          shown[i],
+                          _concernPastels[i % _concernPastels.length],
                         ),
-                    ],
+                      ),
+                    ),
                   );
                 },
               ),

@@ -4,10 +4,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Web configuration for the shared `kk-nutrivet-web` Firebase project.
 ///
 /// Android reads the same project from `android/app/google-services.json`
-/// (merged at build time), so it must keep passing `null` options to
-/// `Firebase.initializeApp`.
+/// (merged at build time), so it passes `null` options to
+/// `Firebase.initializeApp`. For Web builds, pass the API key via
+/// `--dart-define=FIREBASE_WEB_API_KEY=...` so no literal key is stored in git.
+const String _firebaseWebApiKey = String.fromEnvironment(
+  'FIREBASE_WEB_API_KEY',
+);
+
 const FirebaseOptions firebaseWebOptions = FirebaseOptions(
-  apiKey: 'AIzaSyDcsOwec0DXCgXTYXOAIdhBCM40Xxi-9vw',
+  apiKey: _firebaseWebApiKey,
   authDomain: 'kk-nutrivet-web.firebaseapp.com',
   projectId: 'kk-nutrivet-web',
   storageBucket: 'kk-nutrivet-web.firebasestorage.app',
@@ -16,4 +21,4 @@ const FirebaseOptions firebaseWebOptions = FirebaseOptions(
 );
 
 FirebaseOptions? get platformFirebaseOptions =>
-    kIsWeb ? firebaseWebOptions : null;
+    kIsWeb && _firebaseWebApiKey.isNotEmpty ? firebaseWebOptions : null;

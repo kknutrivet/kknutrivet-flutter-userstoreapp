@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/checkout_breadcrumb.dart';
 import '../../../core/widgets/common.dart';
 import '../../../models/cart_item.dart';
+import '../../../models/pricing.dart';
 import '../../../models/product.dart';
 import '../../../models/store_settings.dart';
 import '../../../providers/app_providers.dart';
@@ -76,7 +77,13 @@ class CartScreen extends ConsumerWidget {
           final settings =
               settingsAsync.valueOrNull ?? StoreSettings.defaults();
           final outOfStock = items.any((i) => i.hasStockIssue);
-          final discount = draft.couponDiscount + draft.pointsToRedeem;
+          final feedPairing = calculateFeedPairingDiscount(items, settings);
+          final promo = resolveBestPromo(
+            subtotal: subtotal,
+            couponDiscount: draft.couponDiscount,
+            feedPairingDiscount: feedPairing.discount,
+          );
+          final discount = promo.merchandiseDiscount + draft.pointsToRedeem;
           final merchandiseAfterDiscount = (subtotal - discount).clamp(
             0.0,
             double.infinity,
@@ -164,6 +171,7 @@ class CartScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              FeedPairingBanner(breakdown: feedPairing, promo: promo),
               CartCouponRow(subtotal: subtotal),
               const SizedBox(height: 8),
               CartPointsRow(subtotal: subtotal),
@@ -172,12 +180,18 @@ class CartScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               CartSummaryCard(
                 subtotal: subtotal,
-                couponCode: draft.couponCode,
-                couponDiscount: draft.couponDiscount,
+                couponCode: promo.effectiveCouponDiscount > 0
+                    ? draft.couponCode
+                    : null,
+                couponDiscount: promo.effectiveCouponDiscount,
+                feedPairingDiscount: promo.effectiveFeedPairingDiscount,
+                feedPairingPercent: feedPairing.discountPercent,
                 points: draft.pointsToRedeem,
                 deliveryFee: deliveryFee,
                 baseDeliveryCharge: baseDeliveryCharge,
                 freeDeliveryThreshold: freeDeliveryThreshold,
+                isPrepaidFreeDelivery:
+                    settings.prepaidFreeDeliveryThreshold > 0,
                 total: total.toDouble(),
               ),
               if (outOfStock) ...[
@@ -227,34 +241,22 @@ class CartScreen extends ConsumerWidget {
           final draft = ref.watch(checkoutDraftProvider);
           final pincode = ref.watch(deliveryPincodeProvider).valueOrNull;
           final deliveryInfo = ref.watch(deliveryEtaProvider).valueOrNull;
-          final settings = settingsAsync.valueOrNull;
+          final settings = settingsAsync.valueOrNull ?? StoreSettings.defaults();
           final blocked = items.any((i) => i.hasStockIssue);
+          final feedPairing = calculateFeedPairingDiscount(items, settings);
+          final promo = resolveBestPromo(
+            subtotal: subtotal,
+            couponDiscount: draft.couponDiscount,
+            feedPairingDiscount: feedPairing.discount,
+          );
           final merchandiseAfterDiscount =
-              (subtotal - draft.couponDiscount - draft.pointsToRedeem).clamp(
-                0.0,
-                double.infinity,
-              );
-          final freeDeliveryThreshold =
-              settings?.effectiveFreeDeliveryThreshold(
-                pincode: pincode,
-                source: deliveryInfo?.source,
-              ) ??
-              500.0;
-          final baseDeliveryCharge =
-              settings?.effectiveDeliveryCharge(
-                pincode: pincode,
-                source: deliveryInfo?.source,
-              ) ??
-              49.0;
-          final deliveryFee = settings != null
-              ? settings.calculateDeliveryFee(
-                  merchandiseAfterDiscount,
-                  pincode: pincode,
-                  source: deliveryInfo?.source,
-                )
-              : (merchandiseAfterDiscount >= freeDeliveryThreshold
-                    ? 0.0
-                    : baseDeliveryCharge);
+              (subtotal - promo.merchandiseDiscount - draft.pointsToRedeem)
+                  .clamp(0.0, double.infinity);
+          final deliveryFee = settings.calculateDeliveryFee(
+            merchandiseAfterDiscount,
+            pincode: pincode,
+            source: deliveryInfo?.source,
+          );
           final total = (merchandiseAfterDiscount + deliveryFee).clamp(
             0.0,
             double.infinity,

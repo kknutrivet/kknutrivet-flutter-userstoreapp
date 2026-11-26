@@ -42,6 +42,29 @@ class CouponOffer {
       ? 'On orders of ₹${formatInr(minOrderAmount)} or more'
       : 'On any order';
 
+  /// Estimated rupee savings on [subtotal] (0 when minimum order isn't met).
+  int estimateSavings(double subtotal) {
+    if (subtotal <= 0) return 0;
+    if (minOrderAmount > 0 && subtotal < minOrderAmount) return 0;
+    double raw;
+    if (discountType == 'percent') {
+      raw = subtotal * (discountValue / 100);
+      if (maxDiscount != null && maxDiscount! > 0) {
+        raw = raw > maxDiscount! ? maxDiscount! : raw;
+      }
+    } else {
+      raw = discountValue;
+    }
+    if (raw > subtotal) raw = subtotal;
+    return raw.round().clamp(0, subtotal.round());
+  }
+
+  /// Additional spend needed to unlock this coupon on [subtotal].
+  int amountNeeded(double subtotal) {
+    if (subtotal <= 0 || minOrderAmount <= subtotal) return 0;
+    return (minOrderAmount - subtotal).ceil();
+  }
+
   /// Human-readable expiry badge or note from dynamic backend expiration timestamp.
   String? get expiryBadge {
     if (expiresAt == null) return null;
@@ -77,9 +100,19 @@ class CouponOffer {
   }
 }
 
-/// Loyalty cap mirrored from `getMaxRedeemablePoints` (lib/loyalty.ts):
-/// at most 30% of the subtotal can be paid with KK Coins (1 coin = ₹1).
-int maxRedeemablePoints(int loyaltyPoints, double subtotal) {
-  final cap = (subtotal * 0.30).floor();
-  return loyaltyPoints.clamp(0, cap);
+/// Loyalty cap mirrored from `getMaxRedeemablePoints` (lib/loyalty.ts) &
+/// `StoreSettings.businessRules.loyalty` (default `20%` of subtotal, max `50` coins).
+int maxRedeemablePoints(
+  int loyaltyPoints,
+  double subtotal, {
+  double maxPercent = 20.0,
+  int maxCoins = 50,
+  double coinValue = 1.0,
+}) {
+  if (loyaltyPoints <= 0 || subtotal <= 0 || maxPercent <= 0 || maxCoins <= 0 || coinValue <= 0) {
+    return 0;
+  }
+  final percentCap = ((subtotal * maxPercent) / 100.0 / coinValue).floor();
+  final cap = percentCap < maxCoins ? percentCap : maxCoins;
+  return loyaltyPoints.clamp(0, cap < 0 ? 0 : cap);
 }

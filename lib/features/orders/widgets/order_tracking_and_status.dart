@@ -26,6 +26,16 @@ final orderTrackingProvider = FutureProvider.autoDispose
       return ref.read(orderServiceProvider).fetchTracking(id);
     });
 
+final orderParcelTrackingProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, ({String orderId, String? parcelId})>((
+      ref,
+      arg,
+    ) {
+      return ref
+          .read(orderServiceProvider)
+          .fetchTracking(arg.orderId, parcelId: arg.parcelId);
+    });
+
 /// Dark hero card: order number, placed date, total, invoice + current status.
 class OrderHeroCard extends StatelessWidget {
   const OrderHeroCard({super.key, required this.order});
@@ -590,7 +600,7 @@ class OrderPaymentCard extends StatelessWidget {
 }
 
 /// Shipment tracking timeline section.
-class OrderTrackingSection extends ConsumerWidget {
+class OrderTrackingSection extends ConsumerStatefulWidget {
   const OrderTrackingSection({
     super.key,
     required this.order,
@@ -601,13 +611,32 @@ class OrderTrackingSection extends ConsumerWidget {
   final String orderId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final trackingAsync = ref.watch(orderTrackingProvider(orderId));
+  ConsumerState<OrderTrackingSection> createState() =>
+      _OrderTrackingSectionState();
+}
+
+class _OrderTrackingSectionState extends ConsumerState<OrderTrackingSection> {
+  String? _selectedParcelId;
+
+  @override
+  Widget build(BuildContext context) {
+    final trackingAsync = _selectedParcelId != null
+        ? ref.watch(
+            orderParcelTrackingProvider((
+              orderId: widget.orderId,
+              parcelId: _selectedParcelId,
+            )),
+          )
+        : ref.watch(orderTrackingProvider(widget.orderId));
     return trackingAsync.maybeWhen(
       data: (tracking) {
         final shipped = tracking['shipped'] == true;
-        final awb = tracking['awbNumber']?.toString() ?? order.awbNumber;
-        if (!shipped || awb == null) return const SizedBox.shrink();
+        final awb =
+            tracking['awbNumber']?.toString() ?? widget.order.awbNumber;
+        final hasSplitParcels = widget.order.shipments.length > 1;
+        if ((!shipped || awb == null) && !hasSplitParcels) {
+          return const SizedBox.shrink();
+        }
 
         final events = (tracking['events'] as List?) ?? const [];
         return Padding(
@@ -632,80 +661,225 @@ class OrderTrackingSection extends ConsumerWidget {
                   'Tracking information',
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Tracking number',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          Text(
-                            awb,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ],
-                      ),
+                if (hasSplitParcels) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'PARCELS IN THIS ORDER (${widget.order.shipments.length}) · TAP TO TRACK',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: AppColors.textSecondary,
                     ),
-                    if (tracking['courierName'] != null ||
-                        order.courierName != null)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Courier',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final parcel in widget.order.shipments) ...[
+                    Builder(
+                      builder: (context) {
+                        final isSelected = _selectedParcelId == parcel.id ||
+                            (_selectedParcelId == null &&
+                                parcel.awbNumber != null &&
+                                parcel.awbNumber == awb);
+                        final parcelStatus = parcel.awbNumber != null
+                            ? courierStatusLabel(
+                                parcel.trackingStatus ?? parcel.status,
+                              )
+                            : 'Preparing';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Material(
+                            color: isSelected
+                                ? AppColors.primaryWashFaint
+                                : AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                AppHaptics.selection();
+                                setState(() => _selectedParcelId = parcel.id);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(11),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppColors.primaryDeep
+                                        : AppColors.border,
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Parcel ${parcel.parcelIndex} of ${widget.order.shipments.length}',
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                              if (isSelected) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        AppColors.primaryDeep,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                  ),
+                                                  child: const Text(
+                                                    'VIEWING',
+                                                    style: TextStyle(
+                                                      fontSize: 9,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            parcel.awbNumber != null
+                                                ? 'AWB: ${parcel.awbNumber}${parcel.courierName != null ? " · ${parcel.courierName}" : ""}'
+                                                : 'Awaiting courier booking',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primaryDeep
+                                                  .withValues(alpha: 0.35)
+                                              : AppColors.border,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        parcelStatus,
+                                        style: const TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primaryDeep,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            Text(
-                              '${tracking['courierName'] ?? order.courierName}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (tracking['trackingStatus'] != null)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Status',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                            Text(
-                              courierStatusLabel(
-                                '${tracking['trackingStatus']}',
-                              ),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
-                ),
+                ],
+                if (shipped && awb != null) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Tracking number',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              awb,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (tracking['courierName'] != null ||
+                          widget.order.courierName != null)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Courier',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                '${tracking['courierName'] ?? widget.order.courierName}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (tracking['trackingStatus'] != null)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Status',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                courierStatusLabel(
+                                  '${tracking['trackingStatus']}',
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
                 if (events.isNotEmpty) ...[
                   const Divider(height: 24),
                   ExpansionTile(

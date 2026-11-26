@@ -18,6 +18,17 @@ final animalTypeProductsProvider = FutureProvider.autoDispose
       .fetchProducts(animalType: animalType, limit: 10);
 });
 
+final homeCategoryProductsProvider = FutureProvider.autoDispose
+    .family<List<Product>, String>((ref, animalType) async {
+  final products = await ref.read(catalogServiceProvider).fetchProducts(
+        animalType: animalType.isEmpty ? null : animalType,
+        limit: 40,
+      );
+  return products
+      .where((p) => !p.requiresPrescription && !p.onlyForCombo)
+      .toList();
+});
+
 final homeBrandsProvider = FutureProvider.autoDispose<List<Brand>>((ref) {
   return ref.read(catalogServiceProvider).fetchBrands();
 });
