@@ -133,19 +133,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               }
             },
           ),
-          title: Image.asset(
-            'assets/images/logo.png',
-            height: 32,
-            fit: BoxFit.contain,
-            alignment: Alignment.centerLeft,
-            errorBuilder: (_, _, _) => const Text(
-              'KK NUTRIVET',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.6,
-                color: AppColors.primaryDeep,
-              ),
+          title: Text(
+            strings.checkout,
+            style: const TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
             ),
           ),
           bottom: (_submitting || _checkingDelivery || _validatingCoupon)

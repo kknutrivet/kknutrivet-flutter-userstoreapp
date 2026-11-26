@@ -56,14 +56,12 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
             }
           },
         ),
-        title: Image.asset(
-          'assets/images/logo.png',
-          height: 32,
-          fit: BoxFit.contain,
-          alignment: Alignment.centerLeft,
-          errorBuilder: (context, error, stackTrace) => Text(
-            'KK Nutrivet',
-            style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
+        title: const Text(
+          'Prescriptions',
+          style: TextStyle(
+            fontSize: 16.5,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
           ),
         ),
         actions: [
