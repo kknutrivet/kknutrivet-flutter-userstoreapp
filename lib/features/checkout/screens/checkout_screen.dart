@@ -113,17 +113,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return PopScope(
       canPop: !_submitting,
       child: Scaffold(
-        backgroundColor: AppColors.homeCanvas,
+        backgroundColor: const Color(0xFFF3F7F4),
         appBar: AppBar(
-          toolbarHeight: 54,
-          backgroundColor: Colors.white,
+          toolbarHeight: 56,
+          backgroundColor: const Color(0xFF07583F),
+          foregroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 18,
-              color: AppColors.textPrimary,
+              color: Colors.white,
             ),
             onPressed: () {
               if (context.canPop()) {
@@ -138,7 +139,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             style: const TextStyle(
               fontSize: 16.5,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Colors.white,
             ),
           ),
           bottom: (_submitting || _checkingDelivery || _validatingCoupon)
@@ -207,10 +208,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 activeSettings.codConfirmationEnabled;
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
               children: [
                 const CheckoutStepHeader(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 CheckoutOrderReviewSection(
                   items: items,
                   combos: combos,
@@ -229,83 +230,95 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  strings.deliveryAddress,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                const SizedBox(height: 12),
+                _CheckoutSectionCard(
+                  icon: Icons.location_on_outlined,
+                  title: strings.deliveryAddress,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CheckoutAddressSection(
+                        key: _addressSectionKey,
+                        addressesAsync: addressesAsync,
+                        selectedAddressId: _selectedAddressId,
+                        addressExpanded: _addressExpanded,
+                        onSelectAddress: (addr) {
+                          setState(() => _selectedAddressId = addr.id);
+                          ref
+                                  .read(
+                                    selectedDeliveryAddressIdProvider.notifier,
+                                  )
+                                  .state =
+                              addr.id;
+                          _scheduleDeliveryCheck(addr.zipCode);
+                        },
+                        onToggleExpanded: () => setState(
+                          () => _addressExpanded = !_addressExpanded,
+                        ),
+                        onDefaultAddressResolved: (defaultAddr) {
+                          if (!mounted) return;
+                          if (_selectedAddressId == null) {
+                            setState(() => _selectedAddressId = defaultAddr.id);
+                            ref
+                                    .read(
+                                      selectedDeliveryAddressIdProvider
+                                          .notifier,
+                                    )
+                                    .state =
+                                defaultAddr.id;
+                          }
+                          if (_delivery == null && !_checkingDelivery) {
+                            _scheduleDeliveryCheck(defaultAddr.zipCode);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      CheckoutDeliveryStatusRow(
+                        checkingDelivery: _checkingDelivery,
+                        delivery: _delivery,
+                        onOpenWaitlist: (pincode) =>
+                            showCheckoutWaitlistSheet(context, pincode),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                CheckoutAddressSection(
-                  key: _addressSectionKey,
-                  addressesAsync: addressesAsync,
-                  selectedAddressId: _selectedAddressId,
-                  addressExpanded: _addressExpanded,
-                  onSelectAddress: (addr) {
-                    setState(() => _selectedAddressId = addr.id);
-                    ref.read(selectedDeliveryAddressIdProvider.notifier).state =
-                        addr.id;
-                    _scheduleDeliveryCheck(addr.zipCode);
-                  },
-                  onToggleExpanded: () =>
-                      setState(() => _addressExpanded = !_addressExpanded),
-                  onDefaultAddressResolved: (defaultAddr) {
-                    if (!mounted) return;
-                    if (_selectedAddressId == null) {
-                      setState(() => _selectedAddressId = defaultAddr.id);
-                      ref
-                              .read(selectedDeliveryAddressIdProvider.notifier)
-                              .state =
-                          defaultAddr.id;
-                    }
-                    if (_delivery == null && !_checkingDelivery) {
-                      _scheduleDeliveryCheck(defaultAddr.zipCode);
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                CheckoutDeliveryStatusRow(
-                  checkingDelivery: _checkingDelivery,
-                  delivery: _delivery,
-                  onOpenWaitlist: (pincode) =>
-                      showCheckoutWaitlistSheet(context, pincode),
-                ),
-                const Divider(height: 32),
                 CheckoutRxHoldCard(items: items),
-                Text(
-                  strings.couponCode,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                const SizedBox(height: 12),
+                _CheckoutSectionCard(
+                  icon: Icons.local_offer_outlined,
+                  title: strings.couponCode,
+                  child: CheckoutCouponSection(
+                    subtotal: subtotal,
+                    controller: _couponController,
+                    validating: _validatingCoupon,
+                    error: _couponError,
+                    onValidate: () => _validateCoupon(subtotal),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                CheckoutCouponSection(
-                  subtotal: subtotal,
-                  controller: _couponController,
-                  validating: _validatingCoupon,
-                  error: _couponError,
-                  onValidate: () => _validateCoupon(subtotal),
+                const SizedBox(height: 12),
+                _CheckoutSectionCard(
+                  icon: Icons.monetization_on_outlined,
+                  title: strings.kkCoins,
+                  child: CartPointsRow(
+                    subtotal: subtotal,
+                    loginRedirect: '/checkout',
+                  ),
                 ),
-                const Divider(height: 32),
-                Text(
-                  strings.kkCoins,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                const SizedBox(height: 12),
+                _CheckoutSectionCard(
+                  icon: Icons.credit_card_rounded,
+                  title: strings.paymentMethod,
+                  child: CheckoutPaymentSection(
+                    key: _paymentSectionKey,
+                    paymentMethod: _paymentMethod,
+                    delivery: _delivery,
+                    codConfirmationEnabled: codConfirmationEnabled,
+                    total: total.toDouble(),
+                    onPaymentMethodChanged: (val) =>
+                        setState(() => _paymentMethod = val),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                CartPointsRow(subtotal: subtotal, loginRedirect: '/checkout'),
-                const Divider(height: 32),
-                Text(
-                  strings.paymentMethod,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-                const SizedBox(height: 8),
-                CheckoutPaymentSection(
-                  key: _paymentSectionKey,
-                  paymentMethod: _paymentMethod,
-                  delivery: _delivery,
-                  codConfirmationEnabled: codConfirmationEnabled,
-                  total: total.toDouble(),
-                  onPaymentMethodChanged: (val) =>
-                      setState(() => _paymentMethod = val),
-                ),
-                const Divider(height: 32),
+                const SizedBox(height: 12),
                 CheckoutSummaryCard(
                   subtotal: subtotal,
                   couponCode: promo.effectiveCouponDiscount > 0
@@ -331,7 +344,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
               ],
             );
           },
@@ -947,5 +960,65 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
       context.go('/order/${order.id}');
     }
+  }
+}
+
+class _CheckoutSectionCard extends StatelessWidget {
+  const _CheckoutSectionCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFDCEAE2)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D14382B),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryWash,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 15, color: AppColors.primaryDeep),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
   }
 }

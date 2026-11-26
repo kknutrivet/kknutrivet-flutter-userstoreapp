@@ -28,7 +28,7 @@ class StaticPageScreen extends StatelessWidget {
     StaticPageSection('Dispatch',
         'Orders placed before our daily cut-off are dispatched the same day. You will receive a confirmation with tracking details once your order ships.'),
     StaticPageSection('Delivery time',
-        'Most orders are delivered within 2-5 business days. Delivery timelines depend on your pincode.'),
+        'Most orders are delivered within 5-7 business days. Delivery timelines depend on your pincode.'),
     StaticPageSection('Charges',
         'Delivery charges are calculated at checkout based on your pincode and order value. Free delivery applies above the threshold shown for your pincode.'),
     StaticPageSection('Damaged or incorrect items',

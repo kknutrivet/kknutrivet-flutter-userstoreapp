@@ -1145,128 +1145,270 @@ Future<bool?> showCheckoutConfirmOrderDialog({
 }) {
   final isPayLater = paymentMethod == 'PAY_LATER';
   final isEmi = paymentMethod == 'EMI';
+  final titleText = isPartialCod
+      ? 'Confirm partial payment?'
+      : isCod
+      ? 'Place Cash on Delivery order?'
+      : isPayLater
+      ? 'Continue with Pay Later?'
+      : isEmi
+      ? 'Continue with EMI payment?'
+      : 'Proceed to online payment?';
+  final subtitleText = isPartialCod
+      ? 'Pay ₹${formatInr(partialAdvance)} now and ₹${formatInr(partialBalance)} on delivery. No COD fee.'
+      : isCod
+      ? 'Pay ₹${formatInr(total)} when your order arrives — nothing is charged now.'
+      : isPayLater
+      ? "You'll continue to Cashfree Pay Later options."
+      : isEmi
+      ? "You'll continue to Cashfree EMI plans."
+      : "You'll continue to the secure Cashfree payment page.";
+  final confirmLabel = isCod ? 'Place Order' : 'Confirm & Pay';
+  final headerIcon = isCod
+      ? Icons.local_shipping_outlined
+      : isPartialCod
+      ? Icons.payments_outlined
+      : Icons.verified_user_outlined;
+
   return showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(
-        isPartialCod
-            ? 'Pay advance and the balance on delivery?'
-            : isCod
-            ? 'Place Cash on Delivery order?'
-            : isPayLater
-            ? 'Continue with Pay Later?'
-            : isEmi
-            ? 'Continue with EMI payment?'
-            : 'Proceed to online payment?',
-        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isPartialCod
-                ? 'Pay ₹${formatInr(partialAdvance)} now and ₹${formatInr(partialBalance)} on delivery. No COD fee.'
-                : isCod
-                ? 'Pay ₹${formatInr(total)} when your order arrives — nothing is charged now.'
-                : isPayLater
-                ? "You'll continue to Cashfree Pay Later options."
-                : isEmi
-                ? "You'll continue to Cashfree EMI plans."
-                : "You'll continue to the secure Cashfree payment page.",
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$cartCount ${cartCount == 1 ? 'item' : 'items'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryWash,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    headerIcon,
+                    size: 20,
+                    color: AppColors.primaryDeep,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        titleText,
+                        style: AppTheme.serif(
+                          fontSize: 17.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '₹${formatInr(total)}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDeep,
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitleText,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 16),
-                const Text(
-                  'Delivering to',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  address.fullName,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  '${address.formattedAddress}, ${address.city}, ${address.state} - ${address.zipCode}\nMobile: ${address.phone}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop(false);
-                    onChangeAddress();
-                  },
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(48, 36),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: const Text(
-                    'Change address',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAF8),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFDCEAE2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: const Color(0xFFDCEAE2)),
+                        ),
+                        child: Text(
+                          '$cartCount ${cartCount == 1 ? 'item' : 'items'}',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '₹${formatInr(total)}',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primaryDeep,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 18, color: Color(0xFFDCEAE2)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'DELIVERING TO',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.7,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          Navigator.of(ctx).pop(false);
+                          onChangeAddress();
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 2),
+                          child: Text(
+                            'Change',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDeep,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    address.fullName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${address.formattedAddress}, ${address.city}, ${address.state} - ${address.zipCode}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.phone_outlined,
+                        size: 12.5,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        address.phone,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 46,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    height: 46,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryDeep,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          confirmLabel,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primaryDeep),
-          child: const Text('Confirm & Place Order'),
-        ),
-      ],
     ),
   );
 }
@@ -1446,19 +1588,20 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE2ECE6), width: 1)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: Color(0xFFDCEAE2), width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x0C173C32),
-            blurRadius: 10,
-            offset: Offset(0, -3),
+            color: Color(0x14173C32),
+            blurRadius: 18,
+            offset: Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1482,14 +1625,16 @@ class CheckoutStickyPlaceOrderBar extends StatelessWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(
                   minWidth: double.infinity,
-                  minHeight: 48,
+                  minHeight: 52,
                 ),
                 child: ElevatedButton(
                   onPressed: (canPlace && !submitting) ? onPlaceOrder : null,
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDeep,
+                    foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: submitting

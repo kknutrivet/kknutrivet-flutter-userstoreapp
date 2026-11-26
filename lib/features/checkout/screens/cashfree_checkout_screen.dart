@@ -34,12 +34,28 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
   String? _error;
   bool _resolved = false;
 
+  static const String _hideWebChromeJs = '''
+(function() {
+  if (document.getElementById('kk-app-hide-chrome')) return;
+  var style = document.createElement('style');
+  style.id = 'kk-app-hide-chrome';
+  style.textContent = 'header, [data-site-header], .site-header, .mobile-app-header, nav, footer, [aria-label="Mobile navigation"], [aria-label="Bottom navigation"] { display: none !important; } body, main { padding-top: 0 !important; padding-bottom: 0 !important; }';
+  (document.head || document.documentElement).appendChild(style);
+})();
+''';
+
+  void _hideWebChromeIfOwnHost(String url) {
+    if (url.contains('/checkout/cashfree-session')) {
+      _controller.runJavaScript(_hideWebChromeJs).catchError((_) {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     final cleanMode = widget.mode.toLowerCase().contains('sandbox') ? 'sandbox' : 'production';
     final sessionUrl =
-        '${AppConfig.apiBaseUrl}/checkout/cashfree-session?sessionId=${Uri.encodeQueryComponent(widget.paymentSessionId)}&mode=$cleanMode&orderId=${Uri.encodeQueryComponent(widget.orderId)}';
+        '${AppConfig.apiBaseUrl}/checkout/cashfree-session?sessionId=${Uri.encodeQueryComponent(widget.paymentSessionId)}&mode=$cleanMode&orderId=${Uri.encodeQueryComponent(widget.orderId)}&app=1';
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -48,10 +64,12 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
           onWebResourceError: (error) {
             if (mounted && error.isForMainFrame == true) setState(() { _loading = false; _error = 'Could not load secure payment. Retry or return to your saved order.'; });
           },
-          onPageStarted: (_) {
+          onPageStarted: (url) {
+            _hideWebChromeIfOwnHost(url);
             if (mounted) setState(() => _loading = true);
           },
-          onPageFinished: (_) {
+          onPageFinished: (url) {
+            _hideWebChromeIfOwnHost(url);
             if (mounted) setState(() => _loading = false);
           },
           onNavigationRequest: (request) async {
@@ -107,27 +125,20 @@ class _CashfreeCheckoutScreenState extends State<CashfreeCheckoutScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Complete payment'),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              _resolved = true;
-              Navigator.of(context).pop(false);
-            },
-          ),
-        ),
+        backgroundColor: const Color(0xFF07583F),
         body: SafeArea(
-          top: false,
-          child: Stack(
-            children: [
-              WebViewWidget(controller: _controller),
-              if (_error != null) Positioned.fill(child: ColoredBox(color: Colors.white, child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), TextButton(onPressed: () { setState(() { _error = null; _loading = true; }); _controller.reload(); }, child: const Text('Retry')), TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Return to order'))]))))),
-              if (_loading)
-                const Center(
-                  child: AppLoader(size: 32, strokeWidth: 3),
-                ),
-            ],
+          child: ColoredBox(
+            color: Colors.white,
+            child: Stack(
+              children: [
+                WebViewWidget(controller: _controller),
+                if (_error != null) Positioned.fill(child: ColoredBox(color: Colors.white, child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), TextButton(onPressed: () { setState(() { _error = null; _loading = true; }); _controller.reload(); }, child: const Text('Retry')), TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Return to order'))]))))),
+                if (_loading)
+                  const Center(
+                    child: AppLoader(size: 32, strokeWidth: 3),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

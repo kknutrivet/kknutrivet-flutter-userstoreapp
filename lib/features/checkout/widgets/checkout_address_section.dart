@@ -276,7 +276,6 @@ class CheckoutAddressSection extends ConsumerWidget {
                     TextButton.icon(
                       onPressed: () {
                         AppHaptics.tap();
-                        onToggleExpanded();
                         showCheckoutAddressPickerSheet(
                           context: context,
                           ref: ref,

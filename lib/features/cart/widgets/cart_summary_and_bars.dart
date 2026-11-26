@@ -137,32 +137,53 @@ class CartFreeDeliveryBar extends StatelessWidget {
     final qualifies = remaining <= 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: qualifies
-            ? AppColors.primary.withValues(alpha: 0.08)
-            : AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: qualifies
+              ? const [Color(0xFFECFDF5), Color(0xFFF7FCF9)]
+              : const [Colors.white, Color(0xFFF8FAF9)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: qualifies
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : AppColors.border,
+              ? AppColors.primary.withValues(alpha: 0.35)
+              : const Color(0xFFD9E6DE),
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A14382B),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                qualifies
-                    ? Icons.local_shipping
-                    : Icons.local_shipping_outlined,
-                size: 16,
-                color: qualifies ? AppColors.primary : AppColors.textSecondary,
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: qualifies
+                      ? AppColors.primaryDeep
+                      : AppColors.primaryWash,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  qualifies
+                      ? Icons.check_rounded
+                      : Icons.local_shipping_outlined,
+                  size: 15,
+                  color: qualifies ? Colors.white : AppColors.primaryDeep,
+                ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   qualifies
@@ -170,9 +191,9 @@ class CartFreeDeliveryBar extends StatelessWidget {
                       : '₹${formatInr(remaining)} away from FREE delivery',
                   style: TextStyle(
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     color: qualifies
-                        ? AppColors.primaryDark
+                        ? AppColors.primaryDeep
                         : AppColors.textPrimary,
                   ),
                 ),
@@ -742,12 +763,20 @@ class CartStickyCheckoutBar extends ConsumerWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: Color(0xFFDCEAE2))),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x14173C32),
+            blurRadius: 18,
+            offset: Offset(0, -4),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(
             children: [
               Column(
@@ -758,26 +787,50 @@ class CartStickyCheckoutBar extends ConsumerWidget {
                     'Total',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     '₹${formatInr(total)}',
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
               const Spacer(),
               SizedBox(
-                width: 180,
+                width: 190,
+                height: 48,
                 child: ElevatedButton(
                   onPressed: blocked
                       ? null
                       : () => _handleCheckout(context, ref),
-                  child: const Text('Checkout'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDeep,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Checkout',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_rounded, size: 17),
+                    ],
+                  ),
                 ),
               ),
             ],

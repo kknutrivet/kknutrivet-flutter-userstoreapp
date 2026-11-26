@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "446688659304-57amkdddh1rpj9tk4rse6t040k3s9dae.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.admin",
+            "certificate_hash": "9d746825cc408eab78230431ff5543f6e320f409"
+          }
+        },
+        {
           "client_id": "446688659304-k1lmlnre2qm7pnvdvregt8229ell4eqp.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -27,6 +35,14 @@
           "android_info": {
             "package_name": "com.kknutrivet.admin",
             "certificate_hash": "f520bf30af4838bd1dd6cef92f9feb84b314e0d9"
+          }
+        },
+        {
+          "client_id": "446688659304-vo05c9cjla7dghe4m60179u6db8331ff.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.admin",
+            "certificate_hash": "84f7e4864dcfc10de9ef13f695e9ba94492ba86d"
           }
         },
         {
@@ -66,11 +82,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "446688659304-4q458h3rjn6ijfko2nqjqv786s931l8p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.delivery",
+            "certificate_hash": "3510cf84ad94df34aca99f405332977b25279f0d"
+          }
+        },
+        {
           "client_id": "446688659304-lokar65esnl4cejk3a4du8goj7vdg544.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.kknutrivet.delivery",
             "certificate_hash": "f520bf30af4838bd1dd6cef92f9feb84b314e0d9"
+          }
+        },
+        {
+          "client_id": "446688659304-r6gkmu56r0bos95na24km38ugqa8qgdc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.delivery",
+            "certificate_hash": "9d746825cc408eab78230431ff5543f6e320f409"
           }
         },
         {
@@ -110,6 +142,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "446688659304-afoossfrlr1158vh04a015hqls08tho3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.shop",
+            "certificate_hash": "9d746825cc408eab78230431ff5543f6e320f409"
+          }
+        },
+        {
+          "client_id": "446688659304-cf5it26spor74rcif6c17hhilmqh73lc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.shop",
+            "certificate_hash": "a0a4204051f81b0776e6db6e07791eccc0ffe650"
+          }
+        },
+        {
           "client_id": "446688659304-ecu1s54m49bkk7r77re0fmvo80unvgtr.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -118,11 +166,71 @@
           }
         },
         {
+          "client_id": "446688659304-kl97kad49m226c4ptp97uoooi5gqcduh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.shop",
+            "certificate_hash": "a9c2cd2cb7628c723ec9aa53474d990255cde054"
+          }
+        },
+        {
           "client_id": "446688659304-on5tsguq2d86nftotkkrdmve13ms83hc.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.kknutrivet.shop",
             "certificate_hash": "7421c70f76efeb7ea7effdf0ca3f93bd73f9690b"
+          }
+        },
+        {
+          "client_id": "446688659304-cql9915fjkl985vqm88nhe3pdbpo04bf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALMd83p2VU0K5sJkbcNzlsn0CrFk33l9o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "446688659304-cql9915fjkl985vqm88nhe3pdbpo04bf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "446688659304-l8840u8ib98a7b5pas4re0g36hikiot2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kknutrivet.admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446688659304:android:b21b536f3e9cc6fcc0f8dd",
+        "android_client_info": {
+          "package_name": "com.kknutrivet.vendor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "446688659304-ejugufc97n3piu0be1c9ov1giottr5sk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.vendor",
+            "certificate_hash": "f520bf30af4838bd1dd6cef92f9feb84b314e0d9"
+          }
+        },
+        {
+          "client_id": "446688659304-u52780dmakjel482d3ico4no46v4bt6b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.vendor",
+            "certificate_hash": "bcda93fad762cf81109cce1db876a1e6a5b66540"
           }
         },
         {

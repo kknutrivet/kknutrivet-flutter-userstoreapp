@@ -510,40 +510,36 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
             ),
           ],
         ),
-        padding: EdgeInsets.fromLTRB(
-          16,
-          10,
-          16,
-          MediaQuery.of(context).viewInsets.bottom > 0
-              ? 10
-              : MediaQuery.of(context).padding.bottom + 10,
-        ),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_submitError != null)
-                Semantics(
-                  liveRegion: true,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      _submitError!,
-                      style: const TextStyle(color: AppColors.error),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_submitError != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        _submitError!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
                     ),
                   ),
+                AppButton(
+                  label: isEdit ? 'Update Address' : 'Save Delivery Address',
+                  icon: const Icon(Icons.check_rounded, size: 16),
+                  variant: AppButtonVariant.primary,
+                  size: AppButtonSize.md,
+                  borderRadius: 12,
+                  fullWidth: true,
+                  isLoading: _saving,
+                  onPressed: _saving ? null : _save,
                 ),
-              AppButton(
-                label: isEdit ? 'Update Address' : 'Save Delivery Address',
-                icon: const Icon(Icons.check_rounded, size: 16),
-                variant: AppButtonVariant.primary,
-                size: AppButtonSize.lg,
-                fullWidth: true,
-                isLoading: _saving,
-                onPressed: _saving ? null : _save,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -263,7 +263,7 @@ void main() {
 
       final delivery = await DeliveryService(api).checkPincode('751007');
       expect(delivery.serviceable, isTrue);
-      expect(delivery.etaLabel, '2-3 days');
+      expect(delivery.etaLabel, '5-7 days');
 
       final settings = await SettingsService(api).fetchSettings();
       expect(settings.freeDeliveryThreshold, 500);

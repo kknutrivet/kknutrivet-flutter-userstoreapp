@@ -98,11 +98,13 @@ class FirebaseAuthService {
       if (e.code == 'sign_in_canceled') {
         return null;
       }
-      if (e.message != null && e.message!.contains('ApiException: 10')) {
+      final msg = e.message ?? '';
+      if (msg.contains('ApiException: 10') ||
+          RegExp(r'(?:^|\s)\w+:\s*10(?::|\s|$)').hasMatch(msg)) {
         throw FirebaseAuthException(
           code: 'developer-error-10',
           message:
-              'Google Sign-In configuration error (ApiException 10). Keystore SHA-1 must be registered in Firebase Console.',
+              'Google Sign-In configuration error (code 10). Play App Signing SHA-1 must be registered in Firebase Console.',
         );
       }
       throw FirebaseAuthException(

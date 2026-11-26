@@ -25,8 +25,7 @@ class DeliveryInfo {
 
   String get etaLabel {
     if (!serviceable) return '';
-    if (deliveryDays == deliveryDaysMax) return '$deliveryDays day${deliveryDays == 1 ? '' : 's'}';
-    return '$deliveryDays-$deliveryDaysMax days';
+    return '5-7 days';
   }
 
   factory DeliveryInfo.fromJson(Map<String, dynamic> json) => DeliveryInfo(

@@ -92,7 +92,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Berhampur · 760001'), findsOneWidget);
-      expect(find.text('· 2-3 days'), findsOneWidget);
+      expect(find.text('· 5-7 days'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
       expect(find.text('Free delivery ₹500+'), findsOneWidget);
     });

@@ -843,8 +843,10 @@ class HomePincodeBottomSheet extends ConsumerStatefulWidget {
 
 class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet> {
   late final TextEditingController _controller;
+  late final ScrollController _addressScrollController;
   bool _checking = false;
   bool _detectingLocation = false;
+  bool _editingPincode = false;
   String? _error;
 
   @override
@@ -852,11 +854,13 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
     super.initState();
     final existing = ref.read(deliveryPincodeProvider).value ?? '';
     _controller = TextEditingController(text: existing);
+    _addressScrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _addressScrollController.dispose();
     super.dispose();
   }
 
@@ -923,17 +927,41 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
       await ref.read(deliveryPincodeProvider.notifier).setPincode(pin);
       ref.invalidate(deliveryEtaProvider);
       await ref.read(deliveryEtaProvider.future);
+      if (mounted) {
+        setState(() => _editingPincode = false);
+      }
     } catch (_) {
       // DeliveryPincodeNotifier still persists the pincode locally.
+      if (mounted) {
+        setState(() => _editingPincode = false);
+      }
     } finally {
       if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _openAddNewAddress() async {
+    Navigator.of(context).pop();
+    final newAddr = await context.push<Address?>('/addresses/new');
+    ref.invalidate(addressesProvider);
+    if (newAddr != null) {
+      ref.read(selectedDeliveryAddressIdProvider.notifier).state = newAddr.id;
+      if (RegExp(r'^\d{6}$').hasMatch(newAddr.zipCode.trim())) {
+        await ref
+            .read(deliveryPincodeProvider.notifier)
+            .setPincode(newAddr.zipCode.trim());
+        ref.invalidate(deliveryEtaProvider);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final currentPincode = ref.watch(deliveryPincodeProvider).value;
+    final currentPincode = ref.watch(deliveryPincodeProvider).value?.trim();
+    final hasValidPincode =
+        currentPincode != null && RegExp(r'^\d{6}$').hasMatch(currentPincode);
+    final showPincodeEditor = !hasValidPincode || _editingPincode;
     final etaAsync = ref.watch(deliveryEtaProvider);
     final addresses =
         ref.watch(addressesProvider).valueOrNull ?? const <Address>[];
@@ -941,17 +969,17 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
     final user = ref.watch(authProvider).valueOrNull;
     final isLoggedIn = user != null;
     final String? effectiveSelectedAddressId = selectedAddressId ??
-        (currentPincode != null && currentPincode.trim().isNotEmpty
+        (hasValidPincode
             ? (addresses
                         .where(
                           (a) =>
                               a.isDefault &&
-                              a.zipCode.trim() == currentPincode.trim(),
+                              a.zipCode.trim() == currentPincode,
                         )
                         .firstOrNull ??
                     addresses
                         .where(
-                          (a) => a.zipCode.trim() == currentPincode.trim(),
+                          (a) => a.zipCode.trim() == currentPincode,
                         )
                         .firstOrNull)
                 ?.id
@@ -964,179 +992,643 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
           maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),
         decoration: const BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: EdgeInsets.fromLTRB(
-          20,
-          10,
-          20,
-          24 + MediaQuery.paddingOf(context).bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.borderStrong,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag handle + web-style header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 16, 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryWash,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.location_on_outlined,
-                      size: 20,
-                      color: AppColors.primaryDeep,
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD2DED8),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          addresses.isNotEmpty
-                              ? 'Select delivery location'
-                              : 'Check delivery & speed',
-                          style: AppTheme.serif(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEAF5EF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.location_on_outlined,
+                          size: 20,
+                          color: AppColors.primaryDeep,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              addresses.isNotEmpty
+                                  ? 'Select delivery location'
+                                  : 'Check delivery & speed',
+                              style: const TextStyle(
+                                fontSize: 17.5,
+                                fontWeight: FontWeight.w800,
+                                height: 1.2,
+                                letterSpacing: -0.2,
+                                color: Color(0xFF102A23),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              addresses.isNotEmpty
+                                  ? 'Choose a saved address or enter a 6-digit pincode'
+                                  : 'Enter your 6-digit pincode for dispatch ETA & COD availability',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                height: 1.35,
+                                color: Color(0xFF5B7268),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Material(
+                        color: const Color(0xFFF3F8F5),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => Navigator.of(context).pop(),
+                          child: const SizedBox(
+                            width: 34,
+                            height: 34,
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: Color(0xFF4A6359),
+                            ),
                           ),
                         ),
-                        Text(
-                          addresses.isNotEmpty
-                              ? 'Choose a saved address or enter a 6-digit pincode'
-                              : 'Enter your 6-digit pincode for dispatch ETA & COD availability',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close delivery check',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, size: 20),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              if (addresses.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'SAVED ADDRESSES (${addresses.length})',
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: AppColors.primaryDeep,
-                      ),
-                    ),
-                    if (isLoggedIn)
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () async {
-                          Navigator.of(context).pop();
-                          final newAddr =
-                              await context.push<Address?>('/addresses/new');
-                          ref.invalidate(addressesProvider);
-                          if (newAddr != null) {
-                            ref
-                                    .read(
-                                      selectedDeliveryAddressIdProvider
-                                          .notifier,
-                                    )
-                                    .state =
-                                newAddr.id;
-                            if (RegExp(r'^\d{6}$')
-                                .hasMatch(newAddr.zipCode.trim())) {
-                              await ref
-                                  .read(deliveryPincodeProvider.notifier)
-                                  .setPincode(newAddr.zipCode.trim());
-                              ref.invalidate(deliveryEtaProvider);
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.add_rounded, size: 15),
-                        label: const Text(
-                          'Add',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                  ],
+            ),
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFEDF3EF),
+            ),
+            // Body
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  14,
+                  20,
+                  20 + MediaQuery.paddingOf(context).bottom,
                 ),
-                const SizedBox(height: 8),
-                for (final addr in addresses) ...[
-                  Builder(
-                    builder: (context) {
-                      final isSelected = effectiveSelectedAddressId != null &&
-                          effectiveSelectedAddressId == addr.id;
-                      final titleLabel =
-                          (addr.label != null && addr.label!.trim().isNotEmpty)
-                              ? '${addr.label!.trim()} · ${addr.fullName}'
-                              : addr.fullName;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Material(
-                          color: isSelected
-                              ? AppColors.primaryWashFaint
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          child: InkWell(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (addresses.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'SAVED ADDRESSES (${addresses.length})',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: AppColors.primaryDeep,
+                            ),
+                          ),
+                          if (isLoggedIn)
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primaryDeep,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: _openAddNewAddress,
+                              icon: const Icon(Icons.add_rounded, size: 15),
+                              label: const Text(
+                                'Add',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 245),
+                        child: Scrollbar(
+                          controller: _addressScrollController,
+                          thumbVisibility: addresses.length > 2,
+                          radius: const Radius.circular(4),
+                          thickness: 4,
+                          child: ListView.separated(
+                            controller: _addressScrollController,
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.only(right: 6),
+                            itemCount: addresses.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 9),
+                            itemBuilder: (context, index) {
+                              final addr = addresses[index];
+                              final isSelected =
+                                  effectiveSelectedAddressId != null &&
+                                      effectiveSelectedAddressId == addr.id;
+                              final titleLabel = (addr.label != null &&
+                                      addr.label!.trim().isNotEmpty)
+                                  ? '${addr.label!.trim()} · ${addr.fullName}'
+                                  : addr.fullName;
+                              return Material(
+                                color: isSelected
+                                    ? const Color(0xFFF1F8F4)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () => _selectSavedAddress(addr),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 11,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.primaryDeep
+                                            : const Color(0xFFDCE6E0),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 1.5),
+                                          child: Container(
+                                            width: 18,
+                                            height: 18,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppColors.primaryDeep
+                                                    : const Color(0xFFB7C7BF),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: isSelected
+                                                ? Container(
+                                                    width: 10,
+                                                    height: 10,
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                      color:
+                                                          AppColors.primaryDeep,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      titleLabel,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 13.5,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.w800
+                                                            : FontWeight.w700,
+                                                        color: const Color(
+                                                          0xFF102A23,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (addr.zipCode
+                                                      .trim()
+                                                      .isNotEmpty) ...[
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      addr.zipCode.trim(),
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Color(
+                                                          0xFF5B7268,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                '${addr.formattedAddress}, ${addr.city}${addr.state.trim().isNotEmpty ? ", ${addr.state.trim()}" : ""}, ${addr.zipCode}',
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  height: 1.35,
+                                                  color: Color(0xFF5B7268),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      if (isLoggedIn) ...[
+                        const SizedBox(height: 12),
+                        CustomPaint(
+                          painter: _DashedRRectPainter(
+                            color: AppColors.primaryDeep.withValues(alpha: 0.5),
+                            radius: 14,
+                          ),
+                          child: Material(
+                            color: const Color(0xFFF4FAF6),
                             borderRadius: BorderRadius.circular(14),
-                            onTap: () => _selectSavedAddress(addr),
-                            child: Container(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: _openAddNewAddress,
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '+ Add new address',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryDeep,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                    ],
+                    // Compact web-style pincode status bar OR expandable 6-digit editor
+                    if (!showPincodeEditor) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFDCE6E0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0D102A23),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 18,
+                              color: AppColors.primaryDeep,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      'Delivering to $currentPincode',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF102A23),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    size: 16,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(6),
+                              onTap: () {
+                                _controller.text = currentPincode;
+                                setState(() {
+                                  _editingPincode = true;
+                                  _error = null;
+                                });
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  'Change',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDeep,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.primaryDeep,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      if (addresses.isNotEmpty) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'CHECK BY PINCODE / GPS',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                                color: Color(0xFF5B7268),
+                              ),
+                            ),
+                            if (hasValidPincode)
+                              InkWell(
+                                borderRadius: BorderRadius.circular(6),
+                                onTap: () => setState(() {
+                                  _editingPincode = false;
+                                  _error = null;
+                                }),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF5B7268),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              keyboardType: TextInputType.number,
+                              maxLength: 6,
+                              autofocus: addresses.isEmpty || _editingPincode,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              onSubmitted: (_) => _submitPincode(),
+                              decoration: InputDecoration(
+                                counterText: '',
+                                hintText: 'Enter 6-digit pincode',
+                                errorText: _error,
+                                prefixIcon: const Icon(
+                                  Icons.pin_drop_outlined,
+                                  size: 18,
+                                  color: AppColors.primaryDeep,
+                                ),
+                                suffixIcon: _detectingLocation
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(12),
+                                        child: SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primaryDeep,
+                                          ),
+                                        ),
+                                      )
+                                    : IconButton(
+                                        tooltip: 'Use current location',
+                                        icon: const Icon(
+                                          Icons.my_location_rounded,
+                                          size: 19,
+                                          color: AppColors.primaryDeep,
+                                        ),
+                                        onPressed: _detectCurrentLocation,
+                                      ),
+                                filled: true,
+                                fillColor: const Color(0xFFF6FAF8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFDCE6E0),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFDCE6E0),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primaryDeep,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            height: 48,
+                            child: FilledButton(
+                              onPressed: _checking ? null : _submitPincode,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primaryDeep,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _checking
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Check',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          ActionChip(
+                            avatar: const Icon(
+                              Icons.my_location_rounded,
+                              size: 14,
+                              color: AppColors.primaryDeep,
+                            ),
+                            label: Text(
+                              _detectingLocation
+                                  ? 'Detecting GPS…'
+                                  : 'Use Current GPS Location',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ),
+                            backgroundColor: AppColors.primaryWash,
+                            side: const BorderSide(
+                              color: AppColors.primaryWashDeep,
+                            ),
+                            onPressed: _detectingLocation
+                                ? null
+                                : _detectCurrentLocation,
+                          ),
+                          for (final preset in const [
+                            ('Hyderabad · 500081', '500081'),
+                            ('Brahmapur · 760004', '760004'),
+                            ('Bhubaneswar · 751001', '751001'),
+                          ])
+                            ActionChip(
+                              label: Text(
+                                preset.$1,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              backgroundColor: AppColors.primaryWashFaint,
+                              side: const BorderSide(
+                                color: AppColors.primaryWashDeep,
+                              ),
+                              onPressed: () {
+                                _controller.text = preset.$2;
+                                _submitPincode();
+                              },
+                            ),
+                        ],
+                      ),
+                      if (hasValidPincode) ...[
+                        const SizedBox(height: 12),
+                        etaAsync.when(
+                          data: (info) {
+                            final isBrahmapur =
+                                currentPincode.startsWith('7600');
+                            final serviceable = info?.serviceable ?? true;
+                            return Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
+                                color: serviceable
+                                    ? AppColors.primaryWashFaint
+                                    : AppColors.errorBg,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primaryDeep
-                                      : AppColors.border,
-                                  width: isSelected ? 1.5 : 1,
+                                  color: serviceable
+                                      ? AppColors.primaryWashDeep
+                                      : AppColors.error.withValues(alpha: 0.3),
                                 ),
                               ),
                               child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Icon(
-                                    isSelected
-                                        ? Icons.radio_button_checked_rounded
-                                        : Icons.radio_button_unchecked_rounded,
-                                    size: 19,
-                                    color: isSelected
+                                    serviceable
+                                        ? Icons.check_circle_rounded
+                                        : Icons.info_outline_rounded,
+                                    size: 20,
+                                    color: serviceable
                                         ? AppColors.primaryDeep
-                                        : AppColors.textTertiary,
+                                        : AppColors.error,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -1144,352 +1636,94 @@ class _HomePincodeBottomSheetState extends ConsumerState<HomePincodeBottomSheet>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                titleLabel,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.w800
-                                                      : FontWeight.w700,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                              ),
-                                            ),
-                                            if (addr.zipCode.trim().isNotEmpty)
-                                              Text(
-                                                addr.zipCode.trim(),
-                                                style: const TextStyle(
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w600,
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
                                         Text(
-                                          '${addr.formattedAddress}, ${addr.city}${addr.state.trim().isNotEmpty ? ", ${addr.state.trim()}" : ""}, ${addr.zipCode}',
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
+                                          isBrahmapur
+                                              ? '⚡ 24h Local Dispatch to $currentPincode'
+                                              : serviceable
+                                                  ? 'Delivering to ${info?.city ?? currentPincode} (${info?.etaLabel.isNotEmpty == true ? info!.etaLabel : "5-7 days"})'
+                                                  : 'Currently unserviceable for $currentPincode',
                                           style: const TextStyle(
-                                            fontSize: 12,
-                                            height: 1.35,
-                                            color: AppColors.textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
                                           ),
                                         ),
+                                        if (info != null &&
+                                            info.message.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            info.message,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
+                            );
+                          },
+                          loading: () => const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: LinearProgressIndicator(
+                              color: AppColors.primaryDeep,
+                              backgroundColor: AppColors.primaryWash,
                             ),
                           ),
+                          error: (_, _) => const SizedBox.shrink(),
                         ),
-                      );
-                    },
-                  ),
-                ],
-                if (isLoggedIn) ...[
-                  const SizedBox(height: 2),
-                  Material(
-                    color: const Color(0xFFF4FAF6),
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        final newAddr =
-                            await context.push<Address?>('/addresses/new');
-                        ref.invalidate(addressesProvider);
-                        if (newAddr != null) {
-                          ref
-                                  .read(
-                                    selectedDeliveryAddressIdProvider.notifier,
-                                  )
-                                  .state =
-                              newAddr.id;
-                          if (RegExp(r'^\d{6}$')
-                              .hasMatch(newAddr.zipCode.trim())) {
-                            await ref
-                                .read(deliveryPincodeProvider.notifier)
-                                .setPincode(newAddr.zipCode.trim());
-                            ref.invalidate(deliveryEtaProvider);
-                          }
-                        }
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 11,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.primaryDeep.withValues(
-                              alpha: 0.45,
-                            ),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          '+ Add new address',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryDeep,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                const Divider(height: 16),
-                const Text(
-                  'OR CHECK BY PINCODE / GPS',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    color: AppColors.textSecondary,
-                  ),
+                      ],
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 8),
-              ] else
-                const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      autofocus: addresses.isEmpty,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onSubmitted: (_) => _submitPincode(),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: 'e.g. 500081',
-                        errorText: _error,
-                        prefixIcon: const Icon(
-                          Icons.pin_drop_outlined,
-                          size: 18,
-                          color: AppColors.primaryDeep,
-                        ),
-                        suffixIcon: _detectingLocation
-                            ? const Padding(
-                                padding: EdgeInsets.all(12),
-                                child: SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.primaryDeep,
-                                  ),
-                                ),
-                              )
-                            : IconButton(
-                                tooltip: 'Use current location',
-                                icon: const Icon(
-                                  Icons.my_location_rounded,
-                                  size: 19,
-                                  color: AppColors.primaryDeep,
-                                ),
-                                onPressed: _detectCurrentLocation,
-                              ),
-                        filled: true,
-                        fillColor: AppColors.surfaceAlt,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: AppColors.borderStrong),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: AppColors.borderStrong),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.primaryDeep,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    height: 48,
-                    child: FilledButton(
-                      onPressed: _checking ? null : _submitPincode,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primaryDeep,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _checking
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Check',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ActionChip(
-                    avatar: const Icon(
-                      Icons.my_location_rounded,
-                      size: 14,
-                      color: AppColors.primaryDeep,
-                    ),
-                    label: Text(
-                      _detectingLocation
-                          ? 'Detecting GPS…'
-                          : 'Use Current GPS Location',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryDeep,
-                      ),
-                    ),
-                    backgroundColor: AppColors.primaryWash,
-                    side: const BorderSide(color: AppColors.primaryWashDeep),
-                    onPressed:
-                        _detectingLocation ? null : _detectCurrentLocation,
-                  ),
-                  for (final preset in const [
-                    ('Hyderabad · 500081', '500081'),
-                    ('Brahmapur · 760004', '760004'),
-                    ('Bhubaneswar · 751001', '751001'),
-                  ])
-                    ActionChip(
-                      label: Text(
-                        preset.$1,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      backgroundColor: AppColors.primaryWashFaint,
-                      side: const BorderSide(color: AppColors.primaryWashDeep),
-                      onPressed: () {
-                        _controller.text = preset.$2;
-                        _submitPincode();
-                      },
-                    ),
-                ],
-              ),
-              if (currentPincode != null && currentPincode.length == 6) ...[
-                const SizedBox(height: 14),
-                etaAsync.when(
-                  data: (info) {
-                    final isBrahmapur = currentPincode.startsWith('7600');
-                    final serviceable = info?.serviceable ?? true;
-                    return Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: serviceable
-                            ? AppColors.primaryWashFaint
-                            : AppColors.errorBg,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: serviceable
-                              ? AppColors.primaryWashDeep
-                              : AppColors.error.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            serviceable
-                                ? Icons.check_circle_rounded
-                                : Icons.info_outline_rounded,
-                            size: 20,
-                            color: serviceable
-                                ? AppColors.primaryDeep
-                                : AppColors.error,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isBrahmapur
-                                      ? '⚡ 24h Local Dispatch to $currentPincode'
-                                      : serviceable
-                                          ? 'Delivering to ${info?.city ?? currentPincode} (${info?.etaLabel.isNotEmpty == true ? info!.etaLabel : "Fast courier delivery"})'
-                                          : 'Currently unserviceable for $currentPincode',
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                if (info != null && info.message.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    info.message,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(
-                      color: AppColors.primaryDeep,
-                      backgroundColor: AppColors.primaryWash,
-                    ),
-                  ),
-                  error: (_, _) => const SizedBox.shrink(),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  const _DashedRRectPainter({
+    required this.color,
+    required this.radius,
+  });
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    const dashLength = 5.0;
+    const gapLength = 3.5;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = (distance + dashLength).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance += dashLength + gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.radius != radius;
   }
 }
