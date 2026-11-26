@@ -67,6 +67,7 @@ class VetInsightsScreen extends ConsumerWidget {
           style: AppTheme.serif(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),

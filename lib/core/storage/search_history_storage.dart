@@ -21,5 +21,13 @@ class SearchHistoryStorage {
     await LocalDatabase.instance.put(_key, current.take(_max).toList());
   }
 
+  Future<List<String>> remove(String query) async {
+    final trimmed = query.trim().toLowerCase();
+    final current = (await readAll()).toList()
+      ..removeWhere((q) => q.toLowerCase() == trimmed);
+    await LocalDatabase.instance.put(_key, current);
+    return current;
+  }
+
   Future<void> clear() => LocalDatabase.instance.delete(_key);
 }

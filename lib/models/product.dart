@@ -507,7 +507,7 @@ class HealthConcern {
 }
 
 /// Mirrors `SearchSuggestion` (hooks/nav/useSearchSuggestions.ts):
-/// `{ id, slug, name, brand, category, image }`.
+/// `{ id, slug, name, brand, category, image, isCombo, price, mrp }`.
 class SearchSuggestion {
   SearchSuggestion({
     required this.id,
@@ -516,6 +516,9 @@ class SearchSuggestion {
     this.brand,
     required this.category,
     this.image,
+    this.isCombo = false,
+    this.price,
+    this.mrp,
   });
 
   final String id;
@@ -524,6 +527,9 @@ class SearchSuggestion {
   final String? brand;
   final String category;
   final String? image;
+  final bool isCombo;
+  final double? price;
+  final double? mrp;
 
   /// Detail route this suggestion opens (website links suggestions to
   /// `productHref`, i.e. the canonical slug when present).
@@ -538,5 +544,8 @@ class SearchSuggestion {
         brand: json['brand']?.toString(),
         category: json['category']?.toString() ?? '',
         image: json['image']?.toString(),
+        isCombo: json['isCombo'] == true,
+        price: (json['price'] as num?)?.toDouble(),
+        mrp: (json['mrp'] as num?)?.toDouble(),
       );
 }

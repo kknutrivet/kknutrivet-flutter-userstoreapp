@@ -115,8 +115,6 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF07583F),
         foregroundColor: Colors.white,
-        iconTheme: IconThemeData(color: Colors.white),
-        actionsIconTheme: IconThemeData(color: Colors.white),
         elevation: 0,
         centerTitle: false,
         surfaceTintColor: Colors.transparent,

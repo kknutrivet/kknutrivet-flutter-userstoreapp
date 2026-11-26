@@ -293,6 +293,7 @@ class _AskDrPawScreenState extends ConsumerState<AskDrPawScreen> {
           ],
         ),
         backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [

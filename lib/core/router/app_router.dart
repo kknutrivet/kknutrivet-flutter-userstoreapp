@@ -369,7 +369,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/search',
         pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
           key: state.pageKey,
-          child: const SearchScreen(),
+          child: SearchScreen(
+            initialQuery:
+                state.uri.queryParameters['q'] ??
+                state.uri.queryParameters['search'],
+          ),
         ),
       ),
       GoRoute(

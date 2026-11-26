@@ -41,10 +41,10 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1500));
     await tester.pumpAndSettle();
 
-    // Still on screen, sitting right under the 56dp brand bar.
+    // Brand bar collapses on scroll, so the pinned search bar docks at the top.
     expect(searchText, findsOneWidget);
     final top = tester.getTopLeft(find.byType(HomeSearchField)).dy;
-    expect(top, greaterThanOrEqualTo(48));
-    expect(top, lessThan(56 + 62));
+    expect(top, greaterThanOrEqualTo(0));
+    expect(top, lessThan(24));
   });
 }
