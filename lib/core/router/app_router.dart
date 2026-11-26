@@ -37,6 +37,8 @@ import '../../features/consultations/screens/consultation_detail_screen.dart';
 import '../../features/consultations/screens/consultations_home_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/home/screens/main_shell.dart';
+import '../../features/offers/screens/offers_screen.dart';
+import '../../features/orders/screens/order_confirmation_screen.dart';
 import '../../features/orders/screens/order_detail_screen.dart';
 import '../../features/orders/screens/orders_screen.dart';
 import '../../features/pets/screens/pet_detail_screen.dart';
@@ -243,6 +245,51 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (_, _) => '/consultations',
       ),
       GoRoute(
+        path: '/care-chat/history',
+        redirect: (_, _) => '/consultations',
+      ),
+      GoRoute(
+        path: '/nutrition-calculator',
+        redirect: (_, _) => '/calculator',
+      ),
+      GoRoute(
+        path: '/dog-care-products',
+        redirect: (_, _) => '/products?animalType=Dog',
+      ),
+      GoRoute(
+        path: '/cat-care-products',
+        redirect: (_, _) => '/products?animalType=Cat',
+      ),
+      GoRoute(
+        path: '/cattle-health-products',
+        redirect: (_, _) => '/products?animalType=Cattle',
+      ),
+      GoRoute(
+        path: '/goat-health-products',
+        redirect: (_, _) => '/products?animalType=Goat%2FSheep',
+      ),
+      GoRoute(
+        path: '/poultry-health-products',
+        redirect: (_, _) => '/products?animalType=Poultry',
+      ),
+      for (final slug in const [
+        'about',
+        'contact',
+        'faq',
+        'privacy',
+        'terms',
+        'returns',
+        'return-policy',
+        'shipping',
+        'cod-policy',
+        'payments',
+        'security',
+      ])
+        GoRoute(
+          path: '/$slug',
+          redirect: (_, _) => '/info/$slug',
+        ),
+      GoRoute(
         path: '/health-concerns',
         redirect: (_, _) => '/diseases',
       ),
@@ -337,8 +384,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/offers',
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const OffersScreen(),
+        ),
+      ),
+      GoRoute(
         path: '/orders',
         builder: (context, state) => const OrdersScreen(),
+      ),
+      GoRoute(
+        path: '/orders/:id/confirmation',
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: OrderConfirmationScreen(orderId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/orders/:id',
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: OrderDetailScreen(id: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/order/:id',

@@ -167,6 +167,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onTap: () => context.push('/profile/coupons'),
                   ),
                   AppTile(
+                    icon: Icons.local_offer_outlined,
+                    iconBg: AppColors.primaryWash,
+                    iconColor: AppColors.primaryDeep,
+                    title: 'Offers & Deals',
+                    subtitle: 'Active promo codes, combos & discounts',
+                    onTap: () => context.push('/offers'),
+                  ),
+                  AppTile(
                     icon: Icons.location_on_outlined,
                     iconBg: AppColors.dogRailBg,
                     iconColor: AppColors.dogRailHeading,

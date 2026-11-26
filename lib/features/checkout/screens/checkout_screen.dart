@@ -821,7 +821,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         await ref.read(cartProvider.notifier).refresh();
         if (mounted) {
           showToast('Order placed successfully!');
-          context.go('/order/${order.id}');
+          context.go('/orders/${order.id}/confirmation');
         }
       }
     } on ApiException catch (e) {
@@ -938,7 +938,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       await ref.read(cartProvider.notifier).clear();
       if (!mounted) return;
       showToast('Payment successful! Order confirmed.');
-      context.go('/order/${order.id}');
+      context.go('/orders/${order.id}/confirmation');
     } else {
       _pendingOnlineOrderId = null;
       showToast(
