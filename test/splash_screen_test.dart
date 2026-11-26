@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:nvit_app/core/services/app_update_service.dart';
 import 'package:nvit_app/features/splash/screens/splash_screen.dart';
 import 'package:nvit_app/models/user.dart';
 import 'package:nvit_app/providers/app_providers.dart';
@@ -12,7 +14,7 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   testWidgets(
-    'SplashScreen places tagline beneath the logo and only the loader at the bottom',
+    'SplashScreen places the tagline and app version beneath the logo',
     (tester) async {
       tester.view.physicalSize = const Size(360 * 2, 780 * 2);
       tester.view.devicePixelRatio = 2.0;
@@ -46,6 +48,16 @@ void main() {
               () => _MockOnboardingNotifier(true),
             ),
             authProvider.overrideWith(() => _MockAuthNotifier()),
+            packageInfoProvider.overrideWith(
+              (ref) async => PackageInfo(
+                appName: 'KK Nutrivet',
+                packageName: 'com.kknutrivet.shop',
+                version: '1.0.1',
+                buildNumber: '4',
+                buildSignature: '',
+                installerStore: null,
+              ),
+            ),
           ],
           child: MaterialApp.router(routerConfig: router),
         ),
@@ -61,6 +73,7 @@ void main() {
         find.text('Nutrition. Wellness. Veterinary care.'),
         findsOneWidget,
       );
+      expect(find.text('Version 1.0.1'), findsOneWidget);
       expect(find.text('Care for every animal.'), findsNothing);
 
       // Verify company logo is displayed and not dr-paw mascot

@@ -19,6 +19,7 @@ class ForceUpdateScreen extends ConsumerStatefulWidget {
 
 class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
   bool _checking = false;
+  bool _startingUpdate = false;
 
   Future<void> _refreshStatus() async {
     if (_checking) return;
@@ -51,6 +52,19 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
       'https://wa.me/${HelpScreen.helpPhone}?text=${Uri.encodeComponent('Hi KK Nutrivet support, I need help with the app.')}',
     );
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _startUpdate(String playStoreUrl) async {
+    if (_startingUpdate) return;
+    setState(() => _startingUpdate = true);
+    try {
+      final nativeResult = await startImmediateInAppUpdate();
+      if (nativeResult == NativeUpdateAttempt.unavailable) {
+        await launchPlayStore(overrideUrl: playStoreUrl);
+      }
+    } finally {
+      if (mounted) setState(() => _startingUpdate = false);
+    }
   }
 
   @override
@@ -204,19 +218,21 @@ class _ForceUpdateScreenState extends ConsumerState<ForceUpdateScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              AppHaptics.selection();
-                              launchPlayStore(
-                                overrideUrl: config.playStoreUrl,
-                              );
-                            },
+                            onPressed: _startingUpdate
+                                ? null
+                                : () {
+                                    AppHaptics.selection();
+                                    _startUpdate(config.playStoreUrl);
+                                  },
                             icon: const Icon(
-                              Icons.shop_two_rounded,
+                              Icons.system_update_rounded,
                               size: 19,
                               color: Color(0xFF075B43),
                             ),
-                            label: const Text(
-                              'Update from Google Play',
+                            label: Text(
+                              _startingUpdate
+                                  ? 'Starting update…'
+                                  : 'Update now',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,

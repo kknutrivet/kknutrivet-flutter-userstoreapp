@@ -58,6 +58,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final packageInfo = ref.watch(packageInfoProvider).valueOrNull;
+    final version = packageInfo?.version.trim();
+    final versionLabel = version == null || version.isEmpty
+        ? null
+        : 'Version $version';
+
     return Scaffold(
       body: MascotWorldScene(
         shadowWidth: 160,
@@ -120,6 +126,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   letterSpacing: 0.5,
                 ),
               ),
+              if (versionLabel != null) ...[
+                const SizedBox(height: 10),
+                Semantics(
+                  label: 'App $versionLabel',
+                  child: Text(
+                    versionLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.68),
+                      letterSpacing: 0.35,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

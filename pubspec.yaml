@@ -2,7 +2,7 @@ name: nvit_app
 description: "KK Nutrivet - Animal Nutrition & Veterinary Care mobile app."
 publish_to: 'none'
 
-version: 1.0.1+4
+version: 1.0.2+5
 
 environment:
   sdk: ^3.14.0
@@ -40,6 +40,7 @@ dependencies:
   firebase_crashlytics: ^4.3.10
   device_info_plus: ^12.4.0
   package_info_plus: ^9.0.1
+  in_app_update: ^5.0.0
   lottie: ^3.6.1
   video_player: ^2.9.2
   geolocator: ^14.0.2

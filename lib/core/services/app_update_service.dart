@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,6 +12,12 @@ enum AppUpdateStatus {
   updateRequired,
   maintenance,
 }
+
+/// Result of attempting Android's native Google Play update flow.
+///
+/// The API is only offered by Google Play on Android. Callers use the
+/// Play Store link as a reliable fallback when it is unavailable.
+enum NativeUpdateAttempt { started, unavailable, cancelled }
 
 class AppUpdateCheckResult {
   const AppUpdateCheckResult({
@@ -126,4 +134,34 @@ Future<bool> launchPlayStore({String? overrideUrl}) async {
   } catch (_) {}
 
   return await launchUrl(webUri, mode: LaunchMode.externalApplication);
+}
+
+/// Opens Google Play's full-screen immediate update experience when possible.
+///
+/// This is intentionally only used for a server-mandated update. Google Play
+/// only exposes it to builds installed through Play, so sideloaded, debug, and
+/// unsupported devices fall back to the normal store handoff.
+Future<NativeUpdateAttempt> startImmediateInAppUpdate() async {
+  if (defaultTargetPlatform != TargetPlatform.android) {
+    return NativeUpdateAttempt.unavailable;
+  }
+
+  try {
+    final info = await InAppUpdate.checkForUpdate();
+    final canStart =
+        (info.updateAvailability == UpdateAvailability.updateAvailable ||
+            info.updateAvailability ==
+                UpdateAvailability.developerTriggeredUpdateInProgress) &&
+        info.immediateUpdateAllowed;
+    if (!canStart) return NativeUpdateAttempt.unavailable;
+
+    final result = await InAppUpdate.performImmediateUpdate();
+    return switch (result) {
+      AppUpdateResult.success => NativeUpdateAttempt.started,
+      AppUpdateResult.userDeniedUpdate => NativeUpdateAttempt.cancelled,
+      AppUpdateResult.inAppUpdateFailed => NativeUpdateAttempt.unavailable,
+    };
+  } catch (_) {
+    return NativeUpdateAttempt.unavailable;
+  }
 }

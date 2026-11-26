@@ -69,7 +69,7 @@ void main() {
 
       expect(find.text('Mandatory Update'), findsOneWidget);
       expect(find.text('A critical update is required to continue using KK Nutrivet.'), findsOneWidget);
-      expect(find.text('Update from Google Play'), findsOneWidget);
+      expect(find.text('Update now'), findsOneWidget);
       expect(find.textContaining('v1.0.0 (Build 1)'), findsOneWidget);
       expect(find.textContaining('v1.0.1 (Build 2)'), findsOneWidget);
     });
