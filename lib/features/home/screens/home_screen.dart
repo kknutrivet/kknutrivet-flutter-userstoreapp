@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -102,7 +103,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(selectedHomeAnimalProvider, (prev, next) {
+      if (prev != next &&
+          _scrollController.hasClients &&
+          _scrollController.offset > 0) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
     final selectedAnimal = ref.watch(selectedHomeAnimalProvider);
+    final animalTheme = homeAnimalThemeFor(selectedAnimal);
     final selectedEntry = findHomeAnimalEntry(selectedAnimal);
     final pets = ref.watch(homePetsProvider).valueOrNull;
     final preferredEntry = selectedEntry == null && pets != null && pets.isNotEmpty
@@ -116,15 +130,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ...kHomeAnimals.where((e) => e.value != preferredEntry.value),
               ]
             : kHomeAnimals;
+    final topInset = MediaQuery.paddingOf(context).top;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: AppColors.primaryDeep,
-            onRefresh: _onRefresh,
-            child: CustomScrollView(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              height: topInset,
+              color: animalTheme.headerBg,
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  RefreshIndicator(
+                    color: AppColors.primaryDeep,
+                    onRefresh: _onRefresh,
+                    child: CustomScrollView(
               controller: _scrollController,
               slivers: [
                 // 1. Cream Top Bar, Pinned Search & Pinned Species Tab Strip
@@ -240,6 +269,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
         ],
+      ),
+            ),
+          ],
+        ),
       ),
     );
   }

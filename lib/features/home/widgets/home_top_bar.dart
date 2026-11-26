@@ -79,19 +79,15 @@ class HomeBrandBar extends ConsumerWidget {
         : strings.setDeliveryLocation;
 
     return SliverAppBar(
-      pinned: true,
+      pinned: false,
       floating: false,
+      primary: false,
       backgroundColor: animalTheme.headerBg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       toolbarHeight: 54,
       titleSpacing: 14,
-      systemOverlayStyle: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
       flexibleSpace: AnimatedContainer(
         duration: const Duration(milliseconds: 280),
         color: animalTheme.headerBg,
@@ -680,14 +676,16 @@ class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
 }
 
 /// Tappable search pill that opens the full search screen (matches cream Blinkit-style HomeTopBar.tsx).
-class HomeSearchField extends StatelessWidget {
+class HomeSearchField extends ConsumerWidget {
   const HomeSearchField({super.key, this.storeTitle = ''});
   final String storeTitle;
 
   @override
-  Widget build(BuildContext context) {
-    final placeholder =
-        storeTitle.isNotEmpty ? 'Search in $storeTitle…' : 'Search products';
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final placeholder = strings.locale == AppLocale.en
+        ? (storeTitle.isNotEmpty ? 'Search in $storeTitle…' : 'Search products')
+        : strings.searchHint;
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
