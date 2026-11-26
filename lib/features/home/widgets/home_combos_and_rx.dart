@@ -218,20 +218,37 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
         clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFDFE7E1)),
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFD6E5DC)),
             borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1214382B),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Full-bleed white image area matching webapp HomeComboCard
-              SizedBox(
+              // Subtle mint-cream bundle stage
+              Container(
                 height: 112,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFFF3FAF6), Color(0xFFEAF5EE)],
+                  ),
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFFDFECE4)),
+                  ),
+                ),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    const ColoredBox(color: Colors.white),
                     if (combo.image != null && combo.image!.isNotEmpty)
                       AppNetworkImage(
                         imageUrl: combo.image,
@@ -248,18 +265,26 @@ class _HomeComboCardState extends ConsumerState<HomeComboCard> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 3,
+                            vertical: 3.5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE6F3EA),
-                            borderRadius: BorderRadius.circular(6),
+                            color: const Color(0xFF07583F),
+                            borderRadius: BorderRadius.circular(7),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x2207583F),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Text(
-                            'Save ${combo.savingPercent}%',
+                            'SAVE ${combo.savingPercent}%',
                             style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF176448),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                              color: Color(0xFFC9FF67),
                             ),
                           ),
                         ),

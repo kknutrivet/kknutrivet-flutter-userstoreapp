@@ -373,16 +373,32 @@ class _SpeciesTabItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Spacer(),
-              Container(
-                width: 28,
-                height: 28,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 31,
+                height: 31,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                    color: selected ? accentColor : const Color(0x18000000),
-                    width: selected ? 2 : 1,
+                    color: selected ? accentColor : const Color(0x1F17322B),
+                    width: selected ? 2.2 : 1,
                   ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: accentColor.withValues(alpha: 0.22),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : const [
+                          BoxShadow(
+                            color: Color(0x0A000000),
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: asset != null
@@ -411,15 +427,15 @@ class _SpeciesTabItem extends StatelessWidget {
                   height: 1.1,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   color: selected
-                      ? const Color(0xFF1C1C1C)
-                      : const Color(0xFF525252),
+                      ? const Color(0xFF142D24)
+                      : const Color(0xFF4B5563),
                 ),
               ),
               const Spacer(),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 height: 3,
-                width: selected ? 34 : 0,
+                width: selected ? 36 : 0,
                 decoration: BoxDecoration(
                   color: accentColor,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
@@ -510,9 +526,11 @@ class HomeCategorySelector extends ConsumerWidget {
       });
     }
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final tileWidth = (screenWidth * 0.34).clamp(124.0, 146.0);
     final textScale =
         (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0);
-    final cardHeight = 126.0 + (textScale - 1.0) * 24.0;
+    final cardHeight = 128.0 + (textScale - 1.0) * 24.0;
 
     return Padding(
       padding: const EdgeInsets.only(top: 18, bottom: 4),
@@ -546,7 +564,7 @@ class HomeCategorySelector extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final cat = visible[i];
                 return SizedBox(
-                  width: 108,
+                  width: tileWidth,
                   child: _PastelCategoryTile(
                     cat: cat,
                     meta: _pastelMetaFor(cat.name, cat.label),
@@ -578,6 +596,7 @@ class _PastelCategoryTile extends StatelessWidget {
     final route = selectedAnimal != null && selectedAnimal!.isNotEmpty
         ? '/products?animalType=${Uri.encodeComponent(selectedAnimal!)}&category=${Uri.encodeComponent(cat.name)}'
         : '/products?category=${Uri.encodeComponent(cat.name)}';
+    final borderColor = Color.lerp(meta.$2, const Color(0xFF17322B), 0.10)!;
     return Semantics(
       button: true,
       label: cat.label,
@@ -590,7 +609,15 @@ class _PastelCategoryTile extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: meta.$2,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D14382B),
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -821,9 +848,31 @@ class HomeScrollProductSection extends StatelessWidget {
     final nonRx = products.where((p) => !p.requiresPrescription).toList();
     if (nonRx.isEmpty) return const SizedBox.shrink();
     final shown = nonRx.take(8).toList();
+    final hasTintedBand = surface.background != Colors.white;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 4),
+    return Container(
+      margin: EdgeInsets.only(top: hasTintedBand ? 18 : 16),
+      padding: EdgeInsets.only(
+        top: hasTintedBand ? 16 : 4,
+        bottom: hasTintedBand ? 14 : 4,
+      ),
+      decoration: hasTintedBand
+          ? BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  surface.background,
+                  surface.background.withValues(alpha: 0.48),
+                  Colors.white,
+                ],
+                stops: const [0.0, 0.72, 1.0],
+              ),
+              border: Border(
+                top: BorderSide(color: surface.border.withValues(alpha: 0.75)),
+              ),
+            )
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -832,24 +881,76 @@ class HomeScrollProductSection extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.35,
-                      color: Color(0xFF1C1C1C),
+                if (assetPath != null && hasTintedBand) ...[
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: surface.border, width: 1.2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x12000000),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      assetPath!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Icon(
+                        fallbackIcon,
+                        size: 17,
+                        color: surface.accent,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.35,
+                          color: hasTintedBand
+                              ? surface.heading
+                              : const Color(0xFF1C1C1C),
+                        ),
+                      ),
+                      if (description.isNotEmpty && hasTintedBand) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: surface.subtitle,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
                 Material(
-                  color: Colors.transparent,
+                  color: hasTintedBand
+                      ? Colors.white.withValues(alpha: 0.88)
+                      : const Color(0xFFEDF7F2),
+                  borderRadius: BorderRadius.circular(999),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(999),
                     onTap: () {
                       Haptics.tap();
                       if (route.startsWith('/products')) {
@@ -858,14 +959,27 @@ class HomeScrollProductSection extends StatelessWidget {
                         context.push(route);
                       }
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: hasTintedBand
+                              ? surface.border
+                              : const Color(0xFFCBE5D7),
+                        ),
+                      ),
                       child: Text(
                         'See all →',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF07583F),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: hasTintedBand
+                              ? surface.accent
+                              : const Color(0xFF07583F),
                         ),
                       ),
                     ),
@@ -876,18 +990,18 @@ class HomeScrollProductSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 256 + 35 * MediaQuery.textScalerOf(context).scale(1),
+            height: 252 + 34 * MediaQuery.textScalerOf(context).scale(1),
             child: ListView.separated(
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: shown.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              separatorBuilder: (_, _) => const SizedBox(width: 11),
               itemBuilder: (context, i) => SizedBox(
                 width: 166,
                 child: CompactProductCard(
                   product: shown[i],
-                  variant: CompactCardVariant.catalogue,
+                  variant: CompactCardVariant.homeGrid,
                 ),
               ),
             ),

@@ -157,7 +157,19 @@ class CartScreen extends ConsumerWidget {
               ),
               Container(
                 margin: const EdgeInsets.only(bottom: 10),
-
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFD9E6DE)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1014382B),
+                      blurRadius: 14,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

@@ -795,7 +795,7 @@ class HomeConcernsRail extends ConsumerWidget {
                   final textScale =
                       (MediaQuery.textScalerOf(context).scale(12) / 12)
                           .clamp(1.0, 2.0);
-                  final tileHeight = 112.0 + (textScale - 1.0) * 24.0;
+                  final tileHeight = 116.0 + (textScale - 1.0) * 24.0;
                   return SizedBox(
                     height: tileHeight,
                     child: ListView.separated(
@@ -805,7 +805,7 @@ class HomeConcernsRail extends ConsumerWidget {
                       itemCount: shown.length,
                       separatorBuilder: (_, _) => const SizedBox(width: 10),
                       itemBuilder: (context, i) => SizedBox(
-                        width: 118,
+                        width: 126,
                         child: _buildPastelConcernTile(
                           context,
                           shown[i],
@@ -830,6 +830,7 @@ class HomeConcernsRail extends ConsumerWidget {
     Color bg,
   ) {
     final visual = _visualForSlug(concern.slug);
+    final borderColor = Color.lerp(bg, const Color(0xFF17322B), 0.11)!;
     return AppBounce(
       pressedScale: 0.96,
       onTap: () {
@@ -837,10 +838,18 @@ class HomeConcernsRail extends ConsumerWidget {
         context.push('/diseases/${concern.slug}');
       },
       child: Container(
-        padding: const EdgeInsets.all(9),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D14382B),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,36 +860,44 @@ class HomeConcernsRail extends ConsumerWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 11.5,
+                fontSize: 12,
                 height: 1.16,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF1C1C1C),
+                color: Color(0xFF18221E),
               ),
             ),
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.88),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: Colors.white),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x10000000),
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: concern.imageUrl != null && concern.imageUrl!.isNotEmpty
                     ? AppNetworkImage(
                         imageUrl: concern.imageUrl!,
                         fit: BoxFit.cover,
-                        memCacheWidth: 100,
+                        memCacheWidth: 120,
                         errorWidget: (_, _, _) => Icon(
                           visual.icon,
-                          size: 20,
+                          size: 21,
                           color: visual.fg,
                         ),
                       )
                     : Icon(
                         visual.icon,
-                        size: 20,
+                        size: 21,
                         color: visual.fg,
                       ),
               ),

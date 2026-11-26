@@ -38,6 +38,14 @@ class ProductImageCover extends StatelessWidget {
   final BoxBorder? border;
   final BoxFit fit;
 
+  /// 1.28x saturation matrix matching web `.coverBackdrop` (`saturate-125`).
+  static const ColorFilter _kBackdropSaturation = ColorFilter.matrix(<double>[
+    1.220, -0.180, -0.040, 0, 0,
+    -0.060, 1.240, -0.040, 0, 0,
+    -0.060, -0.180, 1.320, 0, 0,
+    0, 0, 0, 1, 0,
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final resolvedUrl = AppNetworkImage.resolveUrl(imageUrl);
@@ -46,51 +54,61 @@ class ProductImageCover extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor,
+        gradient: backgroundColor == Colors.white
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFF8FBF9), Color(0xFFEDF4F0)],
+              ),
+        color: backgroundColor == Colors.white ? backgroundColor : null,
         borderRadius: borderRadius,
-        border: border ?? Border.all(color: const Color(0xFFE3ECE6)),
+        border: border ?? Border.all(color: const Color(0xFFDFEBE3)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Ambient blurred packaging backdrop (lightweight downsampled decode for RAM efficiency)
+          // 1. Ambient blurred packaging backdrop (`scale-115 blur-md saturate-125`)
           if (showBackdrop)
             Positioned(
-              left: -12,
-              top: -12,
-              right: -12,
-              bottom: -12,
+              left: -14,
+              top: -14,
+              right: -14,
+              bottom: -14,
               child: ImageFiltered(
                 imageFilter: ImageFilter.blur(
                   sigmaX: blurSigma,
                   sigmaY: blurSigma,
                 ),
-                child: Opacity(
-                  opacity: backdropOpacity,
-                  child: CachedNetworkImage(
-                    imageUrl: resolvedUrl,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 80,
-                    maxWidthDiskCache: 200,
-                    placeholder: (_, _) => const SizedBox.shrink(),
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
+                child: ColorFiltered(
+                  colorFilter: _kBackdropSaturation,
+                  child: Opacity(
+                    opacity: backdropOpacity,
+                    child: CachedNetworkImage(
+                      imageUrl: resolvedUrl,
+                      fit: BoxFit.cover,
+                      memCacheWidth: 96,
+                      maxWidthDiskCache: 220,
+                      placeholder: (_, _) => const SizedBox.shrink(),
+                      errorWidget: (_, _, _) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),
             ),
 
-          // 2. Subtle radial vignette to keep foreground packaging crisp while preserving rich color
+          // 2. Subtle center highlight so foreground packshot pops crisply
           if (showBackdrop)
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      Colors.white.withValues(alpha: 0.10),
+                      Colors.white.withValues(alpha: 0.16),
                       Colors.transparent,
                     ],
-                    radius: 0.85,
+                    radius: 0.82,
                   ),
                 ),
               ),

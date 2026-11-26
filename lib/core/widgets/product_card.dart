@@ -402,14 +402,38 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (product.brand != null)
+                    if (product.resolvedHighlightBadge != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        child: Text(
+                          product.resolvedHighlightBadge!.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            height: 1.15,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF065F46),
+                          ),
+                        ),
+                      )
+                    else if (product.brand != null)
                       Text(
                         product.brand!.toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.primary,
-                          fontSize: 12,
+                          fontSize: 11,
                           letterSpacing: 0.5,
                           fontWeight: FontWeight.w800,
                         ),
@@ -903,12 +927,18 @@ class _AddButtonState extends ConsumerState<_AddButton> {
           pressedScale: 0.95,
           onTap: _busy ? null : _handleInitialAdd,
           child: Container(
-            height: 48,
+            height: 44,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: AppColors.stepperBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.stepperBorder, width: 1.2),
+              color: AppColors.primaryDeep,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryDeep.withValues(alpha: 0.22),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Center(
               child: _busy
@@ -917,7 +947,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                       height: 15,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.primaryDeep,
+                        color: Colors.white,
                       ),
                     )
                   : Row(
@@ -927,16 +957,16 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                           const Icon(
                             Icons.add,
                             size: 15,
-                            color: AppColors.primaryDeep,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 4),
                         ],
                         const Text(
                           'ADD',
                           style: TextStyle(
-                            color: AppColors.primaryDeep,
+                            color: Colors.white,
                             fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                            fontSize: 13.5,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -945,7 +975,7 @@ class _AddButtonState extends ConsumerState<_AddButton> {
                           const Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 16,
-                            color: AppColors.primaryDeep,
+                            color: Colors.white,
                           ),
                         ],
                       ],

@@ -92,6 +92,21 @@ class ProductTranslation {
       };
 }
 
+class ProductHighlightBadge {
+  const ProductHighlightBadge({required this.label, required this.tone});
+
+  final String label;
+  final String tone; // 'fire' | 'views' | 'farmer' | 'pet' | 'vet' | 'new'
+
+  factory ProductHighlightBadge.fromJson(Map<String, dynamic> json) =>
+      ProductHighlightBadge(
+        label: json['label']?.toString() ?? '',
+        tone: json['tone']?.toString() ?? 'farmer',
+      );
+
+  Map<String, dynamic> toJson() => {'label': label, 'tone': tone};
+}
+
 class Product {
   Product({
     required this.id,
@@ -107,6 +122,7 @@ class Product {
     this.subCategory,
     this.animalTypes = const [],
     this.diseases = const [],
+    this.tags = const [],
     this.brand,
     this.size,
     this.weight,
@@ -120,6 +136,7 @@ class Product {
     this.ratingAverage = 0,
     this.ratingCount = 0,
     this.viewCount = 0,
+    this.highlightBadge,
     this.variants = const [],
     this.quantityDiscounts = const [],
     this.translations = const {},
@@ -138,6 +155,7 @@ class Product {
   final String? subCategory;
   final List<String> animalTypes;
   final List<String> diseases;
+  final List<String> tags;
   final String? brand;
   final String? size;
   final String? weight;
@@ -161,9 +179,73 @@ class Product {
   final double ratingAverage;
   final int ratingCount;
   final int viewCount;
+  final ProductHighlightBadge? highlightBadge;
   final List<ProductVariant> variants;
   final List<QuantityDiscountTier> quantityDiscounts;
   final Map<String, ProductTranslation> translations;
+
+  static const Map<String, ProductHighlightBadge> _manualTagBadges = {
+    'bestseller': ProductHighlightBadge(label: '🔥 Best Seller', tone: 'fire'),
+    'best-seller': ProductHighlightBadge(label: '🔥 Best Seller', tone: 'fire'),
+    'best seller': ProductHighlightBadge(label: '🔥 Best Seller', tone: 'fire'),
+    'trending': ProductHighlightBadge(label: '🔥 Trending Now', tone: 'fire'),
+    'trending-now': ProductHighlightBadge(label: '🔥 Trending Now', tone: 'fire'),
+    'most-viewed': ProductHighlightBadge(label: '👀 Most Viewed', tone: 'views'),
+    'most-view': ProductHighlightBadge(label: '👀 Most Viewed', tone: 'views'),
+    'most viewed': ProductHighlightBadge(label: '👀 Most Viewed', tone: 'views'),
+    'farmers-choice': ProductHighlightBadge(label: "🌾 Farmer's Choice", tone: 'farmer'),
+    'farmer-choice': ProductHighlightBadge(label: "🌾 Farmer's Choice", tone: 'farmer'),
+    "farmer's choice": ProductHighlightBadge(label: "🌾 Farmer's Choice", tone: 'farmer'),
+    'pet-pick': ProductHighlightBadge(label: "🐾 Pet Parent's Pick", tone: 'pet'),
+    'pet-parents-pick': ProductHighlightBadge(label: "🐾 Pet Parent's Pick", tone: 'pet'),
+    "pet parent's pick": ProductHighlightBadge(label: "🐾 Pet Parent's Pick", tone: 'pet'),
+    'vet-pick': ProductHighlightBadge(label: '🩺 Vet Pick', tone: 'vet'),
+    'vet-recommended': ProductHighlightBadge(label: '🩺 Vet Recommended', tone: 'vet'),
+    'new': ProductHighlightBadge(label: '✨ New Arrival', tone: 'new'),
+    'new-arrival': ProductHighlightBadge(label: '✨ New Arrival', tone: 'new'),
+  };
+
+  /// Matches `resolveHighlightBadge` in `src/lib/product-highlights.ts`.
+  ProductHighlightBadge? get resolvedHighlightBadge {
+    if (highlightBadge != null && highlightBadge!.label.isNotEmpty) {
+      return highlightBadge;
+    }
+    for (final raw in tags) {
+      final badge = _manualTagBadges[raw.trim().toLowerCase()];
+      if (badge != null) return badge;
+    }
+    if (ratingAverage >= 4.5 && ratingCount >= 2) {
+      final isLivestock = animalTypes.any(
+        (a) => RegExp(
+          r'cattle|cow|buffalo|goat|sheep|poultry|broiler|layer',
+          caseSensitive: false,
+        ).hasMatch(a),
+      );
+      if (isLivestock) {
+        return const ProductHighlightBadge(
+          label: "🌾 Farmer's Choice",
+          tone: 'farmer',
+        );
+      }
+      final isPet = animalTypes.any(
+        (a) => RegExp(r'dog|puppy|cat|kitten', caseSensitive: false).hasMatch(a),
+      );
+      if (isPet) {
+        return const ProductHighlightBadge(
+          label: "🐾 Pet Parent's Pick",
+          tone: 'pet',
+        );
+      }
+      return const ProductHighlightBadge(label: '⭐ Top Rated', tone: 'farmer');
+    }
+    if (viewCount >= 18) {
+      return const ProductHighlightBadge(
+        label: '👀 Most Viewed',
+        tone: 'views',
+      );
+    }
+    return null;
+  }
 
   /// Returns the localized product name for [localeCode] (e.g. `'hi'`, `'or'`, `'te'`, `'ta'`),
   /// falling back to the canonical English [name].
@@ -208,6 +290,7 @@ class Product {
         animalTypes:
             (json['animalTypes'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         diseases: (json['diseases'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         brand: json['brand']?.toString(),
         size: json['size']?.toString(),
         weight: json['weight']?.toString(),
@@ -224,6 +307,11 @@ class Product {
             (json['viewCount'] as num?)?.toInt() ??
             (json['views'] as num?)?.toInt() ??
             0,
+        highlightBadge: json['highlightBadge'] is Map
+            ? ProductHighlightBadge.fromJson(
+                Map<String, dynamic>.from(json['highlightBadge'] as Map),
+              )
+            : null,
         variants: (json['variants'] as List?)
                 ?.map((e) => ProductVariant.fromJson(Map<String, dynamic>.from(e as Map)))
                 .toList() ??

@@ -639,6 +639,88 @@ class HomePinnedSearchBar extends ConsumerWidget {
   }
 }
 
+/// Emerald trust ribbon directly below the species tab strip — exact parity
+/// with `src/components/home/FreeDeliveryTrustLine.tsx` across all 5 languages.
+class HomeFreeDeliveryTrustRibbon extends ConsumerWidget {
+  const HomeFreeDeliveryTrustRibbon({super.key});
+
+  static String _copyFor(AppLocale locale, String amount) {
+    switch (locale) {
+      case AppLocale.hi:
+        return '₹$amount+ के ऑनलाइन और Partial COD ऑर्डर पर FREE डिलीवरी';
+      case AppLocale.or_:
+        return '₹$amount+ ଅନଲାଇନ୍ ଓ Partial COD ଅର୍ଡରରେ ମାଗଣା ଡେଲିଭରି';
+      case AppLocale.te:
+        return '₹$amount+ ఆన్‌లైన్ & Partial COD ఆర్డర్లపై ఉచిత డెలివరీ';
+      case AppLocale.ta:
+        return '₹$amount+ ஆன்லைன் & Partial COD ஆர்டர்களுக்கு இலவச டெலிவரி';
+      case AppLocale.en:
+        return 'FREE Delivery on Online & Partial COD orders ₹$amount+';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(storeSettingsProvider).valueOrNull;
+    final locale = ref.watch(languageProvider);
+    final standard = settings?.freeDeliveryThreshold ?? 499;
+    final prepaid = settings?.prepaidFreeDeliveryThreshold ?? 299;
+    final threshold = prepaid > 0
+        ? (standard > 0 && standard < prepaid ? standard : prepaid)
+        : standard;
+    if (threshold <= 0) return const SizedBox.shrink();
+
+    final amountLabel = threshold.toStringAsFixed(0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFEAF7F0), Color(0xFFF3FAF6), Color(0xFFEAF7F0)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFCFE6DA), width: 1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF07583F).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.local_shipping_rounded,
+              size: 12.5,
+              color: Color(0xFF07583F),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              _copyFor(locale, amountLabel),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.1,
+                color: Color(0xFF07583F),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
   _PinnedSearchDelegate({
     required this.headerBg,
@@ -697,15 +779,15 @@ class HomeSearchField extends ConsumerWidget {
         },
         child: Container(
           height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.fromLTRB(13, 0, 8, 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E2DA)),
+            border: Border.all(color: const Color(0xFFDCD6C9)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
+                color: Color(0x1217322B),
+                blurRadius: 10,
+                offset: Offset(0, 3),
               ),
             ],
           ),
@@ -713,8 +795,8 @@ class HomeSearchField extends ConsumerWidget {
             children: [
               const Icon(
                 Icons.search_rounded,
-                size: 18,
-                color: Color(0xFF1C1C1C),
+                size: 19,
+                color: Color(0xFF07583F),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -725,14 +807,22 @@ class HomeSearchField extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF525252),
+                    color: Color(0xFF4B5563),
                   ),
                 ),
               ),
-              const Icon(
-                Icons.mic_none_rounded,
-                size: 18,
-                color: Color(0xFF4B5563),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F8F5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.mic_none_rounded,
+                  size: 17,
+                  color: Color(0xFF07583F),
+                ),
               ),
             ],
           ),

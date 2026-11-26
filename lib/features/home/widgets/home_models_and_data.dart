@@ -680,10 +680,10 @@ class HomeAnimalTheme {
 }
 
 const kDefaultHomeAnimalTheme = HomeAnimalTheme(
-  headerBg: Color(0xFFFAF7F0),
-  headerBorder: Color(0xFFECE8DF),
+  headerBg: Color(0xFFFFF7EC),
+  headerBorder: Color(0xFFEDE1CE),
   accent: Color(0xFF07583F),
-  pillBg: Color(0xFFE5F0EA),
+  pillBg: Color(0xFFE3F2EA),
   pillText: Color(0xFF07583F),
   storeTitle: '',
   shortName: '',

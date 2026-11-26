@@ -227,6 +227,7 @@ class HomeEditorialHeroBanner extends ConsumerWidget {
 class _SpotlightCardData {
   const _SpotlightCardData({
     required this.title,
+    required this.subtitle,
     required this.background,
     required this.cutoutAsset,
     required this.route,
@@ -234,6 +235,7 @@ class _SpotlightCardData {
   });
 
   final String title;
+  final String subtitle;
   final Color background;
   final String cutoutAsset;
   final String route;
@@ -242,26 +244,30 @@ class _SpotlightCardData {
 
 const _kDefaultSpotlightCards = [
   _SpotlightCardData(
-    title: 'Ask\nDr. Paw',
-    background: Color(0xFFF1EAFF),
+    title: "What's wrong\nwith your animal?",
+    subtitle: 'Ask Dr. Paw AI',
+    background: Color(0xFFEDE4FF),
     cutoutAsset: 'assets/images/dr-paw-genz.webp',
     route: '/vet',
   ),
   _SpotlightCardData(
     title: 'Order\nwith Rx',
-    background: Color(0xFFE5F6EC),
+    subtitle: 'Upload vet slip',
+    background: Color(0xFFDDF5E6),
     cutoutAsset: 'assets/images/rx-order-3d.webp',
     route: '/prescriptions',
   ),
   _SpotlightCardData(
     title: 'Peak Milk\nStore',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Dairy minerals',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/peak-milk-3d.webp',
     route: '/products?animalType=Cattle',
   ),
   _SpotlightCardData(
     title: 'Tick & Worm\nShield',
-    background: Color(0xFFE6F3FF),
+    subtitle: '360° protection',
+    background: Color(0xFFDCEEFF),
     cutoutAsset: 'assets/images/seasonal-shield-3d.webp',
     route: '/products?category=Deworming',
   ),
@@ -269,27 +275,31 @@ const _kDefaultSpotlightCards = [
 
 const _kDogSpotlightCards = [
   _SpotlightCardData(
-    title: 'Ask Dr. Paw\nfor Dogs',
-    background: Color(0xFFEAF2FF),
+    title: "What's wrong\nwith your dog?",
+    subtitle: 'Symptoms & diet',
+    background: Color(0xFFE3EEFF),
     cutoutAsset: 'assets/images/dr-paw-genz.webp',
     route: '/vet',
   ),
   _SpotlightCardData(
     title: 'Tick & Worm\nShield',
-    background: Color(0xFFE6F3FF),
+    subtitle: 'Spot-ons & chews',
+    background: Color(0xFFDCEEFF),
     cutoutAsset: 'assets/images/seasonal-shield-3d.webp',
     route: '/products?animalType=Dog&category=Deworming',
   ),
   _SpotlightCardData(
     title: 'Coat, Joint\n& Immunity',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Omega & tonics',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/category/supplements-v1.webp',
     route: '/products?animalType=Dog&category=Supplement+%26+Nutrition',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Kibble &\nPuppy Meals',
-    background: Color(0xFFE5F6EC),
+    subtitle: 'Daily nutrition',
+    background: Color(0xFFDDF5E6),
     cutoutAsset: 'assets/images/category/feed-v1.webp',
     route: '/products?animalType=Dog&category=Feed',
     framedPhoto: true,
@@ -298,27 +308,31 @@ const _kDogSpotlightCards = [
 
 const _kCatSpotlightCards = [
   _SpotlightCardData(
-    title: 'Ask Dr. Paw\nfor Cats',
-    background: Color(0xFFF3ECFF),
+    title: "What's wrong\nwith your cat?",
+    subtitle: 'Symptoms & care',
+    background: Color(0xFFEEE4FF),
     cutoutAsset: 'assets/images/dr-paw-genz.webp',
     route: '/vet',
   ),
   _SpotlightCardData(
     title: 'Hairball &\nCoat Care',
-    background: Color(0xFFF5ECF8),
+    subtitle: 'Taurine & washes',
+    background: Color(0xFFF3E5F8),
     cutoutAsset: 'assets/images/category/grooming-v1.webp',
     route: '/products?animalType=Cat&category=Grooming',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Flea & Gut\nDeworming',
-    background: Color(0xFFE6F3FF),
+    subtitle: 'Indoor protection',
+    background: Color(0xFFDCEEFF),
     cutoutAsset: 'assets/images/seasonal-shield-3d.webp',
     route: '/products?animalType=Cat&category=Deworming',
   ),
   _SpotlightCardData(
     title: 'Cat Daily\nSupplements',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Immunity & care',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/category/supplements-v1.webp',
     route: '/products?animalType=Cat&category=Supplement+%26+Nutrition',
     framedPhoto: true,
@@ -328,27 +342,31 @@ const _kCatSpotlightCards = [
 const _kCattleSpotlightCards = [
   _SpotlightCardData(
     title: 'Peak Milk\nStore',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Chelated minerals',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/peak-milk-3d.webp',
     route: '/products?animalType=Cattle&category=Supplement+%26+Nutrition',
   ),
   _SpotlightCardData(
     title: 'Udder &\nMilking Care',
-    background: Color(0xFFE8F4F2),
+    subtitle: 'Gels & support',
+    background: Color(0xFFDFF2EE),
     cutoutAsset: 'assets/images/category/medicine-v1.webp',
     route: '/products?animalType=Cattle&category=Medicine',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Herd\nDeworming',
-    background: Color(0xFFFCEEE8),
+    subtitle: 'Fluke & liver care',
+    background: Color(0xFFFCE6DC),
     cutoutAsset: 'assets/images/category/deworming-v1.webp',
     route: '/products?animalType=Cattle&category=Deworming',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Order Farm\nwith Rx',
-    background: Color(0xFFE5F6EC),
+    subtitle: 'Upload vet slip',
+    background: Color(0xFFDDF5E6),
     cutoutAsset: 'assets/images/rx-order-3d.webp',
     route: '/prescriptions',
   ),
@@ -357,28 +375,32 @@ const _kCattleSpotlightCards = [
 const _kGoatSpotlightCards = [
   _SpotlightCardData(
     title: 'Grower\nNutrition Store',
-    background: Color(0xFFE6F5EC),
+    subtitle: 'Minerals & amino',
+    background: Color(0xFFDFF3E7),
     cutoutAsset: 'assets/images/category/supplements-v1.webp',
     route: '/products?animalType=Goat%2FSheep&category=Supplement+%26+Nutrition',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Flock\nDeworming',
-    background: Color(0xFFFCEEE8),
+    subtitle: 'Gut & appetite',
+    background: Color(0xFFFCE6DC),
     cutoutAsset: 'assets/images/category/deworming-v1.webp',
     route: '/products?animalType=Goat%2FSheep&category=Deworming',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Hoof, Skin\n& Spray Care',
-    background: Color(0xFFE8F2FA),
+    subtitle: 'Topical sprays',
+    background: Color(0xFFDFEEFA),
     cutoutAsset: 'assets/images/category/spray-v1.webp',
     route: '/products?animalType=Goat%2FSheep&category=Spray',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Order\nwith Rx',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Herd prescriptions',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/rx-order-3d.webp',
     route: '/prescriptions',
   ),
@@ -387,28 +409,32 @@ const _kGoatSpotlightCards = [
 const _kPoultrySpotlightCards = [
   _SpotlightCardData(
     title: 'Broiler\nNutrition Store',
-    background: Color(0xFFFCEEE6),
+    subtitle: 'FCR & starters',
+    background: Color(0xFFFCE6DA),
     cutoutAsset: 'assets/images/category/supplements-v1.webp',
     route: '/products?animalType=Poultry&category=Supplement+%26+Nutrition',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Layer Shell\n& Egg Yield',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Calcium & D3',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/category/feed-v1.webp',
     route: '/products?animalType=Poultry&category=Feed',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Flock\nImmunity',
-    background: Color(0xFFE8F4F2),
+    subtitle: 'Liver & electrolytes',
+    background: Color(0xFFDFF2EE),
     cutoutAsset: 'assets/images/category/medicine-v1.webp',
     route: '/products?animalType=Poultry&category=Medicine',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Coop & Litter\nHygiene',
-    background: Color(0xFFE5F6EC),
+    subtitle: 'Biosecurity sprays',
+    background: Color(0xFFDDF5E6),
     cutoutAsset: 'assets/images/category/homecare-v1.webp',
     route: '/products?animalType=Poultry&category=Home+Care',
     framedPhoto: true,
@@ -418,27 +444,31 @@ const _kPoultrySpotlightCards = [
 const _kExoticSpotlightCards = [
   _SpotlightCardData(
     title: 'Ask Dr. Paw\nSmall Pets',
-    background: Color(0xFFE6F4F4),
+    subtitle: 'Guided care',
+    background: Color(0xFFDEF2F2),
     cutoutAsset: 'assets/images/dr-paw-genz.webp',
     route: '/vet',
   ),
   _SpotlightCardData(
     title: 'Hay, Seed\n& Pellet Mix',
-    background: Color(0xFFEEF4E4),
+    subtitle: 'Daily feed',
+    background: Color(0xFFE8F2DA),
     cutoutAsset: 'assets/images/category/feed-v1.webp',
     route: '/products?animalType=Exotic+%26+Small+Pets&category=Feed',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Vitamin C &\nElectrolytes',
-    background: Color(0xFFFDF2DC),
+    subtitle: 'Water drops',
+    background: Color(0xFFFDECC8),
     cutoutAsset: 'assets/images/category/supplements-v1.webp',
     route: '/products?animalType=Exotic+%26+Small+Pets&category=Supplement+%26+Nutrition',
     framedPhoto: true,
   ),
   _SpotlightCardData(
     title: 'Gentle\nHealth Care',
-    background: Color(0xFFE8F4F2),
+    subtitle: 'Gut & feather care',
+    background: Color(0xFFDFF2EE),
     cutoutAsset: 'assets/images/category/medicine-v1.webp',
     route: '/products?animalType=Exotic+%26+Small+Pets&category=Medicine',
     framedPhoto: true,
@@ -467,12 +497,14 @@ class HomeCareBentoSection extends ConsumerWidget {
     final animalTheme = homeAnimalThemeFor(selectedAnimal);
     final cards = _spotlightCardsForAnimal(selectedAnimal);
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final tileWidth = (screenWidth * 0.37).clamp(132.0, 154.0);
     final textScale =
         (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0);
-    final tileHeight = 106.0 + (textScale - 1.0) * 24.0;
+    final tileHeight = 118.0 + (textScale - 1.0) * 26.0;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 4),
+      padding: const EdgeInsets.only(top: 14, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -500,7 +532,7 @@ class HomeCareBentoSection extends ConsumerWidget {
               itemCount: cards.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, i) => SizedBox(
-                width: 112,
+                width: tileWidth,
                 child: _SpotlightPastelTile(
                   item: cards[i],
                   height: tileHeight,
@@ -521,6 +553,8 @@ class _SpotlightPastelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderTint = Color.lerp(item.background, const Color(0xFF17322B), 0.11)!;
+    final deeperBg = Color.lerp(item.background, Colors.white, 0.28)!;
     return AppBounce(
       pressedScale: 0.96,
       onTap: () {
@@ -535,21 +569,47 @@ class _SpotlightPastelTile extends StatelessWidget {
       child: Container(
         height: height,
         decoration: BoxDecoration(
-          color: item.background,
-          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [deeperBg, item.background],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderTint, width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F14382B),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
             Positioned(
-              right: item.framedPhoto ? 6 : 2,
-              bottom: item.framedPhoto ? 6 : 2,
-              width: item.framedPhoto ? 48 : 56,
-              height: item.framedPhoto ? 48 : 56,
+              right: item.framedPhoto ? 7 : 2,
+              bottom: item.framedPhoto ? 7 : 1,
+              width: item.framedPhoto ? 54 : 64,
+              height: item.framedPhoto ? 54 : 64,
               child: IgnorePointer(
                 child: item.framedPhoto
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                    ? Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            width: 1.5,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x16000000),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
                         child: Image.asset(
                           item.cutoutAsset,
                           fit: BoxFit.cover,
@@ -565,17 +625,38 @@ class _SpotlightPastelTile extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(9, 9, 7, 8),
-              child: Text(
-                item.title,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11.2,
-                  fontWeight: FontWeight.w800,
-                  height: 1.15,
-                  color: Color(0xFF1C1C1C),
-                ),
+              padding: const EdgeInsets.fromLTRB(11, 10, 10, 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.2,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                      height: 1.15,
+                      color: Color(0xFF18221E),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 88),
+                    child: Text(
+                      item.subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 9.8,
+                        fontWeight: FontWeight.w600,
+                        height: 1.18,
+                        color: Color(0xFF4B5563),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

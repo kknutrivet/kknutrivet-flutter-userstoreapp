@@ -163,6 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   pinned: true,
                   delegate: _PinnedSpeciesTabDelegate(),
                 ),
+                const SliverToBoxAdapter(child: HomeFreeDeliveryTrustRibbon()),
 
                 // 2. Active Order Alert at very top when user has an ongoing order
                 const SliverToBoxAdapter(child: HomeActiveOrderBanner()),
