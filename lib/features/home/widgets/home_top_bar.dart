@@ -98,42 +98,6 @@ class HomeBrandBar extends ConsumerWidget {
       ),
       title: Row(
         children: [
-          Material(
-            color: const Color(0xFFE5F0EA),
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                Haptics.tap();
-                if (customerName != null) {
-                  context.go('/profile');
-                } else {
-                  context.push('/login');
-                }
-              },
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: Center(
-                  child: customerName != null
-                      ? Text(
-                          firstName.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF07583F),
-                          ),
-                        )
-                      : const Icon(
-                          Icons.person_outline_rounded,
-                          size: 19,
-                          color: Color(0xFF07583F),
-                        ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

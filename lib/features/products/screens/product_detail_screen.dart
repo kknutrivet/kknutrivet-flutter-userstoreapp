@@ -2,8 +2,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/analytics/analytics_service.dart';
+import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/utils/share_helper.dart';
@@ -1085,13 +1087,18 @@ class _DetailsCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  product.name,
-                  style: AppTheme.serif(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    height: 1.08,
-                  ),
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final locale = ref.watch(languageProvider);
+                    return Text(
+                      product.localizedName(locale.code),
+                      style: AppTheme.serif(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        height: 1.08,
+                      ),
+                    );
+                  },
                 ),
               ),
               IconButton(
@@ -1159,6 +1166,92 @@ class _DetailsCard extends ConsumerWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Partial COD trust banner + WhatsApp Order / Ask Dosage assist (matching mobile web PDP)
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.verified_user_outlined,
+                        size: 14,
+                        color: Color(0xFF047857),
+                      ),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Partial COD · Pay small advance, rest on delivery',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF065F46),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Material(
+                color: const Color(0xFFE7F8EE),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () async {
+                    Haptics.tap();
+                    final msg = Uri.encodeComponent(
+                      'Hi KK Nutrivet! I need dosage guidance / want to order ${product.name}.',
+                    );
+                    final uri = Uri.parse('https://wa.me/917846932453?text=$msg');
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.chat_rounded,
+                          size: 13.5,
+                          color: Color(0xFF15803D),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Ask Dosage',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF15803D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -3345,7 +3438,9 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
                             ),
                           ),
                           child: Text(
-                            widget.adding ? 'Adding…' : 'Add to Cart',
+                            widget.adding
+                                ? 'Adding…'
+                                : ref.watch(appStringsProvider).addToCart,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -3383,9 +3478,9 @@ class _BuyBarState extends ConsumerState<_BuyBar> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Buy Now',
-                            style: TextStyle(
+                        : Text(
+                            ref.watch(appStringsProvider).buyNow,
+                            style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w800,
                             ),

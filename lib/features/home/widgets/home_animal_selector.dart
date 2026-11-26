@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/compact_product_card.dart';
@@ -297,7 +298,7 @@ class HomeAnimalSelector extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SpeciesTabItem(
-              label: 'All',
+              label: ref.watch(appStringsProvider).speciesAll,
               icon: Icons.grid_view_rounded,
               selected: isAllSelected,
               accentColor: animalTheme.accent,
@@ -310,7 +311,9 @@ class HomeAnimalSelector extends ConsumerWidget {
             for (final animal in visibleAnimals) ...[
               Builder(
                 builder: (context) {
-                  final label = animal.selectorLabel ?? animal.name;
+                  final rawLabel = animal.selectorLabel ?? animal.name;
+                  final label =
+                      ref.watch(appStringsProvider).speciesLabel(rawLabel);
                   final isSelected = selectedAnimal == animal.query ||
                       selectedAnimal == animal.value;
                   return _SpeciesTabItem(
@@ -319,7 +322,7 @@ class HomeAnimalSelector extends ConsumerWidget {
                     asset: animal.asset,
                     selected: isSelected,
                     accentColor: animalTheme.accent,
-                    semanticLabel: 'Filter homepage by $label',
+                    semanticLabel: 'Filter homepage by $rawLabel',
                     onTap: () {
                       Haptics.selection();
                       ref.read(selectedHomeAnimalProvider.notifier).state =

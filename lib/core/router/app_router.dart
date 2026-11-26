@@ -28,6 +28,7 @@ import '../../features/vet/screens/vet_insights_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/blog/screens/blog_detail_screen.dart';
 import '../../features/blog/screens/blog_list_screen.dart';
+import '../../features/brands/screens/brands_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
 import '../../features/checkout/screens/checkout_screen.dart';
 import '../../features/combos/screens/combo_detail_screen.dart';
@@ -44,6 +45,7 @@ import '../../features/pets/screens/pets_screen.dart';
 import '../../features/prescriptions/screens/prescriptions_screen.dart';
 import '../../features/products/screens/product_detail_screen.dart';
 import '../../features/products/screens/product_list_screen.dart';
+import '../../features/profile/screens/profile_coupons_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/search/screens/search_screen.dart';
 import '../../features/shots/screens/shots_screen.dart';
@@ -265,6 +267,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
           key: state.pageKey,
           child: ProductDetailScreen(id: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/brands',
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const BrandsListScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/brands/:slug',
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: BrandDetailScreen(
+            slug: state.pathParameters['slug']!,
+            initialName: state.uri.queryParameters['name'],
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/coupons',
+        pageBuilder: (context, state) => AppTransitions.fadeSlidePage(
+          key: state.pageKey,
+          child: const ProfileCouponsScreen(),
         ),
       ),
       GoRoute(

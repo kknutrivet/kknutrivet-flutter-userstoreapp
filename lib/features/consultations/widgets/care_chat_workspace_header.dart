@@ -42,7 +42,7 @@ class CareChatWorkspaceAppBar extends StatelessWidget
             ),
           ),
           const Text(
-            'Certified vets · Digital prescriptions',
+            'Certified vets · 10 AM – 10 PM IST',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

@@ -118,4 +118,29 @@ class OrderService {
     final data = await _client.post('/orders/$orderId/scratch-reward');
     return data is Map ? Map<String, dynamic>.from(data) : const {};
   }
+
+  /// Fetches the user's scratch cards and coupons (`GET /api/profile/coupons`).
+  Future<Map<String, dynamic>> fetchProfileCoupons() async {
+    final data = await _client.get('/profile/coupons');
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
+  }
+
+  /// Fetches 30-day reorder reminder opt-in status (`GET /api/orders/:id/reorder-reminder`).
+  Future<Map<String, dynamic>> fetchReorderReminder(String orderId) async {
+    final data = await _client.get('/orders/$orderId/reorder-reminder');
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
+  }
+
+  /// Toggles 30-day reorder reminder (`POST /api/orders/:id/reorder-reminder`).
+  Future<Map<String, dynamic>> setReorderReminder(
+    String orderId, {
+    required bool enabled,
+    int intervalDays = 30,
+  }) async {
+    final data = await _client.post(
+      '/orders/$orderId/reorder-reminder',
+      data: {'enabled': enabled, 'intervalDays': intervalDays},
+    );
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
+  }
 }

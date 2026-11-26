@@ -32,6 +32,7 @@ class MockCatalogService extends CatalogService {
     String? subCategory,
     String? animalType,
     String? disease,
+    String? brand,
     String? search,
     String? sort,
     int? limit,

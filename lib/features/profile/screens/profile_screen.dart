@@ -159,6 +159,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onTap: () => context.push('/orders'),
                   ),
                   AppTile(
+                    icon: Icons.card_giftcard_rounded,
+                    iconBg: const Color(0xFFFEF3C7),
+                    iconColor: const Color(0xFFB45309),
+                    title: 'Coupons & Scratch Cards',
+                    subtitle: 'Reveal order scratch cards & active vouchers',
+                    onTap: () => context.push('/profile/coupons'),
+                  ),
+                  AppTile(
                     icon: Icons.location_on_outlined,
                     iconBg: AppColors.dogRailBg,
                     iconColor: AppColors.dogRailHeading,

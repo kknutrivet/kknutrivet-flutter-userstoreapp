@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/storage/search_history_storage.dart';
 import '../../../core/theme/app_theme.dart';
@@ -536,7 +537,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         ),
                       ),
                       const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
                         child: Center(
                           child: Text(
                             'Try a product name, animal type, brand, or category.',
@@ -544,6 +545,42 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             style: TextStyle(
                               fontSize: 11,
                               color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Center(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final msg = Uri.encodeComponent(
+                                'Hi KK Nutrivet! I searched for "$query" and could not find it. Can you help me get this product?',
+                              );
+                              await launchUrl(
+                                Uri.parse('https://wa.me/917846932453?text=$msg'),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.chat_rounded,
+                              size: 15,
+                              color: Color(0xFF15803D),
+                            ),
+                            label: Text(
+                              'Request "$query" on WhatsApp',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF15803D),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF86EFAC)),
+                              backgroundColor: const Color(0xFFF0FDF4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),

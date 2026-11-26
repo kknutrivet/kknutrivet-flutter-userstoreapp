@@ -19,6 +19,7 @@ class CatalogService {
     String? subCategory,
     String? animalType,
     String? disease,
+    String? brand,
     String? search,
     String? sort,
     int? limit,
@@ -26,7 +27,7 @@ class CatalogService {
     bool forceRefresh = false,
   }) async {
     final cacheKey =
-        '$category|$subCategory|$animalType|$disease|$search|$sort|$limit|$relatedTo';
+        '$category|$subCategory|$animalType|$disease|$brand|$search|$sort|$limit|$relatedTo';
     if (!forceRefresh) {
       final hit = _productsCache[cacheKey];
       if (hit != null && DateTime.now().difference(hit.$1).inMinutes < 5) {
@@ -40,6 +41,7 @@ class CatalogService {
         'subCategory': ?subCategory,
         'animalType': ?animalType,
         'disease': ?disease,
+        if (brand != null && brand.isNotEmpty) 'brand': brand,
         if (search != null && search.isNotEmpty) 'search': search,
         'sort': ?sort,
         'limit': ?limit,

@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../widgets/order_items_and_summary.dart';
 import '../widgets/order_tracking_and_status.dart';
+import '../widgets/reorder_reminder_card.dart';
 
 export '../widgets/order_items_and_summary.dart';
 export '../widgets/order_tracking_and_status.dart';
@@ -60,6 +61,10 @@ class OrderDetailScreen extends ConsumerWidget {
                 children: [
                   OrderHeroCard(order: order),
                   OrderScratchToWinCard(order: order),
+                  if (!order.isCancelled) ...[
+                    const SizedBox(height: 12),
+                    ReorderReminderCard(orderId: order.id),
+                  ],
                   if ((order.paymentMethod == 'CASHFREE' ||
                           order.paymentMethod == 'PARTIAL_COD') &&
                       order.paymentStatus != 'PAID' &&
