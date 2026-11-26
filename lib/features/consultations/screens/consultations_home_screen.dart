@@ -12,6 +12,7 @@ import '../../../models/consultation.dart';
 import '../../../models/pet.dart';
 import '../../../providers/app_providers.dart';
 import '../widgets/care_chat_intake_steps.dart';
+import '../widgets/care_chat_single_screen_intake.dart';
 import '../widgets/care_chat_thread_widgets.dart';
 import '../widgets/care_chat_workspace_header.dart';
 import '../widgets/past_consultations_list.dart';
@@ -209,56 +210,23 @@ class _ConsultationsHomeScreenState
     }
   }
 
-  void _continueFromContact() {
-    final name = _nameController.text.trim();
-    final rawPhone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
-    final phone = rawPhone.length == 12 && rawPhone.startsWith('91')
-        ? rawPhone.substring(2)
-        : rawPhone;
-
-    if (name.isEmpty) {
-      const msg = 'Please enter your name.';
-      showToast(msg, isError: true);
-      setState(() => _errorText = msg);
-      return;
-    }
-    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
-      const msg = 'Please enter a valid 10-digit mobile number.';
-      showToast(msg, isError: true);
-      setState(() => _errorText = msg);
-      return;
-    }
-    AppHaptics.light();
-    setState(() {
-      _phoneController.text = phone;
-      _errorText = null;
-      _step = 2;
-    });
-  }
-
-  void _continueFromAnimal() {
-    if (_selectedAnimal.isEmpty) {
-      const msg = 'Please select which animal needs care.';
-      showToast(msg, isError: true);
-      setState(() => _errorText = msg);
-      return;
-    }
-    if (_selectedAnimal == 'Other' &&
-        _otherAnimalController.text.trim().isEmpty) {
-      const msg = 'Please enter the animal name.';
-      showToast(msg, isError: true);
-      setState(() => _errorText = msg);
-      return;
-    }
-    AppHaptics.light();
-    setState(() {
-      _errorText = null;
-      _step = 3;
-    });
-  }
-
   Future<void> _submitCareChat() async {
     if (_submitting || _uploadingPhoto) return;
+    final phoneDigits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+    if (phoneDigits.length < 10) {
+      const msg = 'Enter a valid 10-digit mobile number for SMS updates.';
+      showToast(msg, isError: true);
+      setState(() => _errorText = msg);
+      return;
+    }
+    if (_selectedAnimal.isEmpty ||
+        (_selectedAnimal == 'Other' &&
+            _otherAnimalController.text.trim().isEmpty)) {
+      const msg = 'Please select which animal needs help.';
+      showToast(msg, isError: true);
+      setState(() => _errorText = msg);
+      return;
+    }
     final concern = _concernController.text.trim();
     if (concern.isEmpty) {
       const msg = 'Describe your concern before starting the consultation.';
@@ -684,22 +652,16 @@ class _ConsultationsHomeScreenState
   }
 
   Widget _buildIntakeWorkspace(bool isSignedIn, List<PetProfile> savedPets) {
+    if (!isSignedIn) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [CareChatSignInRequiredCard(onSignInTap: _goToSignIn)],
+      );
+    }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
       children: [
-        CareChatSummaryChipsBar(
-          step: _step,
-          selectedLanguage: _selectedLanguage,
-          contactName: _nameController.text,
-          contactPhone: _phoneController.text,
-          selectedAnimal: _selectedAnimal,
-          otherAnimalName: _otherAnimalController.text,
-          onStepTap: _goToStep,
-        ),
-        CareChatIntakeWorkspaceCard(
-          step: _step,
-          header: CareChatIntakeCardHeader(step: _step),
-          isSignedIn: isSignedIn,
+        CareChatSingleScreenIntake(
           selectedLanguage: _selectedLanguage,
           nameController: _nameController,
           phoneController: _phoneController,
@@ -715,15 +677,12 @@ class _ConsultationsHomeScreenState
           onSelectLanguage: (code) => setState(() {
             _selectedLanguage = code;
             _errorText = null;
-            _step = 1;
           }),
-          onContinueContact: _continueFromContact,
           onSelectPetProfile: _handleSelectPetProfile,
           onSelectAnimal: (animal) => setState(() {
             _selectedAnimal = animal;
             _errorText = null;
           }),
-          onContinueAnimal: _continueFromAnimal,
           onConcernChanged: (_) => setState(() {
             if (_errorText != null) _errorText = null;
           }),
@@ -733,8 +692,7 @@ class _ConsultationsHomeScreenState
             _uploadedPhotoName = null;
             _uploadedMediaType = null;
           }),
-          onStepBack: _goToStep,
-          onSignInTap: _goToSignIn,
+          onSubmit: _submitCareChat,
           errorText: _errorText,
         ),
       ],
