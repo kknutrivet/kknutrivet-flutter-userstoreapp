@@ -166,11 +166,12 @@ class ComboBundleCartTile extends ConsumerStatefulWidget {
 }
 
 class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
-  bool _busy = false;
+  String? _busyAction; // 'qty' | 'remove'
+  bool get _busy => _busyAction != null;
 
   Future<void> _updateQty(String bundleName, int nextQty) async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() => _busyAction = 'qty');
     try {
       await ref
           .read(cartProvider.notifier)
@@ -183,20 +184,20 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
     } catch (e) {
       showToast('Could not update bundle: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyAction = null);
     }
   }
 
   Future<void> _removeBundle(String bundleName) async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() => _busyAction = 'remove');
     try {
       await ref.read(cartProvider.notifier).setComboQuantity(widget.comboId, 0);
       showToast('$bundleName removed from cart');
     } catch (e) {
       showToast('Could not remove bundle: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyAction = null);
     }
   }
 
@@ -395,7 +396,7 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                           minHeight: 32,
                         ),
                         visualDensity: VisualDensity.compact,
-                        icon: _busy
+                        icon: _busyAction == 'remove'
                             ? const SizedBox(
                                 width: 14,
                                 height: 14,
@@ -510,7 +511,7 @@ class _ComboBundleCartTileState extends ConsumerState<ComboBundleCartTile> {
                                     ),
                                   ),
                                 ),
-                                child: _busy
+                                child: _busyAction == 'qty'
                                     ? const SizedBox(
                                         width: 12,
                                         height: 12,
@@ -582,7 +583,8 @@ class CartItemTile extends ConsumerStatefulWidget {
 }
 
 class _CartItemTileState extends ConsumerState<CartItemTile> {
-  bool _busy = false;
+  String? _busyAction; // 'qty' | 'remove' | 'upgrade'
+  bool get _busy => _busyAction != null;
 
   ComboBundle? _findUpgradeCombo() {
     if (widget.item.comboId != null) return null;
@@ -602,7 +604,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
 
   Future<void> _removeItem(String title) async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() => _busyAction = 'remove');
     final removedItem = widget.item;
     try {
       await ref.read(cartProvider.notifier).removeItem(removedItem.id);
@@ -628,7 +630,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
     } catch (e) {
       showToast('Could not remove item: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyAction = null);
     }
   }
 
@@ -645,7 +647,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
       );
       return;
     }
-    setState(() => _busy = true);
+    setState(() => _busyAction = 'qty');
     try {
       await ref
           .read(cartProvider.notifier)
@@ -658,7 +660,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
     } catch (e) {
       showToast('Could not update quantity: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyAction = null);
     }
   }
 
@@ -704,7 +706,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
 
   Future<void> _upgradeToBundle(ComboBundle combo) async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() => _busyAction = 'upgrade');
     try {
       await ref.read(cartProvider.notifier).removeItem(widget.item.id);
       await ref
@@ -719,7 +721,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
     } catch (e) {
       showToast('Could not upgrade to bundle: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyAction = null);
     }
   }
 
@@ -880,7 +882,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                               minHeight: 32,
                             ),
                             visualDensity: VisualDensity.compact,
-                            icon: _busy
+                            icon: _busyAction == 'remove'
                                 ? const SizedBox(
                                     width: 14,
                                     height: 14,
@@ -1000,7 +1002,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                                         ),
                                       ),
                                     ),
-                                    child: _busy
+                                    child: _busyAction == 'qty'
                                         ? const SizedBox(
                                             width: 12,
                                             height: 12,
@@ -1174,7 +1176,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: _busy
+                      child: _busyAction == 'upgrade'
                           ? const SizedBox(
                               width: 14,
                               height: 14,
