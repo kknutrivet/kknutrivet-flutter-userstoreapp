@@ -102,12 +102,19 @@ class AuthNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
     final token = await TokenStorage.instance.readToken();
-    if (token == null) return null;
+    if (token == null || token.isEmpty) return null;
     try {
       return await ref.read(authServiceProvider).fetchProfile();
+    } on ApiException catch (e) {
+      // Only clear stored session when the server explicitly rejects the token (401).
+      if (e.statusCode == 401) {
+        await TokenStorage.instance.clearToken();
+        return null;
+      }
+      return TokenStorage.instance.readUser();
     } catch (_) {
-      await TokenStorage.instance.clearToken();
-      return null;
+      // Network timeout / offline / transient cold-start error: keep token & cached user!
+      return TokenStorage.instance.readUser();
     }
   }
 

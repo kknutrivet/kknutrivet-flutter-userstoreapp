@@ -31,4 +31,15 @@ class AppUser {
             (json['rewardsPoints'] as num?)?.toInt() ??
             0,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'email': email,
+        if (name != null) 'name': name,
+        if (phone != null) 'phone': phone,
+        'role': role,
+        if (authProvider != null) 'authProvider': authProvider,
+        'isAnonymous': isAnonymous,
+        if (loyaltyPoints != null) 'loyaltyPoints': loyaltyPoints,
+      };
 }

@@ -6,10 +6,19 @@ class AuthService {
   AuthService(this._client);
   final ApiClient _client;
 
+  Future<AppUser> _persistSession(Map<String, dynamic> data) async {
+    final token = data['token']?.toString();
+    if (token != null && token.isNotEmpty) {
+      await TokenStorage.instance.saveToken(token);
+    }
+    final user = AppUser.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+    await TokenStorage.instance.saveUser(user);
+    return user;
+  }
+
   Future<AppUser> login(String email, String password) async {
     final data = await _client.post('/auth/login', data: {'email': email, 'password': password});
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   Future<AppUser> register({
@@ -26,8 +35,7 @@ class AuthService {
       'phone': phone,
       if (referralCode != null && referralCode.isNotEmpty) 'referralCode': referralCode,
     });
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   Future<void> sendOtp(String phone, String name) =>
@@ -40,8 +48,7 @@ class AuthService {
       if (name != null && name.isNotEmpty) 'name': name,
       if (referralCode != null && referralCode.isNotEmpty) 'referralCode': referralCode,
     });
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   Future<void> forgotPassword(String email) => _client.post('/auth/forgot-password', data: {'email': email});
@@ -51,8 +58,7 @@ class AuthService {
 
   Future<AppUser> continueAsGuest() async {
     final data = await _client.post('/auth/guest', data: {});
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   /// Same Firebase project as the website: POST /api/auth/firebase
@@ -66,8 +72,7 @@ class AuthService {
       if (referralCode != null && referralCode.isNotEmpty)
         'referralCode': referralCode,
     });
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   /// POST /api/auth/firebase-phone {idToken, name?, referralCode?}.
@@ -82,8 +87,7 @@ class AuthService {
       if (referralCode != null && referralCode.isNotEmpty)
         'referralCode': referralCode,
     });
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   /// POST /api/auth/firebase-anonymous {idToken} — the website's
@@ -92,13 +96,14 @@ class AuthService {
     final data = await _client.post('/auth/firebase-anonymous', data: {
       'idToken': idToken,
     });
-    await TokenStorage.instance.saveToken(data['token']);
-    return AppUser.fromJson(data['user']);
+    return _persistSession(Map<String, dynamic>.from(data as Map));
   }
 
   Future<AppUser> fetchProfile() async {
     final data = await _client.get('/auth/profile');
-    return AppUser.fromJson(data);
+    final user = AppUser.fromJson(data);
+    await TokenStorage.instance.saveUser(user);
+    return user;
   }
 
   Future<AppUser> updateProfile({String? name, String? phone, String? email}) async {
@@ -107,7 +112,9 @@ class AuthService {
       'phone': ?phone,
       'email': ?email,
     });
-    return AppUser.fromJson(data);
+    final user = AppUser.fromJson(data);
+    await TokenStorage.instance.saveUser(user);
+    return user;
   }
 
   Future<void> logout() => TokenStorage.instance.clearToken();
