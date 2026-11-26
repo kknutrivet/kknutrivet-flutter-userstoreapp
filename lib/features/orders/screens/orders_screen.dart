@@ -11,6 +11,8 @@ import '../../../core/widgets/common.dart';
 import '../../../core/widgets/skeletons.dart';
 import '../../../models/order.dart';
 import '../../../providers/app_providers.dart';
+import '../../profile/screens/profile_coupons_screen.dart'
+    show profileCouponsProvider;
 
 final ordersProvider = FutureProvider.autoDispose<List<Order>>((ref) {
   return ref.read(orderServiceProvider).fetchOrders();
@@ -31,6 +33,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(ordersProvider);
+    final couponsData = ref.watch(profileCouponsProvider).valueOrNull;
+    final scratchList = (couponsData?['data'] is Map
+            ? (couponsData!['data'] as Map)['scratchCards']
+            : couponsData?['scratchCards'])
+        as List?;
+    final unscratchedCount = (scratchList ?? const [])
+        .whereType<Map>()
+        .where((c) => c['state'] == 'UNSCRATCHED')
+        .length;
 
     void handleBack() {
       if (context.canPop()) {
@@ -115,6 +126,63 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
+                    if (unscratchedCount > 0)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Material(
+                            color: const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(14),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () {
+                                AppHaptics.tap();
+                                context.push('/profile/coupons');
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: const Color(0xFFF59E0B),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.card_giftcard_rounded,
+                                      size: 20,
+                                      color: Color(0xFFB45309),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'You have $unscratchedCount unscratched Scratch & Win ${unscratchedCount == 1 ? 'card' : 'cards'}!',
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF92400E),
+                                        ),
+                                      ),
+                                    ),
+                                    const Text(
+                                      'Reveal →',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.primaryDeep,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     // Filter chips
                     SliverToBoxAdapter(
                       child: SingleChildScrollView(

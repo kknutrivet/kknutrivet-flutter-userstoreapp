@@ -1428,14 +1428,18 @@ class _DetailsCard extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (product.size?.isNotEmpty == true &&
-                    product.variants.isEmpty)
+                if (product.basePackLabel.isNotEmpty &&
+                    !product.variants.any(
+                      (v) =>
+                          v.name.trim().toLowerCase() ==
+                          product.basePackLabel.toLowerCase(),
+                    ))
                   _variantTile(
-                    name: product.size!,
-                    price: product.price,
+                    name: product.basePackLabel,
+                    price: product.effectivePrice,
                     mrp: product.mrp,
                     selected: selectedVariantId == null,
-                    enabled: true,
+                    enabled: product.stock > 0,
                     onTap: () => onVariant(null),
                   ),
                 for (final v in product.variants)

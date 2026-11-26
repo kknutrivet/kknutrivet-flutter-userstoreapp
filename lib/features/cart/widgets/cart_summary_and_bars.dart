@@ -307,6 +307,35 @@ class CartSummaryCard extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.verified_user_outlined,
+                  size: 14,
+                  color: Color(0xFF047857),
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Partial COD available · Small advance now, rest on delivery (₹0 COD fee)',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF065F46),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (showInlinePincodeChecker) ...[
             const SizedBox(height: 8),
             const CartDeliveryCheckerCard(),

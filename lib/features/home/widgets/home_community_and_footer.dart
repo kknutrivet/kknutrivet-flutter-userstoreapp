@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../providers/app_providers.dart';
+import '../../brands/screens/brands_screen.dart' show brandSlugOf;
 import 'home_models_and_data.dart';
 
 // ── 14. KnowledgeRail ("Pet Care Knowledge") ───────────────────────────────
@@ -589,7 +590,7 @@ class HomeBrandsRail extends ConsumerWidget {
               children: [
                 const HomeSectionTitle(
                   title: 'Top brands you can trust',
-                  route: '/products',
+                  route: '/brands',
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -607,8 +608,8 @@ class HomeBrandsRail extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                           onTap: () {
                             Haptics.tap();
-                            context.go(
-                              '/products?search=${Uri.encodeComponent(brand.name)}',
+                            context.push(
+                              '/brands/${brandSlugOf(brand.name)}?name=${Uri.encodeComponent(brand.name)}',
                             );
                           },
                           child: Container(
