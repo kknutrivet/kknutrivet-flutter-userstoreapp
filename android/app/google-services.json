@@ -150,6 +150,14 @@
           }
         },
         {
+          "client_id": "446688659304-cdkq0a7027a81r97f2d3339m71uncoeu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kknutrivet.shop",
+            "certificate_hash": "304d690f2b78b8dd19ea6e12d74ed57db5b54dc3"
+          }
+        },
+        {
           "client_id": "446688659304-cf5it26spor74rcif6c17hhilmqh73lc.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -163,14 +171,6 @@
           "android_info": {
             "package_name": "com.kknutrivet.shop",
             "certificate_hash": "f520bf30af4838bd1dd6cef92f9feb84b314e0d9"
-          }
-        },
-        {
-          "client_id": "446688659304-kl97kad49m226c4ptp97uoooi5gqcduh.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.kknutrivet.shop",
-            "certificate_hash": "a9c2cd2cb7628c723ec9aa53474d990255cde054"
           }
         },
         {

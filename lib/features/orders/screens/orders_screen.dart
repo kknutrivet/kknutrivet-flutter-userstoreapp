@@ -11,6 +11,7 @@ import '../../../core/widgets/common.dart';
 import '../../../core/widgets/skeletons.dart';
 import '../../../models/order.dart';
 import '../../../providers/app_providers.dart';
+import '../widgets/express_reorder_sheet.dart';
 import '../../profile/screens/profile_coupons_screen.dart'
     show profileCouponsProvider;
 
@@ -296,53 +297,9 @@ class _OrderCard extends ConsumerStatefulWidget {
 }
 
 class _OrderCardState extends ConsumerState<_OrderCard> {
-  bool _reordering = false;
-
   Future<void> _reorder() async {
-    if (_reordering) return;
-    final batch = [
-      for (final item in widget.order.items)
-        if (item.product != null)
-          (
-            productId: item.product!.id,
-            variantId: item.variant?.id,
-            quantity: item.quantity > 0 ? item.quantity : 1,
-            product: item.product,
-            variant: item.variant,
-          ),
-    ];
-    if (batch.isEmpty) {
-      showToast('No reorderable items found', type: AppToastType.warning);
-      return;
-    }
-
     AppHaptics.tap();
-    setState(() => _reordering = true);
-    try {
-      final result = await ref.read(cartProvider.notifier).addItemsBatch(batch);
-      if (!mounted) return;
-      if (result.added > 0) {
-        final msg = result.failed > 0
-            ? 'Added ${result.added} of ${batch.length} items to cart'
-            : 'Added ${result.added} ${result.added == 1 ? 'item' : 'items'} to cart';
-        showToast(msg);
-        context.push('/cart');
-      } else {
-        showToast(
-          'Items from this order are currently unavailable',
-          type: AppToastType.warning,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        showToast(
-          e.toString().replaceFirst(RegExp(r'^Exception: '), ''),
-          isError: true,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _reordering = false);
-    }
+    await showExpressReorderSheet(context, widget.order);
   }
 
   @override
@@ -503,20 +460,11 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
                 children: [
                   if (order.items.any((i) => i.product != null)) ...[
                     OutlinedButton.icon(
-                      onPressed: _reordering ? null : _reorder,
-                      icon: _reordering
-                          ? const SizedBox(
-                              width: 13,
-                              height: 13,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primaryDeep,
-                              ),
-                            )
-                          : const Icon(Icons.replay_rounded, size: 14),
-                      label: Text(
-                        _reordering ? 'Adding...' : 'Reorder',
-                        style: const TextStyle(
+                      onPressed: _reorder,
+                      icon: const Icon(Icons.bolt_rounded, size: 14),
+                      label: const Text(
+                        'Reorder',
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),

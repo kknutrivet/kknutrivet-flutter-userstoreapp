@@ -10,6 +10,7 @@ import '../../../core/widgets/common.dart';
 import '../../../models/order.dart';
 import '../../../models/product.dart';
 import '../../../providers/app_providers.dart';
+import 'express_reorder_sheet.dart';
 
 /// Shared elevated card wrapper used across Order Detail sections.
 class OrderDetailCard extends StatelessWidget {
@@ -73,8 +74,6 @@ class OrderItemsCard extends ConsumerStatefulWidget {
 }
 
 class _OrderItemsCardState extends ConsumerState<OrderItemsCard> {
-  bool _reordering = false;
-
   Order get order => widget.order;
 
   String? _extractComboId(OrderItem item) {
@@ -128,47 +127,7 @@ class _OrderItemsCardState extends ConsumerState<OrderItemsCard> {
   }
 
   Future<void> _reorder() async {
-    if (_reordering) return;
-    final batch = [
-      for (final item in order.items)
-        (
-          productId: item.product?.id ?? item.id,
-          variantId: item.variant?.id,
-          quantity: item.quantity > 0 ? item.quantity : 1,
-          product: item.product,
-          variant: item.variant,
-        ),
-    ];
-    if (batch.isEmpty) {
-      showToast('No reorderable items found', type: AppToastType.warning);
-      return;
-    }
-
-    setState(() => _reordering = true);
-    try {
-      final result = await ref.read(cartProvider.notifier).addItemsBatch(batch);
-      if (!mounted) return;
-      if (result.added > 0) {
-        final msg = result.failed > 0
-            ? 'Added ${result.added} of ${batch.length} items to cart'
-            : 'Added ${result.added} ${result.added == 1 ? 'item' : 'items'} to cart';
-        showToast(msg);
-        context.push('/cart');
-      } else {
-        showToast(
-          'Items from this order are currently unavailable',
-          type: AppToastType.warning,
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      showToast(
-        e.toString().replaceFirst(RegExp(r'^Exception: '), ''),
-        isError: true,
-      );
-    } finally {
-      if (mounted) setState(() => _reordering = false);
-    }
+    await showExpressReorderSheet(context, order);
   }
 
   @override
@@ -220,20 +179,11 @@ class _OrderItemsCardState extends ConsumerState<OrderItemsCard> {
     return OrderDetailCard(
       title: 'Items ($displayCount)',
       trailing: TextButton.icon(
-        onPressed: _reordering ? null : _reorder,
-        icon: _reordering
-            ? const SizedBox(
-                width: 13,
-                height: 13,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.primaryDeep,
-                ),
-              )
-            : const Icon(Icons.replay_rounded, size: 14),
-        label: Text(
-          _reordering ? 'Adding...' : 'Shop again',
-          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+        onPressed: _reorder,
+        icon: const Icon(Icons.bolt_rounded, size: 14),
+        label: const Text(
+          'Shop again',
+          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
         ),
       ),
       child: Column(children: children),

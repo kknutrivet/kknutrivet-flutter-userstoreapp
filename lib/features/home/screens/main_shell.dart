@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,16 +7,24 @@ import 'package:go_router/go_router.dart';
 import '../../../core/i18n/app_language.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/haptics.dart';
-import '../../../core/widgets/app_loader.dart';
+import '../../../core/widgets/common.dart';
 import '../../../providers/app_providers.dart';
 
 /// Persistent mobile navigation with a cart dock outside page content.
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  DateTime? _lastBackPressAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final navigationShell = widget.navigationShell;
     final cartCount = ref.watch(cartCountProvider);
     final cartTotal = ref.watch(cartTotalProvider);
     final user = ref.watch(authProvider).value;
@@ -33,13 +42,26 @@ class MainShell extends ConsumerWidget {
         navigationShell.currentIndex != 4;
 
     return PopScope(
-      canPop: navigationShell.currentIndex == 0,
-      onPopInvokedWithResult: (didPop, _) async {
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (navigationShell.currentIndex != 0) {
           AppHaptics.tap();
           navigationShell.goBranch(0);
+          return;
         }
+        final now = DateTime.now();
+        if (_lastBackPressAt != null &&
+            now.difference(_lastBackPressAt!) < const Duration(seconds: 2)) {
+          SystemNavigator.pop();
+          return;
+        }
+        _lastBackPressAt = now;
+        showToast(
+          'Press back again to exit',
+          type: AppToastType.info,
+          duration: const Duration(milliseconds: 1800),
+        );
       },
       child: Scaffold(
         body: Stack(

@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../config/firebase_options.dart';
 
@@ -31,6 +33,22 @@ class FirebaseAuthService {
   static final FirebaseAuthService instance = FirebaseAuthService._();
 
   bool _initialized = false;
+  Future<void>? _googleInitFuture;
+
+  static const _webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+
+  Future<void> _ensureGoogleSignInInitialized() {
+    // On Android, google_sign_in_android 7.2.x automatically reads
+    // `default_web_client_id` generated from `android/app/google-services.json`.
+    return _googleInitFuture ??= GoogleSignIn.instance
+        .initialize(
+          clientId: kIsWeb && _webClientId.isNotEmpty ? _webClientId : null,
+        )
+        .catchError((Object error, StackTrace stackTrace) {
+          _googleInitFuture = null;
+          Error.throwWithStackTrace(error, stackTrace);
+        });
+  }
 
   /// Must be called (and awaited) before any other method. Returns true
   /// when Firebase is usable, false when the native config files are
@@ -57,15 +75,8 @@ class FirebaseAuthService {
     }
   }
 
-  /// Google sign-in via Firebase Auth's OAuth provider flow
-  /// (Chrome Custom Tab on Android / ASWebAuthenticationSession on iOS /
-  /// popup on Web) → ID token for POST /api/auth/firebase.
-  ///
-  /// Uses the same `kk-nutrivet-web.firebaseapp.com` OAuth handler as the
-  /// website so it works reliably across USB, Internal Testing, Closed Beta,
-  /// and Production without Android Credential Manager / SHA-1 failures.
-  Future<String?> signInWithGoogle() async {
-    _requireReady();
+  /// Fallback OAuth via Firebase Auth Chrome Custom Tab / Web popup.
+  Future<String?> _signInWithGoogleWebFallback() async {
     try {
       final provider = GoogleAuthProvider()
         ..addScope('email')
@@ -90,11 +101,65 @@ class FirebaseAuthService {
         return null;
       }
       rethrow;
-    } catch (e) {
-      throw FirebaseAuthException(
-        code: 'google-sign-in-failed',
-        message: e.toString().replaceFirst(RegExp(r'^Exception: '), ''),
+    }
+  }
+
+  /// Native Google sign-in (`google_sign_in` v7.2.0 / Android Credential
+  /// Manager) → Firebase credential → ID token for POST /api/auth/firebase.
+  ///
+  /// Falls back automatically to Firebase Auth web OAuth if native sign-in
+  /// is unsupported or fails for a non-cancellation reason.
+  Future<String?> signInWithGoogle() async {
+    _requireReady();
+    try {
+      await _ensureGoogleSignInInitialized();
+      if (!GoogleSignIn.instance.supportsAuthenticate()) {
+        return await _signInWithGoogleWebFallback();
+      }
+      final googleUser = await GoogleSignIn.instance.authenticate();
+      final googleIdToken = googleUser.authentication.idToken;
+      if (googleIdToken == null || googleIdToken.isEmpty) {
+        debugPrint(
+          '[Firebase] Native Google Sign-In returned empty idToken; falling back to web OAuth.',
+        );
+        return await _signInWithGoogleWebFallback();
+      }
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleIdToken,
       );
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final idToken = await userCredential.user?.getIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'missing-id-token',
+          message: 'Google sign-in did not return an ID token.',
+        );
+      }
+      return idToken;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        return null;
+      }
+      debugPrint(
+        '[Firebase] Native Google Sign-In failed (${e.code}: ${e.description}); falling back to web OAuth.',
+      );
+      return await _signInWithGoogleWebFallback();
+    } on PlatformException catch (e) {
+      if (e.code == 'sign_in_canceled') {
+        return null;
+      }
+      debugPrint(
+        '[Firebase] Native Google Sign-In PlatformException (${e.code}: ${e.message}); falling back to web OAuth.',
+      );
+      return await _signInWithGoogleWebFallback();
+    } on FirebaseAuthException {
+      rethrow;
+    } catch (e) {
+      debugPrint(
+        '[Firebase] Native Google Sign-In error ($e); falling back to web OAuth.',
+      );
+      return await _signInWithGoogleWebFallback();
     }
   }
 
@@ -179,6 +244,12 @@ class FirebaseAuthService {
 
   Future<void> signOut() async {
     if (Firebase.apps.isEmpty) return;
+    try {
+      if (_googleInitFuture != null) {
+        await _googleInitFuture;
+        await GoogleSignIn.instance.signOut();
+      }
+    } catch (_) {}
     try {
       await FirebaseAuth.instance.signOut();
     } catch (_) {}

@@ -2,7 +2,7 @@ name: nvit_app
 description: "KK Nutrivet - Animal Nutrition & Veterinary Care mobile app."
 publish_to: 'none'
 
-version: 1.0.5+11
+version: 1.0.6+12
 
 environment:
   sdk: ^3.14.0
