@@ -1134,7 +1134,8 @@ class OrderScratchToWinCard extends ConsumerStatefulWidget {
       _OrderScratchToWinCardState();
 }
 
-class _OrderScratchToWinCardState extends ConsumerState<OrderScratchToWinCard> {
+class _OrderScratchToWinCardState extends ConsumerState<OrderScratchToWinCard>
+    with AutomaticKeepAliveClientMixin {
   bool _loading = true;
   bool _eligible = true;
   bool _expired = false;
@@ -1143,6 +1144,9 @@ class _OrderScratchToWinCardState extends ConsumerState<OrderScratchToWinCard> {
   bool _claiming = false;
   bool _copied = false;
   double _scratchProgress = 0;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -1214,6 +1218,7 @@ class _OrderScratchToWinCardState extends ConsumerState<OrderScratchToWinCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (_loading || !_eligible) return const SizedBox.shrink();
 
     final shortId = widget.order.orderNumber.length > 6

@@ -18,13 +18,17 @@ class ReorderReminderCard extends ConsumerStatefulWidget {
       _ReorderReminderCardState();
 }
 
-class _ReorderReminderCardState extends ConsumerState<ReorderReminderCard> {
+class _ReorderReminderCardState extends ConsumerState<ReorderReminderCard>
+    with AutomaticKeepAliveClientMixin {
   bool _loading = true;
   bool _saving = false;
   bool _optedIn = false;
   String _rewardType = 'percent_5';
   int _bonusCoins = 25;
   String? _couponCode;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -78,6 +82,7 @@ class _ReorderReminderCardState extends ConsumerState<ReorderReminderCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (_loading) return const SizedBox.shrink();
 
     final perkText = _rewardType == 'bonus_coins'

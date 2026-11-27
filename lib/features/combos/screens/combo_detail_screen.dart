@@ -564,7 +564,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '₹${formatPrice(combo.comboPrice)}',
+                      formatPrice(combo.comboPrice),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -578,7 +578,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                   children: [
                     if (combo.originalPrice > combo.comboPrice)
                       Text(
-                        '₹${formatPrice(combo.originalPrice)}',
+                        formatPrice(combo.originalPrice),
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -988,7 +988,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                   Row(
                     children: [
                       Text(
-                        '₹${formatPrice(price)}',
+                        formatPrice(price),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -998,7 +998,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                       if (mrp != null && mrp > price) ...[
                         const SizedBox(width: 6),
                         Text(
-                          '₹${formatPrice(mrp)}',
+                          formatPrice(mrp),
                           style: const TextStyle(
                             fontSize: 10.5,
                             color: AppColors.textSecondary,
@@ -1228,7 +1228,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
               Row(
                 children: [
                   Text(
-                    '₹${formatPrice(combo.comboPrice)}',
+                    formatPrice(combo.comboPrice),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -1238,7 +1238,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                   if (combo.originalPrice > combo.comboPrice) ...[
                     const SizedBox(width: 6),
                     Text(
-                      '₹${formatPrice(combo.originalPrice)}',
+                      formatPrice(combo.originalPrice),
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,

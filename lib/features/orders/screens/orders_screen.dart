@@ -287,41 +287,67 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 }
 
-class _OrderCard extends ConsumerWidget {
+class _OrderCard extends ConsumerStatefulWidget {
   const _OrderCard({required this.order});
   final Order order;
 
-  Future<void> _reorder(BuildContext context, WidgetRef ref) async {
-    AppHaptics.tap();
-    final cartNotifier = ref.read(cartProvider.notifier);
-    var addedCount = 0;
-    for (final item in order.items) {
-      final product = item.product;
-      if (product == null) continue;
-      await cartNotifier.addItem(
-        productId: product.id,
-        variantId: item.variant?.id,
-        product: product,
-        variant: item.variant,
-        quantity: item.quantity > 0 ? item.quantity : 1,
-      );
-      addedCount++;
-    }
-    if (addedCount > 0) {
-      showToast(
-        'Added $addedCount ${addedCount == 1 ? 'item' : 'items'} to cart',
-        actionLabel: 'View Cart',
-        onAction: () {
-          if (context.mounted) context.push('/cart');
-        },
-      );
-    } else {
+  @override
+  ConsumerState<_OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends ConsumerState<_OrderCard> {
+  bool _reordering = false;
+
+  Future<void> _reorder() async {
+    if (_reordering) return;
+    final batch = [
+      for (final item in widget.order.items)
+        if (item.product != null)
+          (
+            productId: item.product!.id,
+            variantId: item.variant?.id,
+            quantity: item.quantity > 0 ? item.quantity : 1,
+            product: item.product,
+            variant: item.variant,
+          ),
+    ];
+    if (batch.isEmpty) {
       showToast('No reorderable items found', type: AppToastType.warning);
+      return;
+    }
+
+    AppHaptics.tap();
+    setState(() => _reordering = true);
+    try {
+      final result = await ref.read(cartProvider.notifier).addItemsBatch(batch);
+      if (!mounted) return;
+      if (result.added > 0) {
+        final msg = result.failed > 0
+            ? 'Added ${result.added} of ${batch.length} items to cart'
+            : 'Added ${result.added} ${result.added == 1 ? 'item' : 'items'} to cart';
+        showToast(msg);
+        context.push('/cart');
+      } else {
+        showToast(
+          'Items from this order are currently unavailable',
+          type: AppToastType.warning,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showToast(
+          e.toString().replaceFirst(RegExp(r'^Exception: '), ''),
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _reordering = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final order = widget.order;
     final info = statusInfoFor(order.status);
     final isOnline = order.paymentMethod == 'CASHFREE' || order.partialCod;
     final paid =
@@ -477,11 +503,20 @@ class _OrderCard extends ConsumerWidget {
                 children: [
                   if (order.items.any((i) => i.product != null)) ...[
                     OutlinedButton.icon(
-                      onPressed: () => _reorder(context, ref),
-                      icon: const Icon(Icons.replay_rounded, size: 14),
-                      label: const Text(
-                        'Reorder',
-                        style: TextStyle(
+                      onPressed: _reordering ? null : _reorder,
+                      icon: _reordering
+                          ? const SizedBox(
+                              width: 13,
+                              height: 13,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primaryDeep,
+                              ),
+                            )
+                          : const Icon(Icons.replay_rounded, size: 14),
+                      label: Text(
+                        _reordering ? 'Adding...' : 'Reorder',
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),

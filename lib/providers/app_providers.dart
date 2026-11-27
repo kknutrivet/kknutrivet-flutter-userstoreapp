@@ -521,6 +521,83 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
     }
   }
 
+  /// Adds multiple items in parallel and refreshes the cart once at the end.
+  /// Used by 1-tap Reorder so multi-item orders finish in a single round-trip
+  /// instead of N sequential add + N full cart refreshes.
+  Future<({int added, int failed})> addItemsBatch(
+    List<
+        ({
+          String productId,
+          String? variantId,
+          int quantity,
+          Product? product,
+          ProductVariant? variant,
+        })>
+        items,
+  ) async {
+    if (items.isEmpty) return (added: 0, failed: 0);
+    final user = ref.read(authProvider).value;
+    if (user == null) {
+      for (final item in items) {
+        _addToGuestCart(
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          product: item.product,
+          variant: item.variant,
+        );
+      }
+      state = AsyncData(List.unmodifiable(_guestCart));
+      return (added: items.length, failed: 0);
+    }
+
+    final service = ref.read(cartServiceProvider);
+    var added = 0;
+    var failed = 0;
+    var sawUnauthorized = false;
+
+    await Future.wait(
+      items.map((item) async {
+        try {
+          await service.addItem(
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+          );
+          added++;
+        } on ApiException catch (e) {
+          if (e.statusCode == 401) {
+            sawUnauthorized = true;
+            _addToGuestCart(
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: item.quantity,
+              product: item.product,
+              variant: item.variant,
+            );
+            added++;
+          } else {
+            failed++;
+          }
+        } catch (_) {
+          failed++;
+        }
+      }),
+    );
+
+    if (sawUnauthorized) {
+      state = AsyncData(List.unmodifiable(_guestCart));
+      Future.microtask(() => ref.read(authProvider.notifier).logout());
+      return (added: added, failed: failed);
+    }
+
+    if (added > 0) {
+      await LocalDatabase.instance.invalidateMatching('/cart');
+      await refresh(force: true);
+    }
+    return (added: added, failed: failed);
+  }
+
   Future<void> setQuantity({
     required String productId,
     String? variantId,

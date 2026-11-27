@@ -64,9 +64,18 @@ class OrderDetailCard extends StatelessWidget {
 }
 
 /// Grouped Care Bundle & standalone order items card with "Shop again" action.
-class OrderItemsCard extends ConsumerWidget {
+class OrderItemsCard extends ConsumerStatefulWidget {
   const OrderItemsCard({super.key, required this.order});
   final Order order;
+
+  @override
+  ConsumerState<OrderItemsCard> createState() => _OrderItemsCardState();
+}
+
+class _OrderItemsCardState extends ConsumerState<OrderItemsCard> {
+  bool _reordering = false;
+
+  Order get order => widget.order;
 
   String? _extractComboId(OrderItem item) {
     final val = item.comboId;
@@ -118,26 +127,52 @@ class OrderItemsCard extends ConsumerWidget {
     return null;
   }
 
-  Future<void> _reorder(BuildContext context, WidgetRef ref) async {
-    try {
-      final cartNotifier = ref.read(cartProvider.notifier);
-      for (final item in order.items) {
-        await cartNotifier.addItem(
+  Future<void> _reorder() async {
+    if (_reordering) return;
+    final batch = [
+      for (final item in order.items)
+        (
           productId: item.product?.id ?? item.id,
-          quantity: item.quantity,
+          variantId: item.variant?.id,
+          quantity: item.quantity > 0 ? item.quantity : 1,
+          product: item.product,
+          variant: item.variant,
+        ),
+    ];
+    if (batch.isEmpty) {
+      showToast('No reorderable items found', type: AppToastType.warning);
+      return;
+    }
+
+    setState(() => _reordering = true);
+    try {
+      final result = await ref.read(cartProvider.notifier).addItemsBatch(batch);
+      if (!mounted) return;
+      if (result.added > 0) {
+        final msg = result.failed > 0
+            ? 'Added ${result.added} of ${batch.length} items to cart'
+            : 'Added ${result.added} ${result.added == 1 ? 'item' : 'items'} to cart';
+        showToast(msg);
+        context.push('/cart');
+      } else {
+        showToast(
+          'Items from this order are currently unavailable',
+          type: AppToastType.warning,
         );
       }
-      if (!context.mounted) return;
-      showToast('Items added to cart');
-      context.push('/cart');
     } catch (e) {
-      if (!context.mounted) return;
-      showToast(e.toString(), isError: true);
+      if (!mounted) return;
+      showToast(
+        e.toString().replaceFirst(RegExp(r'^Exception: '), ''),
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _reordering = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final combos = ref.watch(homeCombosProvider).value ?? const <ComboBundle>[];
 
     // Group items that share a comboId or comboName.
@@ -184,9 +219,22 @@ class OrderItemsCard extends ConsumerWidget {
 
     return OrderDetailCard(
       title: 'Items ($displayCount)',
-      trailing: TextButton(
-        onPressed: () => _reorder(context, ref),
-        child: const Text('Shop again', style: TextStyle(fontSize: 12.5)),
+      trailing: TextButton.icon(
+        onPressed: _reordering ? null : _reorder,
+        icon: _reordering
+            ? const SizedBox(
+                width: 13,
+                height: 13,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primaryDeep,
+                ),
+              )
+            : const Icon(Icons.replay_rounded, size: 14),
+        label: Text(
+          _reordering ? 'Adding...' : 'Shop again',
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+        ),
       ),
       child: Column(children: children),
     );

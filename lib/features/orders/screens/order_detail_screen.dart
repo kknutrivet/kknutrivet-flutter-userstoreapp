@@ -56,38 +56,42 @@ class OrderDetailScreen extends ConsumerWidget {
                 ref.invalidate(orderTrackingProvider(id));
                 await ref.read(orderDetailProvider(id).future);
               },
-              child: ListView(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
-                children: [
-                  OrderHeroCard(order: order),
-                  OrderScratchToWinCard(order: order),
-                  if (!order.isCancelled) ...[
-                    const SizedBox(height: 12),
-                    ReorderReminderCard(orderId: order.id),
-                  ],
-                  if ((order.paymentMethod == 'CASHFREE' ||
-                          order.paymentMethod == 'PARTIAL_COD') &&
-                      order.paymentStatus != 'PAID' &&
-                      order.paymentStatus != 'ADVANCE_PAID' &&
-                      !order.isCancelled)
-                    OrderPaymentRetryBanner(order: order),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OrderHeroCard(order: order),
+                    OrderScratchToWinCard(order: order),
+                    if (!order.isCancelled) ...[
+                      const SizedBox(height: 12),
+                      ReorderReminderCard(orderId: order.id),
+                    ],
+                    if ((order.paymentMethod == 'CASHFREE' ||
+                            order.paymentMethod == 'PARTIAL_COD') &&
+                        order.paymentStatus != 'PAID' &&
+                        order.paymentStatus != 'ADVANCE_PAID' &&
+                        !order.isCancelled)
+                      OrderPaymentRetryBanner(order: order),
 
-                  const SizedBox(height: 16),
-                  if (order.isCancelled)
-                    const OrderCancelledBanner()
-                  else
-                    OrderJourneyTracker(order: order),
-                  const SizedBox(height: 16),
-                  OrderPaymentCard(order: order),
-                  OrderTrackingSection(order: order, orderId: id),
-                  const SizedBox(height: 16),
-                  OrderItemsCard(order: order),
-                  const SizedBox(height: 16),
-                  OrderBillSummaryCard(order: order),
-                  const SizedBox(height: 16),
-                  OrderDeliveryAddressCard(order: order),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 16),
+                    if (order.isCancelled)
+                      const OrderCancelledBanner()
+                    else
+                      OrderJourneyTracker(order: order),
+                    const SizedBox(height: 16),
+                    OrderPaymentCard(order: order),
+                    OrderTrackingSection(order: order, orderId: id),
+                    const SizedBox(height: 16),
+                    OrderItemsCard(order: order),
+                    const SizedBox(height: 16),
+                    OrderBillSummaryCard(order: order),
+                    const SizedBox(height: 16),
+                    OrderDeliveryAddressCard(order: order),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
             loading: () => const LoadingView(),
