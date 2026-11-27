@@ -22,6 +22,33 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> {
   DateTime? _lastBackPressAt;
 
+  /// Handles root-level back presses when [MainShell] is the active top route.
+  /// Returns `true` when consumed so GoRouter / Android never closes the app
+  /// on a single accidental back press from the Home tab.
+  bool _consumeShellBack(StatefulNavigationShell navigationShell) {
+    if (navigationShell.currentIndex != 0) {
+      _lastBackPressAt = null;
+      AppHaptics.tap();
+      navigationShell.goBranch(0);
+      return true;
+    }
+
+    final now = DateTime.now();
+    if (_lastBackPressAt != null &&
+        now.difference(_lastBackPressAt!) < const Duration(seconds: 2)) {
+      SystemNavigator.pop();
+      return true;
+    }
+
+    _lastBackPressAt = now;
+    showToast(
+      'Press back again to exit',
+      type: AppToastType.info,
+      duration: const Duration(milliseconds: 2000),
+    );
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final navigationShell = widget.navigationShell;
@@ -41,56 +68,56 @@ class _MainShellState extends ConsumerState<MainShell> {
         navigationShell.currentIndex != 3 &&
         navigationShell.currentIndex != 4;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        if (navigationShell.currentIndex != 0) {
-          AppHaptics.tap();
-          navigationShell.goBranch(0);
-          return;
-        }
-        final now = DateTime.now();
-        if (_lastBackPressAt != null &&
-            now.difference(_lastBackPressAt!) < const Duration(seconds: 2)) {
-          SystemNavigator.pop();
-          return;
-        }
-        _lastBackPressAt = now;
-        showToast(
-          'Press back again to exit',
-          type: AppToastType.info,
-          duration: const Duration(milliseconds: 1800),
-        );
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        if (!mounted) return false;
+        // Let modal dialogs, bottom sheets, or pushed GoRouter screens pop normally.
+        if (ModalRoute.of(context)?.isCurrent == false) return false;
+        final router = GoRouter.maybeOf(context);
+        if (router != null && router.canPop()) return false;
+        return _consumeShellBack(navigationShell);
       },
-      child: Scaffold(
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          _consumeShellBack(navigationShell);
+        },
+        child: Scaffold(
+        extendBody: true,
         body: Stack(
           children: [
             Positioned.fill(child: navigationShell),
             Positioned(
               left: 0,
               right: 0,
-              bottom: 8,
-              child: AnimatedSwitcher(
-                duration: AppMotion.normal,
-                switchInCurve: AppMotion.easeOut,
-                switchOutCurve: AppMotion.easeIn,
-                transitionBuilder: (child, animation) => SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.35),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: FadeTransition(opacity: animation, child: child),
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: AnimatedSwitcher(
+                    duration: AppMotion.normal,
+                    switchInCurve: AppMotion.easeOut,
+                    switchOutCurve: AppMotion.easeIn,
+                    transitionBuilder: (child, animation) => SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.35),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: FadeTransition(opacity: animation, child: child),
+                    ),
+                    child: showFloatingCart
+                        ? CartFloatingBar(
+                            key: const ValueKey('floating_cart_bar'),
+                            count: cartCount,
+                            total: cartTotal,
+                          )
+                        : const SizedBox.shrink(
+                            key: ValueKey('floating_cart_empty'),
+                          ),
+                  ),
                 ),
-                child: showFloatingCart
-                    ? CartFloatingBar(
-                        key: const ValueKey('floating_cart_bar'),
-                        count: cartCount,
-                        total: cartTotal,
-                      )
-                    : const SizedBox.shrink(
-                        key: ValueKey('floating_cart_empty'),
-                      ),
               ),
             ),
           ],
@@ -110,6 +137,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               initialLocation: i == navigationShell.currentIndex,
             );
           },
+        ),
         ),
       ),
     );
@@ -138,7 +166,7 @@ class WebsiteBottomNav extends ConsumerWidget {
     final useCompactMargins = screenWidth < 350 || textScale > 1.3;
 
     return ColoredBox(
-      color: dark ? const Color(0xFF0A1411) : AppColors.homeBackground,
+      color: Colors.transparent,
       child: SafeArea(
         top: false,
         minimum: useCompactMargins
