@@ -4,9 +4,11 @@ import '../features/referral/screens/referral_screen.dart' show referralSummaryP
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/analytics/analytics_service.dart';
+import '../core/analytics/mixpanel_service.dart';
 import '../core/auth/firebase_auth_service.dart';
 import '../core/database/local_database.dart';
 import '../core/network/api_client.dart';
+import '../core/notifications/push_service.dart';
 import '../core/storage/delivery_pincode_storage.dart';
 import '../core/storage/guest_cart_storage.dart';
 import '../core/storage/onboarding_storage.dart';
@@ -237,8 +239,12 @@ class AuthNotifier extends AsyncNotifier<AppUser?> {
   }
 
   Future<void> logout() async {
+    await PushService.instance.detachCurrentToken(
+      (token) => ref.read(notificationServiceProvider).detachPushToken(token),
+    );
     await FirebaseAuthService.instance.signOut();
     await ref.read(authServiceProvider).logout();
+    await MixpanelService.instance.reset();
     AnalyticsService.instance.logLogout();
     state = const AsyncData(null);
   }

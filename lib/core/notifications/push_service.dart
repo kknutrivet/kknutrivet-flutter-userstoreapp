@@ -110,6 +110,30 @@ class PushService {
     await _registerCurrentToken(targetRegistrar);
   }
 
+  /// Best-effort unlinking of `userId` from this device's push token on logout.
+  /// Must be called BEFORE `TokenStorage.clearToken()` so the Bearer JWT is sent.
+  Future<void> detachCurrentToken(
+    Future<void> Function(String token) detacher,
+  ) async {
+    try {
+      String? token;
+      if (Firebase.apps.isNotEmpty) {
+        token = await FirebaseMessaging.instance
+            .getToken()
+            .timeout(const Duration(seconds: 3));
+      }
+      if (token == null || token.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        token = prefs.getString(_previousTokenKey);
+      }
+      if (token != null && token.isNotEmpty) {
+        await detacher(token).timeout(const Duration(seconds: 4));
+      }
+    } catch (e) {
+      debugPrint('[PushService] detachCurrentToken skipped: $e');
+    }
+  }
+
   Future<void> _registerCurrentToken(PushTokenRegistrar register) async {
     try {
       final token = await FirebaseMessaging.instance.getToken();
