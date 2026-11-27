@@ -139,6 +139,7 @@ class StoreSettings {
     this.courierDeliveryCharge,
     this.courierCodFlatFee = 0.0,
     this.codEnabled = true,
+    this.codMaxOrderAmount = 1500.0,
     this.onlinePaymentsEnabled = true,
     this.payLaterEnabled = false,
     this.partialCodEnabled = false,
@@ -160,6 +161,8 @@ class StoreSettings {
   final double? courierDeliveryCharge;
   final double courierCodFlatFee;
   final bool codEnabled;
+  /// Maximum order amount (before COD handling fee) eligible for 100% Full COD (`0` = unlimited).
+  final double codMaxOrderAmount;
   final bool onlinePaymentsEnabled;
   final bool payLaterEnabled;
   final bool partialCodEnabled;
@@ -237,6 +240,17 @@ class StoreSettings {
     return (courierCodFlatFee * 100).round() / 100.0;
   }
 
+  /// True when Full COD has an active rupee cap (`> 0`) and [amountBeforeCodFee] exceeds it.
+  bool exceedsCodMaxOrderAmount(
+    double amountBeforeCodFee, {
+    double? overrideMax,
+  }) {
+    final limit = overrideMax ?? codMaxOrderAmount;
+    if (limit <= 0) return false;
+    final clamped = amountBeforeCodFee < 0 ? 0.0 : amountBeforeCodFee;
+    return (clamped * 100).round() > (limit * 100).round();
+  }
+
   /// Mirrors `partialCodQuote` in `src/lib/order-payment.ts`:
   /// Integer rupee advance = min(max(1, round(total * percent%)), cap), capped at total.
   ({double advance, double balance}) partialCodQuote(double total) {
@@ -282,11 +296,18 @@ class StoreSettings {
     final deliveryRules = brMap?['delivery'] is Map
         ? Map<String, dynamic>.from(brMap!['delivery'] as Map)
         : null;
+    final codPolicy = brMap?['codPolicy'] is Map
+        ? Map<String, dynamic>.from(brMap!['codPolicy'] as Map)
+        : null;
     final prepaidThreshold =
         (json['prepaidFreeDeliveryThreshold'] as num?)?.toDouble() ??
             (deliveryRules?['prepaidFreeDeliveryThreshold'] as num?)
                 ?.toDouble() ??
             0.0;
+    final rawCodMax =
+        (json['codMaxOrderAmount'] as num?)?.toDouble() ??
+            (codPolicy?['maxOrderAmount'] as num?)?.toDouble() ??
+            1500.0;
 
     return StoreSettings(
       freeDeliveryThreshold: freeDeliveryThreshold,
@@ -302,6 +323,7 @@ class StoreSettings {
       courierCodFlatFee:
           (json['courierCodFlatFee'] as num?)?.toDouble() ?? 0.0,
       codEnabled: json['codEnabled'] != false,
+      codMaxOrderAmount: rawCodMax >= 0 ? rawCodMax : 1500.0,
       onlinePaymentsEnabled: json['onlinePaymentsEnabled'] != false,
       payLaterEnabled: json['payLaterEnabled'] == true,
       partialCodEnabled: json['partialCodEnabled'] == true,

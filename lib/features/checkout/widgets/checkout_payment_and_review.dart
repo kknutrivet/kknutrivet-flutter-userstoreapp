@@ -30,6 +30,7 @@ class PaymentAvailabilityStatus {
   const PaymentAvailabilityStatus({
     this.onlineEnabled = true,
     this.codEnabled = false,
+    this.codMaxOrderAmount,
     this.userCodAllowed = true,
     this.partialCodEnabled = false,
     this.codDisabledReason,
@@ -40,6 +41,7 @@ class PaymentAvailabilityStatus {
 
   final bool onlineEnabled;
   final bool codEnabled;
+  final double? codMaxOrderAmount;
   final bool userCodAllowed;
   final bool partialCodEnabled;
   final String? codDisabledReason;
@@ -60,6 +62,7 @@ final paymentAvailabilityStatusProvider =
         return PaymentAvailabilityStatus(
           onlineEnabled: (data['enabled'] as bool?) ?? true,
           codEnabled: (data['codEnabled'] as bool?) ?? false,
+          codMaxOrderAmount: (data['codMaxOrderAmount'] as num?)?.toDouble(),
           userCodAllowed: (data['userCodAllowed'] as bool?) ?? true,
           partialCodEnabled: (data['partialCodEnabled'] as bool?) ?? false,
           codDisabledReason: data['codDisabledReason'] as String?,
@@ -821,6 +824,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
     required this.delivery,
     required this.codConfirmationEnabled,
     this.total = 0.0,
+    this.codOrderAmount,
     required this.onPaymentMethodChanged,
   });
 
@@ -828,6 +832,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
   final DeliveryInfo? delivery;
   final bool codConfirmationEnabled;
   final double total;
+  final double? codOrderAmount;
   final ValueChanged<String> onPaymentMethodChanged;
 
   @override
@@ -844,11 +849,17 @@ class CheckoutPaymentSection extends ConsumerWidget {
         availability.onlineEnabled && settings.onlinePaymentsEnabled;
     final pincodeCod = delivery == null || delivery!.cod;
     final pincodePrepaid = delivery == null || delivery!.prepaid;
+    final effectiveCodMax =
+        availability.codMaxOrderAmount ?? settings.codMaxOrderAmount;
+    final codOverCap = settings.exceedsCodMaxOrderAmount(
+      codOrderAmount ?? total,
+      overrideMax: effectiveCodMax,
+    );
     final backendCodAllowed =
         availability.codEnabled &&
         availability.userCodAllowed &&
         settings.codEnabled;
-    final codAvailable = backendCodAllowed && pincodeCod;
+    final codAvailable = backendCodAllowed && pincodeCod && !codOverCap;
 
     final partialCodConfigured =
         settings.partialCodEnabled || availability.partialCodEnabled;
@@ -860,7 +871,9 @@ class CheckoutPaymentSection extends ConsumerWidget {
         availability.userCodAllowed;
     final payLaterAvailable =
         settings.payLaterEnabled && onlineEnabled && pincodePrepaid;
-    final quote = settings.partialCodQuote(total);
+    final quote = settings.partialCodQuote(
+      total - settings.codCollectionFeeFor(paymentMethod),
+    );
 
     String codNote;
     if (codAvailable) {
@@ -870,6 +883,10 @@ class CheckoutPaymentSection extends ConsumerWidget {
       } else {
         codNote = 'Pay with cash upon delivery · No extra COD fee';
       }
+    } else if (codOverCap) {
+      codNote = partialCodAvailable
+          ? 'Available for orders up to ₹${formatInr(effectiveCodMax)} · Use Partial COD (₹${formatInr(quote.advance)} now, rest on delivery) or Online Payment'
+          : 'Available for orders up to ₹${formatInr(effectiveCodMax)} · Please pay online for higher-value orders';
     } else if (!settings.codEnabled) {
       codNote = 'Cash on Delivery is currently disabled by store';
     } else if (!availability.codEnabled &&
@@ -898,6 +915,39 @@ class CheckoutPaymentSection extends ConsumerWidget {
               ? null
               : 'Online payments are currently unavailable',
         ),
+        if (codOverCap && partialCodAvailable) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.verified_user_rounded,
+                  size: 17,
+                  color: Color(0xFF047857),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'Orders above ₹${formatInr(effectiveCodMax)} use Partial COD: pay just ₹${formatInr(quote.advance)} online now to confirm & ₹${formatInr(quote.balance)} cash on delivery (₹0 COD fee!).',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.38,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF064E3B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (partialCodConfigured || partialCodAvailable) ...[
           const SizedBox(height: 8),
           _payOption(
@@ -905,7 +955,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
             title:
                 '${strings.partialCodTitlePrefix} ₹${formatInr(quote.advance)} ${strings.partialCodAdvanceSuffix}',
             enabled: partialCodAvailable,
-            badge: '₹0 COD Fee',
+            badge: codOverCap ? 'Recommended' : '₹0 COD Fee',
             subtitle: '₹${formatInr(quote.balance)} ${strings.onDelivery}',
             note: partialCodAvailable
                 ? 'A small advance confirms your order · No extra COD fee'
@@ -935,6 +985,7 @@ class CheckoutPaymentSection extends ConsumerWidget {
           value: 'COD',
           title: strings.codTitle,
           enabled: codAvailable,
+          badge: codOverCap ? 'Max ₹${formatInr(effectiveCodMax)}' : null,
           note: codNote,
         ),
         if (paymentMethod == 'COD' &&

@@ -12,6 +12,7 @@ import '../../../core/widgets/common.dart';
 import '../../../core/widgets/compact_product_card.dart' show formatInr;
 import '../../../models/address.dart';
 import '../../../models/order.dart';
+import '../../../models/store_settings.dart';
 import '../../../providers/app_providers.dart';
 import '../../checkout/screens/cashfree_checkout_screen.dart';
 import '../../checkout/widgets/checkout_address_section.dart';
@@ -83,7 +84,9 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
           ),
     ];
     final prevMethod = widget.order.paymentMethod?.toUpperCase();
-    if (prevMethod == 'COD') {
+    if (widget.order.partialCod || prevMethod == 'PARTIAL_COD') {
+      _paymentMethod = 'PARTIAL_COD';
+    } else if (prevMethod == 'COD') {
       _paymentMethod = 'COD';
     } else {
       _paymentMethod = 'CASHFREE';
@@ -172,7 +175,10 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
     }
   }
 
-  Future<void> _placeExpressOrder(Address? selectedAddress) async {
+  Future<void> _placeExpressOrder(
+    Address? selectedAddress,
+    String effectiveMethod,
+  ) async {
     if (_submitting || _addingToCart || _items.isEmpty) return;
 
     final user = ref.read(authProvider).valueOrNull;
@@ -222,7 +228,15 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
           .toList();
 
       await _abandonPendingOrderIfAny();
-      final isOnline = _paymentMethod != 'COD';
+      final isOnline = effectiveMethod != 'COD';
+      final apiPaymentMethod =
+          (effectiveMethod == 'PAY_LATER' || effectiveMethod == 'EMI')
+          ? 'CASHFREE'
+          : effectiveMethod;
+      final paymentPreference =
+          (effectiveMethod == 'PAY_LATER' || effectiveMethod == 'EMI')
+          ? effectiveMethod
+          : null;
 
       final order = await ref
           .read(orderServiceProvider)
@@ -231,14 +245,14 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
             shippingAddress: shippingAddress,
             phone: phone,
             pincode: pincode,
-            paymentMethod: isOnline ? 'CASHFREE' : 'COD',
+            paymentMethod: apiPaymentMethod,
             items: itemsPayload,
           );
       createdOrderId = order.id;
 
       if (isOnline) {
         _pendingOnlineOrderId = order.id;
-        await _payOnline(order);
+        await _payOnline(order, paymentPreference: paymentPreference);
       } else {
         AnalyticsService.instance.logPurchase(
           paymentMethod: 'COD',
@@ -280,10 +294,10 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
     }
   }
 
-  Future<void> _payOnline(Order order) async {
+  Future<void> _payOnline(Order order, {String? paymentPreference}) async {
     final session = await ref
         .read(orderServiceProvider)
-        .createCashfreeOrder(order.id);
+        .createCashfreeOrder(order.id, paymentPreference: paymentPreference);
     if (!mounted) return;
 
     final returnedFromPayment = await Navigator.of(context).push<bool>(
@@ -336,8 +350,12 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
     if (isPaymentConfirmed(result)) {
       AnalyticsService.instance.logPurchase(
         orderId: order.id,
-        value: order.totalAmount,
-        paymentMethod: 'prepaid',
+        value: (order.paymentMethod == 'PARTIAL_COD')
+            ? (order.advanceAmount ?? 0)
+            : order.totalAmount,
+        paymentMethod: (order.paymentMethod == 'PARTIAL_COD')
+            ? 'advance'
+            : 'prepaid',
       );
       ref.invalidate(ordersProvider);
       await ref.read(cartProvider.notifier).clear();
@@ -360,34 +378,62 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
     final addresses =
         ref.watch(addressesProvider).valueOrNull ?? const <Address>[];
     final selectedAddress = _resolveAddress(addresses);
-    final settings = ref.watch(storeSettingsProvider).valueOrNull;
+    final settings =
+        ref.watch(storeSettingsProvider).valueOrNull ??
+        StoreSettings.defaults();
     final availability =
         ref.watch(paymentAvailabilityStatusProvider).valueOrNull ??
         const PaymentAvailabilityStatus();
 
+    final subtotal = _items.fold<double>(0, (sum, i) => sum + i.lineTotal);
+    final freeThreshold = settings.freeDeliveryThreshold;
+    final baseDelivery =
+        settings.courierDeliveryCharge ?? settings.deliveryCharge;
+    final deliveryFee = subtotal >= freeThreshold ? 0.0 : baseDelivery;
+    final baseTotal = subtotal + deliveryFee;
+    final codOverCap = settings.exceedsCodMaxOrderAmount(
+      baseTotal,
+      overrideMax: availability.codMaxOrderAmount,
+    );
+
     final codAllowed =
         availability.codEnabled &&
         availability.userCodAllowed &&
-        (settings?.codEnabled ?? true);
+        settings.codEnabled &&
+        !codOverCap;
     final onlineAllowed =
-        availability.onlineEnabled && (settings?.onlinePaymentsEnabled ?? true);
+        availability.onlineEnabled && settings.onlinePaymentsEnabled;
+    final partialCodConfigured =
+        settings.partialCodEnabled || availability.partialCodEnabled;
+    final partialCodAvailable =
+        partialCodConfigured &&
+        onlineAllowed &&
+        availability.userCodAllowed;
+    final payLaterAvailable = settings.payLaterEnabled && onlineAllowed;
 
-    final effectiveMethod =
-        (_paymentMethod == 'COD' && !codAllowed && onlineAllowed)
-        ? 'CASHFREE'
-        : (_paymentMethod == 'CASHFREE' && !onlineAllowed && codAllowed)
-        ? 'COD'
-        : _paymentMethod;
+    String effectiveMethod = _paymentMethod;
+    if (codOverCap && partialCodAvailable && effectiveMethod == 'COD') {
+      effectiveMethod = 'PARTIAL_COD';
+    } else if (effectiveMethod == 'PARTIAL_COD' && !partialCodAvailable) {
+      effectiveMethod = onlineAllowed ? 'CASHFREE' : (codAllowed ? 'COD' : 'CASHFREE');
+    } else if ((effectiveMethod == 'PAY_LATER' || effectiveMethod == 'EMI') &&
+        !payLaterAvailable) {
+      effectiveMethod = onlineAllowed ? 'CASHFREE' : (codAllowed ? 'COD' : 'CASHFREE');
+    } else if (effectiveMethod == 'COD' && !codAllowed) {
+      effectiveMethod = partialCodAvailable
+          ? 'PARTIAL_COD'
+          : (onlineAllowed ? 'CASHFREE' : 'COD');
+    } else if (effectiveMethod == 'CASHFREE' && !onlineAllowed) {
+      effectiveMethod = partialCodAvailable
+          ? 'PARTIAL_COD'
+          : (codAllowed ? 'COD' : 'CASHFREE');
+    }
 
-    final subtotal = _items.fold<double>(0, (sum, i) => sum + i.lineTotal);
-    final freeThreshold = settings?.freeDeliveryThreshold ?? 499;
-    final baseDelivery =
-        settings?.courierDeliveryCharge ?? settings?.deliveryCharge ?? 49;
-    final deliveryFee = subtotal >= freeThreshold ? 0.0 : baseDelivery;
     final codFee = (effectiveMethod == 'COD')
-        ? (settings?.courierCodFlatFee ?? 0.0)
+        ? settings.courierCodFlatFee
         : 0.0;
-    final estimatedTotal = subtotal + deliveryFee + codFee;
+    final estimatedTotal = baseTotal + codFee;
+    final partialQuote = settings.partialCodQuote(baseTotal);
 
     final displayName = selectedAddress?.fullName ??
         widget.order.recipientName ??
@@ -775,40 +821,87 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Payment selector
-                    Row(
+                    // Payment selector (mirrors CheckoutPaymentSection from StoreSettings)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (onlineAllowed)
-                          Expanded(
-                            child: _PaymentChip(
-                              label: 'Pay Online',
-                              subtitle: 'UPI · Cards · Free',
-                              icon: Icons.account_balance_wallet_outlined,
-                              selected: effectiveMethod == 'CASHFREE',
-                              onTap: _submitting
-                                  ? null
-                                  : () => setState(
-                                        () => _paymentMethod = 'CASHFREE',
-                                      ),
-                            ),
+                          _PaymentChip(
+                            label: 'Pay Online',
+                            subtitle: 'UPI · Cards · NetBanking · ₹0 COD Fee',
+                            icon: Icons.account_balance_wallet_outlined,
+                            selected: effectiveMethod == 'CASHFREE',
+                            onTap: _submitting
+                                ? null
+                                : () => setState(
+                                      () => _paymentMethod = 'CASHFREE',
+                                    ),
                           ),
-                        if (onlineAllowed && codAllowed)
-                          const SizedBox(width: 10),
-                        if (codAllowed)
-                          Expanded(
-                            child: _PaymentChip(
-                              label: 'Cash on Delivery',
-                              subtitle: codFee > 0
-                                  ? '+₹${formatInr(codFee)} COD fee'
-                                  : 'Pay on arrival',
-                              icon: Icons.payments_outlined,
-                              selected: effectiveMethod == 'COD',
-                              onTap: _submitting
-                                  ? null
-                                  : () =>
-                                        setState(() => _paymentMethod = 'COD'),
-                            ),
+                        if (partialCodAvailable) ...[
+                          const SizedBox(height: 8),
+                          _PaymentChip(
+                            label:
+                                'Pay ₹${formatInr(partialQuote.advance)} Advance (Partial COD)',
+                            subtitle:
+                                '₹${formatInr(partialQuote.balance)} on delivery · ₹0 COD Fee',
+                            badge: '₹0 COD Fee',
+                            icon: Icons.splitscreen_outlined,
+                            selected: effectiveMethod == 'PARTIAL_COD',
+                            onTap: _submitting
+                                ? null
+                                : () => setState(
+                                      () => _paymentMethod = 'PARTIAL_COD',
+                                    ),
                           ),
+                        ],
+                        if (payLaterAvailable) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _PaymentChip(
+                                  label: 'Pay Later',
+                                  subtitle: 'Simpl · LazyPay',
+                                  icon: Icons.schedule_rounded,
+                                  selected: effectiveMethod == 'PAY_LATER',
+                                  onTap: _submitting
+                                      ? null
+                                      : () => setState(
+                                            () => _paymentMethod = 'PAY_LATER',
+                                          ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _PaymentChip(
+                                  label: 'EMI',
+                                  subtitle: 'Cardless · Card EMI',
+                                  icon: Icons.credit_score_outlined,
+                                  selected: effectiveMethod == 'EMI',
+                                  onTap: _submitting
+                                      ? null
+                                      : () => setState(
+                                            () => _paymentMethod = 'EMI',
+                                          ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (codAllowed) ...[
+                          const SizedBox(height: 8),
+                          _PaymentChip(
+                            label: 'Cash on Delivery',
+                            subtitle: settings.courierCodFlatFee > 0
+                                ? '+₹${formatInr(settings.courierCodFlatFee)} COD handling fee'
+                                : 'Pay cash on delivery · No extra COD fee',
+                            icon: Icons.payments_outlined,
+                            selected: effectiveMethod == 'COD',
+                            onTap: _submitting
+                                ? null
+                                : () => setState(() => _paymentMethod = 'COD'),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -836,9 +929,11 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              deliveryFee <= 0
-                                  ? 'Total · FREE delivery'
-                                  : 'Total (incl. ₹${formatInr(deliveryFee)} delivery)',
+                              effectiveMethod == 'PARTIAL_COD'
+                                  ? '₹${formatInr(partialQuote.advance)} now · ₹${formatInr(partialQuote.balance)} COD'
+                                  : deliveryFee <= 0
+                                      ? 'Total · FREE delivery'
+                                      : 'Total (incl. ₹${formatInr(deliveryFee)} delivery)',
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -864,7 +959,10 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
                                       _submitting ||
                                       _addingToCart)
                                   ? null
-                                  : () => _placeExpressOrder(selectedAddress),
+                                  : () => _placeExpressOrder(
+                                        selectedAddress,
+                                        effectiveMethod,
+                                      ),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primaryDeep,
                                 foregroundColor: Colors.white,
@@ -884,7 +982,13 @@ class _ExpressReorderSheetState extends ConsumerState<_ExpressReorderSheet> {
                                   : Text(
                                       effectiveMethod == 'COD'
                                           ? 'Place Order · ₹${formatInr(estimatedTotal)}'
-                                          : 'Pay ₹${formatInr(estimatedTotal)} →',
+                                          : effectiveMethod == 'PARTIAL_COD'
+                                              ? 'Pay ₹${formatInr(partialQuote.advance)} advance →'
+                                              : effectiveMethod == 'PAY_LATER'
+                                                  ? 'Pay Later · ₹${formatInr(estimatedTotal)} →'
+                                                  : effectiveMethod == 'EMI'
+                                                      ? 'Pay via EMI · ₹${formatInr(estimatedTotal)} →'
+                                                      : 'Pay ₹${formatInr(estimatedTotal)} →',
                                       style: const TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w800,
@@ -947,6 +1051,7 @@ class _PaymentChip extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.badge,
   });
 
   final String label;
@@ -954,6 +1059,7 @@ class _PaymentChip extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback? onTap;
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -964,7 +1070,7 @@ class _PaymentChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -983,29 +1089,56 @@ class _PaymentChip extends StatelessWidget {
                     ? AppColors.primaryDeep
                     : const Color(0xFF5B7268),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: selected
-                            ? FontWeight.w800
-                            : FontWeight.w700,
-                        color: const Color(0xFF102A23),
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: selected
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
+                              color: const Color(0xFF102A23),
+                            ),
+                          ),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE4F4EB),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              badge!,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         color: Color(0xFF5B7268),
                       ),
                     ),

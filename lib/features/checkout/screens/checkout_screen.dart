@@ -24,7 +24,7 @@ import '../../prescriptions/screens/prescriptions_screen.dart'
 import '../../prescriptions/widgets/rx_upload_sheet.dart'
     show showRxUploadSheet;
 import '../../prescriptions/widgets/rx_checkout_gate.dart'
-    show prescriptionReadyForCheckout;
+    show attachedPrescription, prescriptionReadyForCheckout;
 import '../widgets/checkout_address_section.dart';
 import '../widgets/checkout_payment_and_review.dart';
 import 'cashfree_checkout_screen.dart';
@@ -52,6 +52,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String? _selectedAddressId;
   bool _addressExpanded = false;
   String _paymentMethod = 'CASHFREE';
+  String? _explicitPaymentChoice;
   bool _submitting = false;
   bool _checkingDelivery = false;
   DeliveryInfo? _delivery;
@@ -198,6 +199,56 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               paymentMethod: _paymentMethod,
             );
             final codFee = activeSettings.codCollectionFeeFor(_paymentMethod);
+            final codDeliveryFee = activeSettings.calculateDeliveryFee(
+              merchandise,
+              pincode: effectivePincode,
+              source: effectiveSource,
+              paymentMethod: 'COD',
+            );
+            final codOrderAmount = (merchandise + codDeliveryFee).clamp(
+              0.0,
+              double.infinity,
+            );
+            final availabilitySnapshot =
+                ref.watch(paymentAvailabilityStatusProvider).valueOrNull ??
+                const PaymentAvailabilityStatus();
+            final effectiveCodMax =
+                availabilitySnapshot.codMaxOrderAmount ??
+                activeSettings.codMaxOrderAmount;
+            final codOverCap = activeSettings.exceedsCodMaxOrderAmount(
+              codOrderAmount,
+              overrideMax: effectiveCodMax,
+            );
+            final onlineAllowedNow =
+                availabilitySnapshot.onlineEnabled &&
+                activeSettings.onlinePaymentsEnabled;
+            final partialCodReadyNow =
+                (activeSettings.partialCodEnabled ||
+                    availabilitySnapshot.partialCodEnabled) &&
+                onlineAllowedNow &&
+                (_delivery == null || (_delivery!.prepaid && _delivery!.cod)) &&
+                availabilitySnapshot.userCodAllowed;
+            if (codOverCap &&
+                partialCodReadyNow &&
+                _paymentMethod != 'PARTIAL_COD' &&
+                (_explicitPaymentChoice == null ||
+                    _explicitPaymentChoice == 'COD')) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _paymentMethod != 'PARTIAL_COD') {
+                  setState(() => _paymentMethod = 'PARTIAL_COD');
+                }
+              });
+            } else if (codOverCap && _paymentMethod == 'COD') {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _paymentMethod == 'COD') {
+                  setState(
+                    () => _paymentMethod = partialCodReadyNow
+                        ? 'PARTIAL_COD'
+                        : 'CASHFREE',
+                  );
+                }
+              });
+            }
             final isNotServiceable =
                 _delivery != null && !_delivery!.serviceable;
             final total = (merchandise + deliveryFee + codFee).clamp(
@@ -314,8 +365,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     delivery: _delivery,
                     codConfirmationEnabled: codConfirmationEnabled,
                     total: total.toDouble(),
-                    onPaymentMethodChanged: (val) =>
-                        setState(() => _paymentMethod = val),
+                    codOrderAmount: codOrderAmount.toDouble(),
+                    onPaymentMethodChanged: (val) => setState(() {
+                      _explicitPaymentChoice = val;
+                      _paymentMethod = val;
+                    }),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -524,17 +578,42 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final availability =
             ref.read(paymentAvailabilityStatusProvider).value ??
             const PaymentAvailabilityStatus();
-        final settings = ref.read(storeSettingsProvider).valueOrNull;
+        final settings =
+            ref.read(storeSettingsProvider).valueOrNull ??
+            StoreSettings.defaults();
+        final cartItems = ref.read(cartProvider).value ?? const [];
+        final cartSubtotal = ref.read(cartTotalProvider);
+        final draft = ref.read(checkoutDraftProvider);
+        final feedPairing = calculateFeedPairingDiscount(cartItems, settings);
+        final promo = resolveBestPromo(
+          subtotal: cartSubtotal,
+          couponDiscount: draft.couponDiscount,
+          feedPairingDiscount: feedPairing.discount,
+        );
+        final merchandise =
+            (cartSubtotal -
+                    promo.merchandiseDiscount -
+                    draft.pointsToRedeem.toDouble())
+                .clamp(0.0, double.infinity);
+        final codDelivery = settings.calculateDeliveryFee(
+          merchandise,
+          pincode: zip,
+          source: info.source,
+          paymentMethod: 'COD',
+        );
+        final codOverCap = settings.exceedsCodMaxOrderAmount(
+          merchandise + codDelivery,
+          overrideMax: availability.codMaxOrderAmount,
+        );
         final codAllowed =
             availability.codEnabled &&
             availability.userCodAllowed &&
-            (settings?.codEnabled ?? true);
+            settings.codEnabled &&
+            !codOverCap;
         final onlineAllowed =
-            availability.onlineEnabled &&
-            (settings?.onlinePaymentsEnabled ?? true);
+            availability.onlineEnabled && settings.onlinePaymentsEnabled;
         final partialCodConfigured =
-            (settings?.partialCodEnabled ?? false) ||
-            availability.partialCodEnabled;
+            settings.partialCodEnabled || availability.partialCodEnabled;
         final partialCodAvailable =
             partialCodConfigured &&
             onlineAllowed &&
@@ -542,14 +621,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             info.cod &&
             availability.userCodAllowed;
         final payLaterAvailable =
-            (settings?.payLaterEnabled ?? false) &&
-            onlineAllowed &&
-            info.prepaid;
+            settings.payLaterEnabled && onlineAllowed && info.prepaid;
 
         setState(() {
           _delivery = info;
           if (info.serviceable) {
-            if ((_paymentMethod == 'PAY_LATER' || _paymentMethod == 'EMI') &&
+            if (codOverCap &&
+                partialCodAvailable &&
+                (_explicitPaymentChoice == null ||
+                    _explicitPaymentChoice == 'COD')) {
+              _paymentMethod = 'PARTIAL_COD';
+            } else if ((_paymentMethod == 'PAY_LATER' ||
+                    _paymentMethod == 'EMI') &&
                 !payLaterAvailable) {
               _paymentMethod = onlineAllowed
                   ? 'CASHFREE'
@@ -657,10 +740,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ref.read(storeSettingsProvider).valueOrNull ?? StoreSettings.defaults();
     final onlineEnabled =
         availability.onlineEnabled && settings.onlinePaymentsEnabled;
+    final cartItems = ref.read(cartProvider).value ?? const [];
+    final cartSubtotal = ref.read(cartTotalProvider);
+    final draft = ref.read(checkoutDraftProvider);
+    final feedPairing = calculateFeedPairingDiscount(cartItems, settings);
+    final promo = resolveBestPromo(
+      subtotal: cartSubtotal,
+      couponDiscount: draft.couponDiscount,
+      feedPairingDiscount: feedPairing.discount,
+    );
+    final merchandise =
+        (cartSubtotal -
+                promo.merchandiseDiscount -
+                draft.pointsToRedeem.toDouble())
+            .clamp(0.0, double.infinity);
+    final codDelivery = settings.calculateDeliveryFee(
+      merchandise,
+      pincode: info.pincode,
+      source: info.source,
+      paymentMethod: 'COD',
+    );
+    final codOverCap = settings.exceedsCodMaxOrderAmount(
+      merchandise + codDelivery,
+      overrideMax: availability.codMaxOrderAmount,
+    );
     final codAllowed =
         availability.codEnabled &&
         availability.userCodAllowed &&
-        settings.codEnabled;
+        settings.codEnabled &&
+        !codOverCap;
     final partialCodConfigured =
         settings.partialCodEnabled || availability.partialCodEnabled;
     final partialCodAvailable =
@@ -767,7 +875,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       String? prescriptionId;
       try {
         final rx = await ref.read(prescriptionsProvider.future);
-        prescriptionId = rx.where(prescriptionReadyForCheckout).firstOrNull?.id;
+        prescriptionId = attachedPrescription(rx)?.id;
       } catch (_) {}
       final itemsPayload = cartItems
           .map(
