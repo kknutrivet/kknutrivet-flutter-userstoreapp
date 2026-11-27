@@ -296,18 +296,12 @@ class StoreSettings {
     final deliveryRules = brMap?['delivery'] is Map
         ? Map<String, dynamic>.from(brMap!['delivery'] as Map)
         : null;
-    final codPolicy = brMap?['codPolicy'] is Map
-        ? Map<String, dynamic>.from(brMap!['codPolicy'] as Map)
-        : null;
     final prepaidThreshold =
         (json['prepaidFreeDeliveryThreshold'] as num?)?.toDouble() ??
             (deliveryRules?['prepaidFreeDeliveryThreshold'] as num?)
                 ?.toDouble() ??
             0.0;
-    final rawCodMax =
-        (json['codMaxOrderAmount'] as num?)?.toDouble() ??
-            (codPolicy?['maxOrderAmount'] as num?)?.toDouble() ??
-            1500.0;
+    final rawCodMax = (json['codMaxOrderAmount'] as num?)?.toDouble() ?? 0.0;
 
     return StoreSettings(
       freeDeliveryThreshold: freeDeliveryThreshold,
@@ -323,7 +317,7 @@ class StoreSettings {
       courierCodFlatFee:
           (json['courierCodFlatFee'] as num?)?.toDouble() ?? 0.0,
       codEnabled: json['codEnabled'] != false,
-      codMaxOrderAmount: rawCodMax >= 0 ? rawCodMax : 1500.0,
+      codMaxOrderAmount: rawCodMax >= 0 ? rawCodMax : 0.0,
       onlinePaymentsEnabled: json['onlinePaymentsEnabled'] != false,
       payLaterEnabled: json['payLaterEnabled'] == true,
       partialCodEnabled: json['partialCodEnabled'] == true,
