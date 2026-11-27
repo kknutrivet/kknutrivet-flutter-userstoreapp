@@ -25,6 +25,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 enum _EmailMode { login, register }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
   // Phone OTP (primary flow — direct SMS verification)
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
@@ -81,11 +83,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _showLocalToast(String message, {bool isError = false}) {
+    showToast(
+      message,
+      isError: isError,
+      context: _scaffoldKey.currentContext,
+    );
+  }
+
   Future<void> _sendOtp() async {
     final rawPhone = _phoneController.text.trim();
     final phone = normalizeIndianPhone(rawPhone);
     if (phone.length != 10) {
-      showToast('Enter a valid 10-digit mobile number', isError: true);
+      _showLocalToast('Enter a valid 10-digit mobile number', isError: true);
       return;
     }
     setState(() => _sendingOtp = true);
@@ -93,7 +103,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authServiceProvider).sendOtp(phone, _regName.text.trim());
       setState(() => _otpSent = true);
       _tick(30);
-      showToast('OTP sent to +91 $phone');
+      _showLocalToast('OTP sent to +91 $phone');
     } catch (e) {
       String msg = e.toString();
       if (e is ApiException) {
@@ -101,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } else {
         msg = msg.replaceFirst(RegExp(r'^Exception: '), '');
       }
-      showToast(msg, isError: true);
+      _showLocalToast(msg, isError: true);
     } finally {
       if (mounted) setState(() => _sendingOtp = false);
     }
@@ -112,7 +122,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final phone = normalizeIndianPhone(rawPhone);
     final code = _otpController.text.trim();
     if (code.isEmpty) {
-      showToast('Enter the OTP sent to your mobile', isError: true);
+      _showLocalToast('Enter the OTP sent to your mobile', isError: true);
       return;
     }
     setState(() => _verifyingOtp = true);
@@ -126,14 +136,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             referralCode: _referralCodeOrNull(),
           );
       _dismissDialog();
-    } catch (e) {
-      String msg = e.toString();
-      if (e is ApiException) {
-        msg = e.message;
-      } else {
-        msg = msg.replaceFirst(RegExp(r'^Exception: '), '');
-      }
-      showToast(msg, isError: true);
+    } catch (_) {
+      // Error toast is displayed once by ref.listen(authProvider).
     } finally {
       if (mounted) setState(() => _verifyingOtp = false);
     }
@@ -148,18 +152,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (ref.read(authProvider).value != null) {
         _dismissDialog();
       }
-    } catch (e) {
-      if (mounted) {
-        String msg = e.toString();
-        if (e is FirebaseAuthException) {
-          msg = e.message ?? e.code;
-        } else if (e is ApiException) {
-          msg = e.message;
-        } else {
-          msg = msg.replaceFirst(RegExp(r'^Exception: '), '');
-        }
-        showToast(msg, isError: true);
-      }
+    } catch (_) {
+      // Error toast is displayed once by ref.listen(authProvider).
     } finally {
       if (mounted) setState(() => _googleLoading = false);
     }
@@ -229,7 +223,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             msg = msg.replaceFirst(RegExp(r'^Exception: '), '');
           }
           if (msg.isNotEmpty) {
-            showToast(msg, isError: true);
+            _showLocalToast(msg, isError: true);
           }
         },
       );
@@ -245,8 +239,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           context.go('/home');
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+      child: ScaffoldMessenger(
+        child: Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: Colors.transparent,
         body: Stack(
           children: [
             // Semi-transparent backdrop overlay with blur
@@ -388,6 +384,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

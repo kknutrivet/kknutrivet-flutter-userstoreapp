@@ -1,8 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
-import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../config/firebase_options.dart';
 
@@ -34,14 +32,6 @@ class FirebaseAuthService {
 
   bool _initialized = false;
 
-  static const _webClientId =
-      '446688659304-cql9915fjkl985vqm88nhe3pdbpo04bf.apps.googleusercontent.com';
-
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: kIsWeb ? _webClientId : null,
-    serverClientId: _webClientId,
-  );
-
   /// Must be called (and awaited) before any other method. Returns true
   /// when Firebase is usable, false when the native config files are
   /// missing — callers fall back to email/guest instead of crashing.
@@ -67,23 +57,23 @@ class FirebaseAuthService {
     }
   }
 
-  /// Google sign-in → Firebase credential → ID token for
-  /// POST /api/auth/firebase. Mirrors `signInWithGoogle` in
-  /// `src/lib/firebase.ts` (+ `useAuthModalController`).
+  /// Google sign-in via Firebase Auth's OAuth provider flow
+  /// (Chrome Custom Tab on Android / ASWebAuthenticationSession on iOS /
+  /// popup on Web) → ID token for POST /api/auth/firebase.
+  ///
+  /// Uses the same `kk-nutrivet-web.firebaseapp.com` OAuth handler as the
+  /// website so it works reliably across USB, Internal Testing, Closed Beta,
+  /// and Production without Android Credential Manager / SHA-1 failures.
   Future<String?> signInWithGoogle() async {
     _requireReady();
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return null;
-      }
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final provider = GoogleAuthProvider()
+        ..addScope('email')
+        ..addScope('profile')
+        ..setCustomParameters(const {'prompt': 'select_account'});
+      final userCredential = kIsWeb
+          ? await FirebaseAuth.instance.signInWithPopup(provider)
+          : await FirebaseAuth.instance.signInWithProvider(provider);
       final idToken = await userCredential.user?.getIdToken();
       if (idToken == null || idToken.isEmpty) {
         throw FirebaseAuthException(
@@ -92,25 +82,14 @@ class FirebaseAuthService {
         );
       }
       return idToken;
-    } on FirebaseAuthException {
-      rethrow;
-    } on PlatformException catch (e) {
-      if (e.code == 'sign_in_canceled') {
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'web-context-canceled' ||
+          e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request' ||
+          e.code == 'user-cancelled') {
         return null;
       }
-      final msg = e.message ?? '';
-      if (msg.contains('ApiException: 10') ||
-          RegExp(r'(?:^|\s)\w+:\s*10(?::|\s|$)').hasMatch(msg)) {
-        throw FirebaseAuthException(
-          code: 'developer-error-10',
-          message:
-              'Google Sign-In configuration error (code 10). Play App Signing SHA-1 must be registered in Firebase Console.',
-        );
-      }
-      throw FirebaseAuthException(
-        code: e.code,
-        message: e.message ?? 'Google Sign-In failed.',
-      );
+      rethrow;
     } catch (e) {
       throw FirebaseAuthException(
         code: 'google-sign-in-failed',
@@ -200,9 +179,6 @@ class FirebaseAuthService {
 
   Future<void> signOut() async {
     if (Firebase.apps.isEmpty) return;
-    try {
-      await _googleSignIn.signOut();
-    } catch (_) {}
     try {
       await FirebaseAuth.instance.signOut();
     } catch (_) {}
